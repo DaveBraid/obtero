@@ -206,5 +206,26 @@
   margin-top: 12px;
 }
 
+/* ── Card Style Preview ───────────────────────────────────────────────── */
 
+.pm-card-style-preview {
+  margin: 16px 0;
+  padding: 16px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+}
 
+.pm-preview-card {
+  margin: 12px auto;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.pm-preview-header {
+  transition: all 0.2s ease;
+}
+
+.pm-preview-body {
+  transition: all 0.2s ease;
+}

@@ -54,9 +54,9 @@ export async function insertPaperToExcalidraw(
   const plainJsonMatch = raw.match(/```json\r?\n([\s\S]*?)\r?\n```/);
   const compressedMatch = raw.match(/```compressed-json\r?\n([\s\S]*?)\r?\n```/);
 
-  if (plainJsonMatch) {
+  if (plainJsonMatch && plainJsonMatch[1]) {
     data = JSON.parse(plainJsonMatch[1]) as typeof data;
-  } else if (compressedMatch) {
+  } else if (compressedMatch && compressedMatch[1]) {
     // Strip ALL whitespace (the plugin may wrap long base64 lines)
     const payload = compressedMatch[1].replace(/\s/g, '');
 
@@ -104,6 +104,9 @@ export async function insertPaperToExcalidraw(
     const titleTextId = genId();
     const metaTextId = genId();
 
+    // Get card style from settings
+    const style = settings.cardStyle;
+
     // Build meta text: journal · date, then institutions (or authors)
     const metaLines: string[] = [];
     const journalDate = [paper.journal, paper.date].filter(Boolean).join(' · ');
@@ -115,7 +118,7 @@ export async function insertPaperToExcalidraw(
     }
     const metaText = metaLines.join('\n');
 
-    // Header rectangle (dark blue)
+    // Header rectangle (使用用户自定义样式)
     data.elements.push({
       id: headerId,
       type: 'rectangle',
@@ -124,15 +127,15 @@ export async function insertPaperToExcalidraw(
       width: cardW,
       height: headerH,
       angle: 0,
-      strokeColor: '#1864ab',
-      backgroundColor: '#1971c2',
+      strokeColor: style.headerBorderColor,
+      backgroundColor: style.headerBackgroundColor,
       fillStyle: 'solid',
       strokeWidth: 1,
       strokeStyle: 'solid',
-      roughness: 0,
-      opacity: 100,
+      roughness: style.headerRoughness,
+      opacity: style.headerOpacity,
       groupIds: [groupId],
-      roundness: { type: 3 },
+      roundness: style.headerRoundness > 0 ? { type: style.headerRoundness } : null,
       isDeleted: false,
       boundElements: [{ id: titleTextId, type: 'text' }],
       link: `[[${file.basename}]]`,
@@ -148,7 +151,7 @@ export async function insertPaperToExcalidraw(
       width: cardW - 16,
       height: headerH - 8,
       angle: 0,
-      strokeColor: '#ffffff',
+      strokeColor: style.headerTextColor,
       backgroundColor: 'transparent',
       fillStyle: 'hachure',
       strokeWidth: 1,
@@ -161,8 +164,8 @@ export async function insertPaperToExcalidraw(
       boundElements: null,
       containerId: headerId,
       text: truncate(paper.title, 80),
-      fontSize: 12,
-      fontFamily: 1,
+      fontSize: style.titleFontSize,
+      fontFamily: style.titleFontFamily,
       textAlign: 'center',
       verticalAlign: 'middle',
       baseline: 14,
@@ -170,7 +173,7 @@ export async function insertPaperToExcalidraw(
       locked: false,
     });
 
-    // Body rectangle (light blue)
+    // Body rectangle (使用用户自定义样式)
     data.elements.push({
       id: bodyId,
       type: 'rectangle',
@@ -179,22 +182,22 @@ export async function insertPaperToExcalidraw(
       width: cardW,
       height: bodyH,
       angle: 0,
-      strokeColor: '#1864ab',
-      backgroundColor: '#e7f5ff',
+      strokeColor: style.bodyBorderColor,
+      backgroundColor: style.bodyBackgroundColor,
       fillStyle: 'solid',
       strokeWidth: 1,
       strokeStyle: 'solid',
-      roughness: 0,
-      opacity: 100,
+      roughness: style.bodyRoughness,
+      opacity: style.bodyOpacity,
       groupIds: [groupId],
-      roundness: null,
+      roundness: style.bodyRoundness > 0 ? { type: style.bodyRoundness } : null,
       isDeleted: false,
       boundElements: [{ id: metaTextId, type: 'text' }],
       link: null,
       locked: false,
     });
 
-    // Meta text (dark, bound to body)
+    // Meta text (使用用户自定义样式)
     data.elements.push({
       id: metaTextId,
       type: 'text',
@@ -203,7 +206,7 @@ export async function insertPaperToExcalidraw(
       width: cardW - 16,
       height: bodyH - 16,
       angle: 0,
-      strokeColor: '#1c3b5a',
+      strokeColor: style.bodyTextColor,
       backgroundColor: 'transparent',
       fillStyle: 'hachure',
       strokeWidth: 1,
@@ -216,8 +219,8 @@ export async function insertPaperToExcalidraw(
       boundElements: null,
       containerId: bodyId,
       text: metaText,
-      fontSize: 11,
-      fontFamily: 1,
+      fontSize: style.metaFontSize,
+      fontFamily: style.metaFontFamily,
       textAlign: 'left',
       verticalAlign: 'top',
       baseline: 13,

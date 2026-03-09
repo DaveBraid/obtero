@@ -1,4 +1,4 @@
-import { ItemView, Menu, Notice, TFile, WorkspaceLeaf } from 'obsidian';
+import { ItemView, Menu, Modal, Notice, TFile, WorkspaceLeaf } from 'obsidian';
 import MyPlugin from '../main';
 import { getPapersByCategory, movePaper, resolveExcalidrawPath } from '../utils/fileUtils';
 import { insertPaperToExcalidraw } from '../utils/excalidrawUtils';
@@ -7,6 +7,41 @@ import { AddPaperModal } from './AddPaperModal';
 import { SetupModal } from './SetupModal';
 
 export const PAPER_VIEW_TYPE = 'paper-plugin-view';
+
+// 删除确认对话框
+class DeleteConfirmModal extends Modal {
+  onConfirm: () => void;
+
+  constructor(app: any, paperTitle: string, onConfirm: () => void) {
+    super(app);
+    this.onConfirm = onConfirm;
+
+    this.contentEl.createEl('h2', { text: '确认删除' });
+    this.contentEl.createEl('p', {
+      text: `确定要删除论文笔记「${paperTitle}」吗？此操作不可撤销。`
+    });
+
+    const buttonContainer = this.contentEl.createDiv({
+      cls: 'modal-button-container',
+    });
+    buttonContainer.style.display = 'flex';
+    buttonContainer.style.justifyContent = 'flex-end';
+    buttonContainer.style.gap = '10px';
+    buttonContainer.style.marginTop = '20px';
+
+    const cancelBtn = buttonContainer.createEl('button', { text: '取消' });
+    cancelBtn.addEventListener('click', () => this.close());
+
+    const confirmBtn = buttonContainer.createEl('button', {
+      text: '确认删除',
+      cls: 'mod-warning',
+    });
+    confirmBtn.addEventListener('click', () => {
+      this.onConfirm();
+      this.close();
+    });
+  }
+}
 
 export class PaperView extends ItemView {
   plugin: MyPlugin;
@@ -152,6 +187,23 @@ export class PaperView extends ItemView {
               } catch (err) {
                 new Notice('添加失败：' + (err as Error).message);
               }
+            })
+          );
+
+          menu.addSeparator();
+
+          // Delete paper
+          menu.addItem(mi =>
+            mi.setTitle('🗑️ 删除论文').onClick(() => {
+              new DeleteConfirmModal(this.app, displayName, async () => {
+                try {
+                  await this.app.vault.delete(file as TFile);
+                  new Notice(`已删除「${displayName}」`);
+                  await this.render();
+                } catch (err) {
+                  new Notice('删除失败：' + (err as Error).message);
+                }
+              }).open();
             })
           );
 

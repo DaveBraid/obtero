@@ -187,15 +187,20 @@ export function getPapersByCategory(
   settings: MyPluginSettings
 ): Record<string, TFile[]> {
   const base = normalizePath(settings.workspaceFolder);
-  const result: Record<string, TFile[]> = { 待阅读: [] };
-  for (const label of settings.labels) result[label] = [];
+  const result: Record<string, TFile[]> = {};
+  result['待阅读'] = [];
+  for (const label of settings.labels) {
+    result[label] = [];
+  }
 
   const unread = app.vault.getAbstractFileByPath(
     normalizePath(`${base}/${settings.unreadFolderName}`)
   );
   if (unread instanceof TFolder) {
     for (const f of unread.children) {
-      if (f instanceof TFile && f.extension === 'md') result['待阅读'].push(f);
+      if (f instanceof TFile && f.extension === 'md') {
+        result['待阅读'].push(f);
+      }
     }
   }
 
@@ -205,9 +210,14 @@ export function getPapersByCategory(
   if (read instanceof TFolder) {
     for (const f of read.children) {
       if (!(f instanceof TFile) || f.extension !== 'md') continue;
+      const fileName = f.name;
+      if (!fileName) continue;
       for (const label of settings.labels) {
-        if (f.name.startsWith(`【${label}】`)) {
-          result[label].push(f);
+        if (fileName.startsWith(`【${label}】`)) {
+          const arr = result[label];
+          if (arr) {
+            arr.push(f);
+          }
           break;
         }
       }
