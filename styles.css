@@ -1,8 +1,210 @@
-/*
+/* ── Paper Plugin ────────────────────────────────────────────────────── */
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
+.pm-view {
+  padding: 12px;
+  overflow-y: auto;
+}
 
-If your plugin does not need CSS, delete this file.
+/* Top toolbar */
+.pm-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
 
-*/
+.pm-btn-add {
+  flex: 1;
+}
+
+.pm-btn-refresh {
+  flex-shrink: 0;
+}
+
+.pm-btn-full {
+  display: block;
+  width: 100%;
+}
+
+/* Category sections */
+.pm-section {
+  margin-bottom: 16px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.pm-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: var(--background-secondary);
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.pm-section-title {
+  font-weight: 600;
+  font-size: 0.9em;
+}
+
+.pm-section-count {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-radius: 10px;
+  padding: 1px 7px;
+  font-size: 0.78em;
+  font-weight: 600;
+}
+
+/* Paper list inside section */
+.pm-paper-list {
+  padding: 4px 0;
+}
+
+.pm-paper-item {
+  display: flex;
+  align-items: center;
+  padding: 5px 10px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--background-modifier-border);
+  transition: background 0.1s;
+  gap: 6px;
+}
+
+.pm-paper-item:last-child {
+  border-bottom: none;
+}
+
+.pm-paper-item:hover {
+  background: var(--background-modifier-hover);
+}
+
+.pm-paper-title {
+  font-size: 0.85em;
+  color: var(--text-normal);
+  flex: 1;
+  word-break: break-word;
+}
+
+.pm-move-btn {
+  flex-shrink: 0;
+  font-size: 0.75em;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.pm-move-btn:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.pm-item-menu-btn {
+  flex-shrink: 0;
+  font-size: 1em;
+  line-height: 1;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.pm-item-menu-btn:hover {
+  border-color: var(--background-modifier-border);
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.pm-empty {
+  padding: 8px 10px;
+  font-size: 0.82em;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Search results container */
+.pm-search-results {
+  margin-top: 12px;
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+.pm-search-loading {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Individual result card */
+.pm-result-item {
+  padding: 8px 10px;
+  margin: 4px 0;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.pm-result-item:hover {
+  background: var(--background-modifier-hover);
+}
+
+.pm-result-title {
+  font-weight: 600;
+  font-size: 0.9em;
+  margin-bottom: 3px;
+}
+
+.pm-result-meta {
+  font-size: 0.78em;
+  color: var(--text-muted);
+}
+
+.pm-result-authors {
+  font-size: 0.78em;
+  color: var(--text-accent);
+  margin-top: 2px;
+}
+
+/* Paper detail */
+.pm-detail {
+  margin: 8px 0 12px;
+}
+
+.pm-detail-row {
+  display: flex;
+  align-items: flex-start;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--background-modifier-border);
+  font-size: 0.9em;
+  gap: 8px;
+}
+
+.pm-detail-label {
+  font-weight: 600;
+  min-width: 80px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.pm-detail-value {
+  flex: 1;
+  word-break: break-word;
+}
+
+/* Button row */
+.pm-btn-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+
+

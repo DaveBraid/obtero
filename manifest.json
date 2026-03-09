@@ -1,11 +1,9 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
+	"id": "obsidian-mypaper-plugin",
+	"name": "My Paper Manager",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"description": "管理学术论文：搜索、分类、追踪阅读状态，并在 Excalidraw 中可视化论文关系。",
+	"author": "User",
 	"isDesktopOnly": false
 }
