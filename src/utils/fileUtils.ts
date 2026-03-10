@@ -135,10 +135,7 @@ function buildPaperContent(paper: PaperInfo, translatedAbstract: string = ''): s
     );
   }
   if (paper.field) lines.push(`field: "${escapeYaml(paper.field)}"`);
-  if (paper.arxivId) {
-    const arxivId = paper.arxivId;
-    lines.push(`arxivId: "[arXiv](https://arxiv.org/abs/${arxivId}), [AlphaXiv](https://alphaxiv.org/abs/${arxivId}), [HTML](https://arxiv.org/html/${arxivId})"`);
-  }
+  if (paper.arxivId) lines.push(`arxivId: "${escapeYaml(paper.arxivId)}"`);
   if (paper.doi) lines.push(`doi: "${paper.doi}"`);
   lines.push('---', '');
   lines.push(`# ${paper.title}`, '');
@@ -151,6 +148,17 @@ function buildPaperContent(paper: PaperInfo, translatedAbstract: string = ''): s
   if (paper.field) {
     lines.push(`**研究领域**：${paper.field}  `);
   }
+
+  // 添加 arxivId 多链接
+  if (paper.arxivId) {
+    let arxivId = paper.arxivId;
+    if (arxivId.includes('/')) {
+      const parts = arxivId.split('/');
+      arxivId = parts[parts.length - 1] || arxivId;
+    }
+    lines.push(`**arXiv**：[arXiv](https://arxiv.org/abs/${arxivId}), [AlphaXiv](https://alphaxiv.org/abs/${arxivId}), [HTML](https://arxiv.org/html/${arxivId})  `);
+  }
+
   if (paper.abstract) {
     lines.push('', '## 摘要');
     // 如果有翻译，添加可折叠的中文翻译
