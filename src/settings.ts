@@ -23,6 +23,11 @@ export interface CardStyleConfig {
   titleFontFamily: number;
   metaFontSize: number;
   metaFontFamily: number;
+
+  // 卡片尺寸
+  cardWidth: number;      // 卡片宽度
+  headerHeight: number;   // 标题区域高度
+  bodyHeight: number;     // 正文区域高度
 }
 
 export const DEFAULT_CARD_STYLE: CardStyleConfig = {
@@ -44,6 +49,10 @@ export const DEFAULT_CARD_STYLE: CardStyleConfig = {
   titleFontFamily: 4, // Comic Sans MS
   metaFontSize: 11,
   metaFontFamily: 4, // Comic Sans MS
+
+  cardWidth: 280,
+  headerHeight: 44,
+  bodyHeight: 116,
 };
 
 export interface MyPluginSettings {
@@ -280,6 +289,54 @@ export class PaperSettingTab extends PluginSettingTab {
             this.updateCardPreview(previewContainer);
           })
       );
+
+    // 卡片尺寸设置
+    containerEl.createEl('h4', { text: '卡片尺寸' });
+
+    new Setting(containerEl)
+      .setName('卡片宽度')
+      .setDesc('卡片的总宽度（像素）')
+      .addSlider(slider =>
+        slider
+          .setLimits(200, 500, 10)
+          .setValue(this.plugin.settings.cardStyle.cardWidth)
+          .setDynamicTooltip()
+          .onChange(async value => {
+            this.plugin.settings.cardStyle.cardWidth = value;
+            await this.plugin.saveSettings();
+            this.updateCardPreview(previewContainer);
+          })
+      );
+
+    new Setting(containerEl)
+      .setName('标题区域高度')
+      .setDesc('标题背景的高度（像素）')
+      .addSlider(slider =>
+        slider
+          .setLimits(30, 80, 2)
+          .setValue(this.plugin.settings.cardStyle.headerHeight)
+          .setDynamicTooltip()
+          .onChange(async value => {
+            this.plugin.settings.cardStyle.headerHeight = value;
+            await this.plugin.saveSettings();
+            this.updateCardPreview(previewContainer);
+          })
+      );
+
+    new Setting(containerEl)
+      .setName('正文区域高度')
+      .setDesc('正文背景的高度（像素）')
+      .addSlider(slider =>
+        slider
+          .setLimits(80, 200, 5)
+          .setValue(this.plugin.settings.cardStyle.bodyHeight)
+          .setDynamicTooltip()
+          .onChange(async value => {
+            this.plugin.settings.cardStyle.bodyHeight = value;
+            await this.plugin.saveSettings();
+            this.updateCardPreview(previewContainer);
+          })
+      );
   }
 
   addColorSetting(
@@ -391,6 +448,10 @@ export class PaperSettingTab extends PluginSettingTab {
       header.style.opacity = (style.headerOpacity / 100).toString();
       header.style.fontSize = `${style.titleFontSize}px`;
       header.style.fontFamily = this.getFontFamilyName(style.titleFontFamily);
+      header.style.height = `${style.headerHeight}px`;
+      header.style.display = 'flex';
+      header.style.alignItems = 'center';
+      header.style.justifyContent = 'center';
     }
 
     if (body) {
@@ -401,6 +462,10 @@ export class PaperSettingTab extends PluginSettingTab {
       body.style.opacity = (style.bodyOpacity / 100).toString();
       body.style.fontSize = `${style.metaFontSize}px`;
       body.style.fontFamily = this.getFontFamilyName(style.metaFontFamily);
+      body.style.height = `${style.bodyHeight}px`;
+      body.style.display = 'flex';
+      body.style.alignItems = 'center';
+      body.style.justifyContent = 'center';
     }
   }
 

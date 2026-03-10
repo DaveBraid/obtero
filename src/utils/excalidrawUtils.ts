@@ -89,23 +89,30 @@ export async function insertPaperToExcalidraw(
     );
     const cardCount = existingGroups.size;
 
+    // Get card style from settings
+    const style = settings.cardStyle;
+
+    // Card dimensions from settings
+    const cardW = style.cardWidth;
+    const headerH = style.headerHeight;
+    const bodyH = style.bodyHeight;
+    const totalCardH = headerH + bodyH;
+
     const cols = 3;
     const col = cardCount % cols;
     const row = Math.floor(cardCount / cols);
-    const cardW = 280;
-    const headerH = 44;
-    const bodyH = 116;
-    const x = col * 310 + 20;
-    const y = row * 210 + 20;
+
+    // Calculate position with dynamic spacing based on card size
+    const cardSpacingX = cardW + 30; // 卡片宽度 + 间距
+    const cardSpacingY = totalCardH + 30; // 卡片总高度 + 间距
+    const x = col * cardSpacingX + 20;
+    const y = row * cardSpacingY + 20;
 
     const groupId = genId();
     const headerId = genId();
     const bodyId = genId();
     const titleTextId = genId();
     const metaTextId = genId();
-
-    // Get card style from settings
-    const style = settings.cardStyle;
 
     // Build meta text: journal · date, then institutions (or authors)
     const metaLines: string[] = [];
@@ -241,7 +248,7 @@ export async function insertPaperToExcalidraw(
     );
   } else {
     newContent = raw.replace(
-      /```json\r?\n[\s\S]*?\r?\n```/,
+      /```json\r?\n([\s\S]*?)\r?\n```/,
       '```json\n' + newJson + '\n```'
     );
   }
