@@ -80,12 +80,11 @@ export class PaperView extends ItemView {
     // 创建主容器
     const mainContainer = root.createDiv({ cls: 'pm-main-container' });
 
-    // 左侧区域（原有功能）
+    // 左侧区域（论文列表）
     const leftContainer = mainContainer.createDiv({ cls: 'pm-left-container' });
-    this.renderToolbar(leftContainer);
     this.renderPaperList(leftContainer);
 
-    // 右侧看板（简化版）
+    // 右侧看板
     const rightContainer = mainContainer.createDiv({ cls: 'pm-right-container' });
     this.renderDashboard(rightContainer);
   }
@@ -103,24 +102,6 @@ export class PaperView extends ItemView {
       .addEventListener('click', () => {
         new SetupModal(this.app, this.plugin, () => this.render()).open();
       });
-  }
-
-  private renderToolbar(root: HTMLElement): void {
-    const toolbar = root.createDiv({ cls: 'pm-toolbar' });
-    toolbar
-      .createEl('button', {
-        text: '➕ 添加论文',
-        cls: 'mod-cta pm-btn-add'
-      })
-      .addEventListener('click', () =>
-        new AddPaperModal(this.app, this.plugin, () => this.render()).open()
-      );
-    toolbar
-      .createEl('button', {
-        text: '刷新',
-        cls: 'pm-btn-refresh'
-      })
-      .addEventListener('click', () => this.render());
   }
 
   private renderPaperList(root: HTMLElement): void {
@@ -279,11 +260,11 @@ export class PaperView extends ItemView {
   // ==================== 右侧看板（Apple 风格简化版）====================
 
   private renderDashboard(container: HTMLElement): void {
+    // 快速操作按钮（添加论文 + 刷新）
+    this.renderQuickActions(container);
+
     // 统计
     this.renderFieldStats(container);
-
-    // 快速操作
-    this.renderQuickActions(container);
 
     // 最近论文
     this.renderRecentPapers(container);
@@ -292,58 +273,153 @@ export class PaperView extends ItemView {
     this.renderReadingProgress(container);
   }
 
-  private renderFieldStats(container: HTMLElement): void {
-    const byCategory = getPapersByCategory(this.app, this.plugin.settings);
-
-    const section = container.createDiv({ cls: 'pm-dashboard-section' });
-    section.createEl('h4', { text: '统计' });
-
-    const statsList = section.createDiv({ cls: 'pm-stats-list' });
-
-    // 统计各领域论文数量
-    const fieldStats: Record<string, number> = {};
-    for (const field of this.plugin.settings.fields) {
-      fieldStats[field.name] = 0;
-    }
-
-    let totalPapers = 0;
-    for (const [category, files] of Object.entries(byCategory)) {
-      for (const file of files) {
-        const fm = this.app.metadataCache.getFileCache(file as TFile)?.frontmatter;
-        const field = fm?.field || this.plugin.settings.defaultField;
-        if (fieldStats[field] !== undefined) {
-          fieldStats[field]++;
-        }
-        totalPapers++;
-      }
-    }
-
-    // 总数
-    const totalRow = statsList.createDiv({ cls: 'pm-stat-row' });
-    totalRow.createSpan({ cls: 'pm-stat-label', text: '总计' });
-    totalRow.createSpan({ cls: 'pm-stat-value', text: String(totalPapers) });
-
-    // 创建简化的统计行
-    for (const field of this.plugin.settings.fields) {
-      const count = fieldStats[field.name] || 0;
-      if (count > 0) {
-        const row = statsList.createDiv({ cls: 'pm-stat-row' });
-        row.createSpan({ cls: 'pm-stat-label', text: field.name });
-        row.createSpan({ cls: 'pm-stat-value', text: String(count) });
-      }
-    }
-  }
-
   private renderQuickActions(container: HTMLElement): void {
     const section = container.createDiv({ cls: 'pm-dashboard-section' });
 
-    const addBtn = section.createEl('button', {
-      cls: 'mod-cta',
-      text: '添加论文'
+    const buttonRow = section.createDiv({ cls: 'pm-action-buttons-row' });
+
+    // 添加论文按钮
+    const addBtn = buttonRow.createEl('button', {
+      cls: 'mod-cta pm-action-button-primary',
+      text: '➕ 添加论文'
     });
     addBtn.addEventListener('click', () =>
       new AddPaperModal(this.app, this.plugin, () => this.render()).open()
     );
+
+    // 刷新按钮
+    const refreshBtn = buttonRow.createEl('button', {
+      cls: 'pm-action-button-secondary',
+      text: '刷新'
+    });
+    refreshBtn.addEventListener('click', () => this.render());
+  }
+
+  private renderFieldStats(container: HTMLElement): void {
+    const byCategory = getPapersByCategory(this.app, this.plugin.settings);
+
+    const section = container.createDiv({ cls: 'pm-dashboard-section' });
+
+    // 统计各领域论文数量
+    const fieldStats: Array<{ name: string; count: number; color: string }> = [];
+    let totalPapers = 0;
+
+    for (const field of this.plugin.settings.fields) {
+      let count = 0;
+      for (const [category, files] of Object.entries(byCategory)) {
+        for (const file of files) {
+          const fm = this.app.metadataCache.getFileCache(file as TFile)?.frontmatter;
+          const paperField = fm?.field || this.plugin.settings.defaultField;
+          if (paperField === field.name) {
+            count++;
+          }
+        }
+      }
+      if (count > 0) {
+        fieldStats.push({
+          name: field.name,
+          count: count,
+          color: field.borderColor
+        });
+        totalPapers += count;
+      }
+    }
+
+    if (totalPapers === 0) {
+      section.createEl('h4', { text: '统计' });
+      section.createDiv({ cls: 'pm-empty', text: '暂无论文' });
+      return;
+    }
+
+    // 创建环形图 - 使用原生 DOM API
+    const chartSize = 160;
+    const strokeWidth = 20;
+    const radius = (chartSize - strokeWidth) / 2;
+    const center = chartSize / 2;
+    const circumference = 2 * Math.PI * radius;
+
+    const chartContainer = section.createDiv({ cls: 'pm-chart-container' });
+
+    // 创建 SVG 元素
+    const svgNs = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNs, 'svg');
+    svg.setAttribute('width', String(chartSize));
+    svg.setAttribute('height', String(chartSize));
+    svg.classList.add('pm-donut-chart');
+    chartContainer.appendChild(svg);
+
+    let currentOffset = 0;
+
+    // 绘制环形图片段
+    for (const field of fieldStats) {
+      const percentage = field.count / totalPapers;
+      const dashArray = percentage * circumference;
+      const dashOffset = -currentOffset;
+
+      const circle = document.createElementNS(svgNs, 'circle');
+      circle.setAttribute('cx', String(center));
+      circle.setAttribute('cy', String(center));
+      circle.setAttribute('r', String(radius));
+      circle.setAttribute('fill', 'none');
+      circle.setAttribute('stroke', field.color);
+      circle.setAttribute('stroke-width', String(strokeWidth));
+      circle.setAttribute('stroke-dasharray', `${dashArray} ${circumference}`);
+      circle.setAttribute('stroke-dashoffset', String(dashOffset));
+      circle.classList.add('pm-donut-segment');
+
+      // 添加 tooltip
+      const title = document.createElementNS(svgNs, 'title');
+      title.textContent = `${field.name}: ${field.count}篇 (${Math.round(percentage * 100)}%)`;
+      circle.appendChild(title);
+
+      svg.appendChild(circle);
+      currentOffset += dashArray;
+    }
+
+    // 中心总数文字
+    const textGroup = document.createElementNS(svgNs, 'g');
+    textGroup.classList.add('pm-donut-center');
+    svg.appendChild(textGroup);
+
+    const totalCount = document.createElementNS(svgNs, 'text');
+    totalCount.setAttribute('x', String(center));
+    totalCount.setAttribute('y', String(center + 8));
+    totalCount.setAttribute('text-anchor', 'middle');
+    totalCount.classList.add('pm-donut-total');
+    totalCount.textContent = String(totalPapers);
+    textGroup.appendChild(totalCount);
+
+    const totalLabel = document.createElementNS(svgNs, 'text');
+    totalLabel.setAttribute('x', String(center));
+    totalLabel.setAttribute('y', String(center + 28));
+    totalLabel.setAttribute('text-anchor', 'middle');
+    totalLabel.classList.add('pm-donut-label');
+    totalLabel.textContent = '总计';
+    textGroup.appendChild(totalLabel);
+
+    // 图例
+    const legend = section.createDiv({ cls: 'pm-chart-legend' });
+    for (const field of fieldStats) {
+      const percentage = Math.round((field.count / totalPapers) * 100);
+      const item = legend.createDiv({ cls: 'pm-legend-item' });
+
+      // 颜色圆点
+      const dotSvg = document.createElementNS(svgNs, 'svg');
+      dotSvg.setAttribute('width', '12');
+      dotSvg.setAttribute('height', '12');
+      dotSvg.classList.add('pm-legend-dot');
+
+      const dot = document.createElementNS(svgNs, 'circle');
+      dot.setAttribute('cx', '6');
+      dot.setAttribute('cy', '6');
+      dot.setAttribute('r', '5');
+      dot.setAttribute('fill', field.color);
+      dotSvg.appendChild(dot);
+
+      item.appendChild(dotSvg);
+      item.createSpan({ cls: 'pm-legend-name', text: field.name });
+      item.createSpan({ cls: 'pm-legend-value', text: `${field.count} (${percentage}%)` });
+    }
   }
 
   private renderRecentPapers(container: HTMLElement): void {

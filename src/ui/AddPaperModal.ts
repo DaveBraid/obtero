@@ -11,7 +11,7 @@ export class AddPaperModal extends Modal {
   private results: PaperInfo[] = [];
   private selected: PaperInfo | null = null;
   private category: string;
-  private field: string; // 领域
+  private field: string;
   private onComplete?: () => void;
 
   constructor(app: App, plugin: MyPlugin, onComplete?: () => void) {
@@ -26,7 +26,7 @@ export class AddPaperModal extends Modal {
     this.showSearchPage();
   }
 
-  // ── Search page ───────────────────────────────────────────────────────────
+  // ── 搜索页面 ───────────────────────────────────────────────────────────
 
   private showSearchPage(): void {
     const { contentEl } = this;
@@ -34,28 +34,27 @@ export class AddPaperModal extends Modal {
     contentEl.createEl('h2', { text: '添加论文' });
 
     let query = '';
-    const resultsEl = contentEl.createDiv({ cls: 'pm-search-results' });
+    const resultsContainer = contentEl.createDiv();
 
     new Setting(contentEl)
-      .setName('搜索论文')
-      .setDesc('输入论文标题或关键词，支持 arXiv 和 IEEE 数据库')
+      .setName('搜索关键词')
+      .setDesc('输入论文标题或关键词，支持 arXiv 和 IEEE')
       .addText(text => {
-        text.setPlaceholder('论文标题或关键词').onChange(v => {
+        text.setPlaceholder('输入搜索关键词...').onChange(v => {
           query = v;
         });
         text.inputEl.addEventListener('keydown', async e => {
-          if (e.key === 'Enter') await this.doSearch(query, resultsEl);
+          if (e.key === 'Enter') await this.doSearch(query, resultsContainer);
         });
       })
       .addButton(btn =>
         btn
           .setButtonText('搜索')
           .setCta()
-          .onClick(async () => await this.doSearch(query, resultsEl))
+          .onClick(async () => await this.doSearch(query, resultsContainer))
       );
 
-    // Move resultsEl below the setting
-    contentEl.appendChild(resultsEl);
+    contentEl.appendChild(resultsContainer);
   }
 
   private async doSearch(query: string, container: HTMLElement): Promise<void> {
@@ -64,7 +63,7 @@ export class AddPaperModal extends Modal {
       return;
     }
     container.empty();
-    container.createEl('p', { text: '搜索中…', cls: 'pm-search-loading' });
+    container.createEl('p', { text: '搜索中...' });
 
     try {
       const [arxiv, ieee] = await Promise.all([
@@ -111,7 +110,7 @@ export class AddPaperModal extends Modal {
     }
   }
 
-  // ── Detail page ───────────────────────────────────────────────────────────
+  // ── 详情页面 ───────────────────────────────────────────────────────────
 
   private showDetailPage(): void {
     if (!this.selected) return;
@@ -120,21 +119,25 @@ export class AddPaperModal extends Modal {
     contentEl.empty();
     contentEl.createEl('h2', { text: '论文详情' });
 
-    const detail = contentEl.createDiv({ cls: 'pm-detail' });
-    const row = (label: string, value: string) => {
+    // 论文信息
+    const info = contentEl.createDiv({ cls: 'pm-detail' });
+
+    const addField = (label: string, value: string) => {
       if (!value) return;
-      const r = detail.createDiv({ cls: 'pm-detail-row' });
-      r.createSpan({ cls: 'pm-detail-label', text: label });
-      r.createSpan({ cls: 'pm-detail-value', text: value });
+      const row = info.createDiv({ cls: 'pm-detail-row' });
+      row.createSpan({ cls: 'pm-detail-label', text: label });
+      row.createSpan({ cls: 'pm-detail-value', text: value });
     };
 
-    row('标 题', p.title);
-    row('期刊/会议', p.journal);
-    row('发表时间', p.date);
-    row('作 者', p.authors.join('; '));
-    if (p.institutions.length > 0) row('作者单位', p.institutions.join('; '));
-    if (p.arxivId) row('arXiv ID', p.arxivId);
-    if (p.doi) row('DOI', p.doi);
+    addField('标题', p.title);
+    addField('期刊/会议', p.journal);
+    addField('发表时间', p.date);
+    addField('作者', p.authors.join('; '));
+    if (p.institutions.length > 0) {
+      addField('作者单位', p.institutions.join('; '));
+    }
+    if (p.arxivId) addField('arXiv ID', p.arxivId);
+    if (p.doi) addField('DOI', p.doi);
 
     // 论文类别
     const categories = ['待阅读', ...this.plugin.settings.labels];
@@ -152,7 +155,7 @@ export class AddPaperModal extends Modal {
     const fieldOptions = this.plugin.settings.fields.map(f => f.name);
     new Setting(contentEl)
       .setName('研究领域')
-      .setDesc('选择该论文所属领域（决定卡片样式）')
+      .setDesc('选择该论文所属领域（决定 Excalidraw 卡片样式）')
       .addDropdown(drop => {
         fieldOptions.forEach(f => drop.addOption(f, f));
         drop.setValue(this.field).onChange(v => {
@@ -162,91 +165,108 @@ export class AddPaperModal extends Modal {
       .addButton(btn => {
         btn
           .setButtonText('+ 新建')
+          .setTooltip('创建新的研究领域')
           .onClick(() => {
-            // 创建一个简单的模态框让用户输入新领域名称
-            const modal = new Modal(this.app);
-            modal.contentEl.createEl('h2', { text: '创建新领域' });
-
-            const input = modal.contentEl.createEl('input', {
-              type: 'text',
-              placeholder: '输入新领域名称',
-            });
-            input.style.width = '100%';
-            input.style.marginTop = '10px';
-            input.style.marginBottom = '10px';
-            input.focus();
-
-            const buttonContainer = modal.contentEl.createDiv();
-            buttonContainer.style.display = 'flex';
-            buttonContainer.style.justifyContent = 'flex-end';
-            buttonContainer.style.gap = '10px';
-
-            const cancelBtn = buttonContainer.createEl('button', { text: '取消' });
-            cancelBtn.addEventListener('click', () => modal.close());
-
-            const confirmBtn = buttonContainer.createEl('button', {
-              text: '创建',
-              cls: 'mod-cta',
-            });
-            confirmBtn.addEventListener('click', () => {
-              const newFieldName = input.value.trim() || '新领域';
-
-              // 检查是否已存在同名领域
-              if (this.plugin.settings.fields.some(f => f.name === newFieldName)) {
-                new Notice('领域名称已存在，请使用其他名称');
-                return;
-              }
-
-              const newField = {
-              name: newFieldName,
-              backgroundColor: '#ffffff',
-              backgroundPattern: 'solid' as const,
-              patternColor: '#cccccc',
-              textColor: '#000000',
-              borderColor: '#000000',
-              roughness: 0,
-              opacity: 100,
-              roundness: 2,
-              titleFontSize: 14,
-              titleFontFamily: 1,
-              metaFontSize: 11,
-              metaFontFamily: 1,
-              cardWidth: 280,
-              cardHeight: 180,
-            };
-              this.plugin.settings.fields.push(newField);
-              this.plugin.saveSettings();
-              this.field = newFieldName;
-              this.showDetailPage(); // 刷新页面
-              new Notice(`已创建新领域「${newFieldName}」`);
-              modal.close();
-            });
-
-            // 添加回车键支持
-            input.addEventListener('keydown', (e) => {
-              if (e.key === 'Enter') {
-                confirmBtn.click();
-              }
-            });
-
-            modal.open();
+            this.showNewFieldModal();
           });
       });
 
-    const btnRow = contentEl.createDiv({ cls: 'pm-btn-row' });
-    btnRow
-      .createEl('button', { text: '← 返回' })
-      .addEventListener('click', () => this.showSearchPage());
+    // 按钮
+    const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
+    buttonContainer.style.display = 'flex';
+    buttonContainer.style.justifyContent = 'flex-end';
+    buttonContainer.style.gap = '10px';
+    buttonContainer.style.marginTop = '20px';
 
-    btnRow
-      .createEl('button', { text: '确定添加', cls: 'mod-cta' })
-      .addEventListener('click', () => this.doAdd());
+    const backBtn = buttonContainer.createEl('button', { text: '← 返回' });
+    backBtn.addEventListener('click', () => this.showSearchPage());
+
+    const addBtn = buttonContainer.createEl('button', {
+      text: '确定添加',
+      cls: 'mod-cta'
+    });
+    addBtn.addEventListener('click', () => this.doAdd());
   }
+
+  // ── 新建领域模态框 ─────────────────────────────────────────────────────
+
+  private showNewFieldModal(): void {
+    const modal = new Modal(this.app);
+    modal.contentEl.createEl('h2', { text: '创建新领域' });
+
+    new Setting(modal.contentEl)
+      .setName('领域名称')
+      .setDesc('输入新研究领域的名称')
+      .addText(text => {
+        text.setPlaceholder('例如：深度学习');
+        text.inputEl.focus();
+      });
+
+    const buttonContainer = modal.contentEl.createDiv({ cls: 'modal-button-container' });
+    buttonContainer.style.display = 'flex';
+    buttonContainer.style.justifyContent = 'flex-end';
+    buttonContainer.style.gap = '10px';
+    buttonContainer.style.marginTop = '20px';
+
+    const cancelBtn = buttonContainer.createEl('button', { text: '取消' });
+    cancelBtn.addEventListener('click', () => modal.close());
+
+    const confirmBtn = buttonContainer.createEl('button', {
+      text: '创建',
+      cls: 'mod-cta'
+    });
+
+    confirmBtn.addEventListener('click', () => {
+      const input = modal.contentEl.querySelector('input') as HTMLInputElement;
+      const newFieldName = input.value.trim() || '新领域';
+
+      if (this.plugin.settings.fields.some(f => f.name === newFieldName)) {
+        new Notice('领域名称已存在，请使用其他名称');
+        return;
+      }
+
+      const newField = {
+        name: newFieldName,
+        backgroundColor: '#ffffff',
+        backgroundPattern: 'solid' as const,
+        patternColor: '#cccccc',
+        textColor: '#000000',
+        borderColor: '#000000',
+        roughness: 0,
+        opacity: 100,
+        roundness: 2,
+        titleFontSize: 14,
+        titleFontFamily: 1,
+        metaFontSize: 11,
+        metaFontFamily: 1,
+        cardWidth: 280,
+        cardHeight: 180,
+      };
+
+      this.plugin.settings.fields.push(newField);
+      this.plugin.saveSettings();
+      this.field = newFieldName;
+      this.showDetailPage();
+      new Notice(`已创建新领域「${newFieldName}」`);
+      modal.close();
+    });
+
+    // 回车键支持
+    const input = modal.contentEl.querySelector('input') as HTMLInputElement;
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        confirmBtn.click();
+      }
+    });
+
+    modal.open();
+  }
+
+  // ── 添加论文 ─────────────────────────────────────────────────────────────
 
   private async doAdd(): Promise<void> {
     if (!this.selected) return;
 
-    // 添加领域信息到 PaperInfo
     this.selected.field = this.field;
 
     try {
