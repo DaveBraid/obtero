@@ -106,6 +106,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
 export class PaperSettingTab extends PluginSettingTab {
   plugin: MyPlugin;
 
+  activeFieldIndex: number = 0; // 当前选中的领域索引
   constructor(app: App, plugin: MyPlugin) {
     super(app, plugin);
     this.plugin = plugin;
@@ -228,52 +229,131 @@ export class PaperSettingTab extends PluginSettingTab {
     // 渲染领域列表
     this.renderFieldsList(containerEl);
 
-    // 添加新领域按钮
-    new Setting(containerEl)
-      .setName('添加新领域')
-      .setDesc('创建一个新的领域样式')
-      .addButton(button => {
-        button
-          .setButtonText('添加')
-          .setCta()
-          .onClick(() => {
-            const newField: FieldStyle = {
-              name: '新领域',
-              backgroundColor: '#ffffff',
-              backgroundPattern: 'solid',
-              patternColor: '#cccccc',
-              textColor: '#000000',
-              borderColor: '#000000',
-              roughness: 0,
-              opacity: 100,
-              roundness: 2,
-  titleFontSize: 14,
-  titleFontFamily: 1,
-  metaFontSize: 11,
-  metaFontFamily: 1,
-  cardWidth: 280,
-  cardHeight: 180,
-    titleTextColor: undefined,
-    metaTextColor: undefined,
-            };
-            this.plugin.settings.fields.push(newField);
-            this.plugin.saveSettings();
-            this.display(); // 刷新设置页面
-          });
-      });
   }
 
   renderFieldsList(containerEl: HTMLElement): void {
     const fieldsContainer = containerEl.createDiv({ cls: 'pm-fields-list' });
     fieldsContainer.style.marginTop = '16px';
 
+    // 创建标签导航栏
+    const tabsNav = fieldsContainer.createDiv({ cls: 'pm-tabs-nav' });
+    tabsNav.style.display = 'flex';
+    tabsNav.style.flexWrap = 'wrap';
+    tabsNav.style.gap = '8px';
+    tabsNav.style.marginBottom = '16px';
+    tabsNav.style.borderBottom = '1px solid var(--background-modifier-border)';
+    tabsNav.style.paddingBottom = '8px';
+
+    // 为每个领域创建标签按钮和对应的内容区域
+    const fieldItems: HTMLElement[] = [];
+
     this.plugin.settings.fields.forEach((field, index) => {
+      // 创建标签按钮
+      const tabBtn = tabsNav.createEl('button', {
+        text: field.name,
+        cls: 'pm-tab-btn',
+      });
+      tabBtn.style.padding = '8px 16px';
+      tabBtn.style.border = '1px solid var(--background-modifier-border)';
+      tabBtn.style.borderRadius = '6px';
+      tabBtn.style.background = 'var(--background-secondary)';
+      tabBtn.style.cursor = 'pointer';
+      tabBtn.style.fontSize = '14px';
+      tabBtn.style.fontWeight = '500';
+      tabBtn.style.transition = 'all 0.2s ease';
+
+      // 创建领域设置区域
       const fieldItem = fieldsContainer.createDiv({ cls: 'pm-field-item' });
       fieldItem.style.border = '1px solid var(--background-modifier-border)';
       fieldItem.style.borderRadius = '8px';
       fieldItem.style.padding = '12px';
       fieldItem.style.marginBottom = '12px';
       fieldItem.style.background = 'var(--background-secondary)';
+
+      // 默认隐藏所有领域设置
+      fieldItem.style.display = index === this.activeFieldIndex ? 'block' : 'none';
+
+      fieldItems.push(fieldItem);
+
+      // 标签按钮点击事件
+      tabBtn.addEventListener('click', () => {
+        // 更新 activeFieldIndex
+        this.activeFieldIndex = index;
+
+        // 隐藏所有领域设置
+        fieldItems.forEach((item, i) => {
+          item.style.display = i === index ? 'block' : 'none';
+        });
+
+        // 更新所有标签按钮的样式
+        const allTabs = tabsNav.querySelectorAll('.pm-tab-btn');
+        allTabs.forEach((tab, i) => {
+          if (i === index) {
+            (tab as HTMLElement).style.background = 'var(--interactive-accent)';
+            (tab as HTMLElement).style.color = 'var(--text-on-accent)';
+            (tab as HTMLElement).style.borderColor = 'var(--interactive-accent)';
+          } else {
+            (tab as HTMLElement).style.background = 'var(--background-secondary)';
+            (tab as HTMLElement).style.color = 'var(--text-normal)';
+            (tab as HTMLElement).style.borderColor = 'var(--background-modifier-border)';
+          }
+        });
+      });
+
+      // 初始化标签按钮样式
+      if (index === this.activeFieldIndex) {
+        tabBtn.style.background = 'var(--interactive-accent)';
+        tabBtn.style.color = 'var(--text-on-accent)';
+        tabBtn.style.borderColor = 'var(--interactive-accent)';
+      }
+    });
+
+    // 添加新领域按钮
+    const addBtn = tabsNav.createEl('button', {
+      text: '+ 添加',
+      cls: 'pm-add-field-btn',
+    });
+    addBtn.style.padding = '8px 16px';
+    addBtn.style.border = '1px dashed var(--interactive-accent)';
+    addBtn.style.borderRadius = '6px';
+    addBtn.style.background = 'transparent';
+    addBtn.style.cursor = 'pointer';
+    addBtn.style.fontSize = '14px';
+    addBtn.style.fontWeight = '500';
+    addBtn.style.color = 'var(--interactive-accent)';
+    addBtn.style.transition = 'all 0.2s ease';
+    addBtn.style.marginLeft = 'auto'; // 推到右边
+
+    addBtn.addEventListener('click', () => {
+      const newField: FieldStyle = {
+        name: '新领域',
+        backgroundColor: '#ffffff',
+        backgroundPattern: 'solid',
+        patternColor: '#cccccc',
+        textColor: '#000000',
+        borderColor: '#000000',
+        roughness: 0,
+        opacity: 100,
+        roundness: 2,
+        titleFontSize: 14,
+        titleFontFamily: 1,
+        metaFontSize: 11,
+        metaFontFamily: 1,
+        cardWidth: 280,
+        cardHeight: 180,
+        titleTextColor: undefined,
+        metaTextColor: undefined,
+      };
+      this.plugin.settings.fields.push(newField);
+      this.plugin.saveSettings();
+      // 切换到新添加的领域
+      this.activeFieldIndex = this.plugin.settings.fields.length - 1;
+      this.display(); // 刷新设置页面
+    });
+
+    // 为每个领域创建内容
+    this.plugin.settings.fields.forEach((field, index) => {
+      const fieldItem = fieldItems[index]!;
 
       // 领域名称和删除按钮
       const header = fieldItem.createDiv({ cls: 'pm-field-header' });
@@ -297,6 +377,12 @@ export class PaperSettingTab extends PluginSettingTab {
 // @ts-ignore
         if (this.plugin.settings.fields[index]!) this.plugin.settings.fields[index].name = nameInput.value;
         await this.plugin.saveSettings();
+        // 刷新标签按钮文字
+        const tabsNav = fieldsContainer.querySelector('.pm-tabs-nav');
+        if (tabsNav) {
+          const tabBtn = tabsNav.querySelectorAll('.pm-tab-btn')[index] as HTMLElement;
+          if (tabBtn) tabBtn.textContent = nameInput.value;
+        }
       });
 
       const deleteBtn = header.createEl('button', {
@@ -310,27 +396,32 @@ export class PaperSettingTab extends PluginSettingTab {
           return;
         }
         this.plugin.settings.fields.splice(index, 1);
+        // 调整 activeFieldIndex
+        if (this.activeFieldIndex >= this.plugin.settings.fields.length) {
+          this.activeFieldIndex = this.plugin.settings.fields.length - 1;
+        }
         await this.plugin.saveSettings();
         this.display();
       });
 
       // 样式设置
-      this.addFieldStyleSetting(fieldItem, field, index);
+      this.addFieldStyleSetting(fieldItem!, field, index);
     });
   }
 
-  addFieldStyleSetting(containerEl: HTMLElement, field: FieldStyle, index: number): void {
+
+    addFieldStyleSetting(containerEl: HTMLElement, field: FieldStyle, index: number): void {
     // 预览容器（包含卡片预览和字体预览）
     const previewContainer = containerEl.createDiv({ cls: 'pm-preview-container' });
     previewContainer.style.marginTop = '12px';
     previewContainer.style.display = 'flex';
-    previewContainer.style.gap = "24px";
+    previewContainer.style.gap = '20px';
     previewContainer.style.alignItems = 'flex-start';
 
     // 卡片预览区域
     const cardPreview = previewContainer.createDiv({ cls: 'pm-field-preview' });
-    cardPreview.style.padding = "20px";
-    cardPreview.style.borderRadius = "8px";
+    cardPreview.style.padding = '16px';
+    cardPreview.style.borderRadius = '6px';
     cardPreview.style.border = `2px solid ${field.borderColor}`;
     cardPreview.style.background = field.backgroundColor;
     cardPreview.style.flexShrink = '0';
@@ -338,9 +429,9 @@ export class PaperSettingTab extends PluginSettingTab {
 
     // 字体预览区域
     const fontPreview = previewContainer.createDiv({ cls: 'pm-font-preview' });
-    fontPreview.style.flex = "1 0 auto";
-    fontPreview.style.padding = "24px";
-    fontPreview.style.borderRadius = "8px";
+    fontPreview.style.flex = '1';
+    fontPreview.style.padding = '20px';
+    fontPreview.style.borderRadius = '6px';
     fontPreview.style.border = '2px solid var(--background-modifier-border)';
     fontPreview.style.background = field.backgroundColor;
     this.updateFontPreview(fontPreview, field);
@@ -348,9 +439,9 @@ export class PaperSettingTab extends PluginSettingTab {
     // 样式控制
     const controls = containerEl.createDiv({ cls: 'pm-field-controls' });
     controls.style.display = 'grid';
-    controls.style.gridTemplateColumns = "repeat(3, 1fr)";
-    controls.style.gap = "16px";
-    controls.style.marginTop = "20px";
+    controls.style.gridTemplateColumns = 'repeat(2, 1fr)';
+    controls.style.gap = '12px';
+    controls.style.marginTop = '12px';
 
     // 背景色
     new Setting(controls)
@@ -372,29 +463,22 @@ export class PaperSettingTab extends PluginSettingTab {
           });
       });
 
-    // 标题颜色
+    // 文字色
     new Setting(controls)
-      .setName('标题颜色')
+      .setName('文字色')
       .addColorPicker(colorPicker => {
+// @ts-ignore
         colorPicker
-          .setValue(field.titleTextColor || field.textColor)
+// @ts-ignore
+          .setValue(field.textColor)
+// @ts-ignore
+// @ts-ignore
+// @ts-ignore
           .onChange(async value => {
-            this.plugin.settings.fields[index]!.titleTextColor = value;
+// @ts-ignore
+            this.plugin.settings.fields[index].textColor = value;
             await this.plugin.saveSettings();
-            this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
-            this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
-          });
-      });
-
-    // 正文颜色
-    new Setting(controls)
-      .setName('正文颜色')
-      .addColorPicker(colorPicker => {
-        colorPicker
-          .setValue(field.metaTextColor || field.textColor)
-          .onChange(async value => {
-            this.plugin.settings.fields[index]!.metaTextColor = value;
-            await this.plugin.saveSettings();
+// @ts-ignore
             this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
             this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
           });
@@ -402,8 +486,13 @@ export class PaperSettingTab extends PluginSettingTab {
 
     // 边框色
     new Setting(controls)
+// @ts-ignore
       .setName('边框色')
+// @ts-ignore
       .addColorPicker(colorPicker => {
+// @ts-ignore
+// @ts-ignore
+// @ts-ignore
         colorPicker
 // @ts-ignore
           .setValue(field.borderColor)
@@ -543,9 +632,8 @@ export class PaperSettingTab extends PluginSettingTab {
           });
           
       });
-
           // 字体设置
-    this.addSubHeaderBold(controls, '字体');
+    this.addSubHeader(controls, '字体');
 
     new Setting(controls)
       .setName('标题字体')
@@ -622,10 +710,10 @@ export class PaperSettingTab extends PluginSettingTab {
       });
 
     // 卡片尺寸设置
-    this.addSubHeaderBold(controls, '卡片尺寸');
+    this.addSubHeader(controls, '卡片尺寸');
 
     new Setting(controls)
-      .setName('宽度')
+      .setName('卡片宽度')
       .addSlider(slider => {
         slider.setLimits(150, 800, 10).setValue(field.cardWidth || 280).setDynamicTooltip()
 // @ts-ignore
@@ -640,7 +728,7 @@ export class PaperSettingTab extends PluginSettingTab {
       });
 
     new Setting(controls)
-      .setName('高度')
+      .setName('卡片高度')
       .addSlider(slider => {
         slider.setLimits(100, 600, 10).setValue(field.cardHeight || 180).setDynamicTooltip()
 // @ts-ignore
@@ -668,10 +756,10 @@ export class PaperSettingTab extends PluginSettingTab {
       '<div style="height: 100%;">' +
         '<div style="margin-bottom: 16px; color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;">字体预览</div>' +
         '<div style="margin-bottom: 24px;">' +
-          '<div style="font-size: ' + (field.titleFontSize || 14) + 'px; font-family: ' + fontFamilyMap[field.titleFontFamily] + '; color: ' + (field.titleTextColor || field.textColor) + '; margin-bottom: 8px; font-weight: 600;">' +
+          '<div style="font-size: ' + (field.titleFontSize || 14) + 'px; font-family: ' + fontFamilyMap[field.titleFontFamily] + '; color: ' + field.textColor + '; margin-bottom: 8px; font-weight: 600;">' +
             '论文标题字体效果 Title Font Preview' +
           '</div>' +
-          '<div style="font-size: ' + (field.metaFontSize || 11) + 'px; font-family: ' + fontFamilyMap[field.metaFontFamily] + '; color: ' + (field.metaTextColor || field.textColor) + '; opacity: 0.85;">' +
+          '<div style="font-size: ' + (field.metaFontSize || 11) + 'px; font-family: ' + fontFamilyMap[field.metaFontFamily] + '; color: ' + field.textColor + '; opacity: 0.85;">' +
             '这是正文字体效果示例 · Meta Font Example · 作者名 · arXiv · 2024' +
           '</div>' +
         '</div>' +
@@ -733,8 +821,8 @@ export class PaperSettingTab extends PluginSettingTab {
 
     preview.innerHTML =
       '<div style="color: ' + field.textColor + '; padding: ' + scaledPadding + 'px; text-align: center; width: 100%;">' +
-        '<strong style="color: ' + (field.titleTextColor || field.textColor) + '; font-size: ' + scaledTitleFontSize + 'px; font-family: ' + fontFamilyMap[field.titleFontFamily] + '; display: block; margin-bottom: ' + (8 * scaleFactor) + 'px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + field.name + '</strong>' +
-        '<div style="color: ' + (field.metaTextColor || field.textColor) + '; font-size: ' + scaledMetaFontSize + 'px; font-family: ' + fontFamilyMap[field.metaFontFamily] + '; opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">TITLE EXAMPLE</div>' +
+        '<strong style="font-size: ' + scaledTitleFontSize + 'px; font-family: ' + fontFamilyMap[field.titleFontFamily] + '; display: block; margin-bottom: ' + (8 * scaleFactor) + 'px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + field.name + '</strong>' +
+        '<div style="font-size: ' + scaledMetaFontSize + 'px; font-family: ' + fontFamilyMap[field.metaFontFamily] + '; opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">TITLE EXAMPLE</div>' +
         '<div style="margin-top: ' + (8 * scaleFactor) + 'px; font-size: ' + (10 * scaleFactor) + 'px; opacity: 0.6;">' + sizeText + '</div>' +
       '</div>';
   }
@@ -758,18 +846,5 @@ export class PaperSettingTab extends PluginSettingTab {
     header.style.color = 'var(--text-muted)';
     header.style.textTransform = 'uppercase';
     header.style.letterSpacing = '0.05em';
-  }
-
-  addSubHeaderBold(containerEl: HTMLElement, text: string): void {
-    const header = containerEl.createEl('h4', { text });
-    header.style.gridColumn = '1 / -1'; // 占满整行
-    header.style.marginTop = '20px';
-    header.style.marginBottom = '12px';
-    header.style.fontSize = '1.1em';
-    header.style.fontWeight = '700';
-    header.style.color = 'var(--text-normal)';
-    header.style.letterSpacing = '-0.01em';
-    header.style.borderBottom = '1px solid var(--background-modifier-border)';
-    header.style.paddingBottom = '8px';
   }
 }
