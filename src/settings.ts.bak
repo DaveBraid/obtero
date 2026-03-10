@@ -310,14 +310,30 @@ export class PaperSettingTab extends PluginSettingTab {
   }
 
   addFieldStyleSetting(containerEl: HTMLElement, field: FieldStyle, index: number): void {
-    // 预览区域
-    const preview = containerEl.createDiv({ cls: 'pm-field-preview' });
-    preview.style.marginTop = '12px';
-    preview.style.padding = '16px';
-    preview.style.borderRadius = '6px';
-    preview.style.border = `2px solid ${field.borderColor}`;
-    preview.style.background = field.backgroundColor;
-    this.updateFieldPreview(preview, field);
+    // 预览容器（包含卡片预览和字体预览）
+    const previewContainer = containerEl.createDiv({ cls: 'pm-preview-container' });
+    previewContainer.style.marginTop = '12px';
+    previewContainer.style.display = 'flex';
+    previewContainer.style.gap = '20px';
+    previewContainer.style.alignItems = 'flex-start';
+
+    // 卡片预览区域
+    const cardPreview = previewContainer.createDiv({ cls: 'pm-field-preview' });
+    cardPreview.style.padding = '16px';
+    cardPreview.style.borderRadius = '6px';
+    cardPreview.style.border = `2px solid ${field.borderColor}`;
+    cardPreview.style.background = field.backgroundColor;
+    cardPreview.style.flexShrink = '0';
+    this.updateFieldPreview(cardPreview, field);
+
+    // 字体预览区域
+    const fontPreview = previewContainer.createDiv({ cls: 'pm-font-preview' });
+    fontPreview.style.flex = '1';
+    fontPreview.style.padding = '20px';
+    fontPreview.style.borderRadius = '6px';
+    fontPreview.style.border = '2px solid var(--background-modifier-border)';
+    fontPreview.style.background = field.backgroundColor;
+    this.updateFontPreview(fontPreview, field);
 
     // 样式控制
     const controls = containerEl.createDiv({ cls: 'pm-field-controls' });
@@ -340,7 +356,9 @@ export class PaperSettingTab extends PluginSettingTab {
 // @ts-ignore
             await this.plugin.saveSettings();
 // @ts-ignore
-            this.updateFieldPreview(preview, this.plugin.settings.fields[index]);
+            this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]);
+            this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]);
+            fontPreview.style.background = value;
           });
       });
 
@@ -360,7 +378,8 @@ export class PaperSettingTab extends PluginSettingTab {
             this.plugin.settings.fields[index].textColor = value;
             await this.plugin.saveSettings();
 // @ts-ignore
-            this.updateFieldPreview(preview, this.plugin.settings.fields[index]);
+            this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]);
+            this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]);
           });
       });
 
@@ -382,7 +401,8 @@ export class PaperSettingTab extends PluginSettingTab {
             this.plugin.settings.fields[index].borderColor = value;
             await this.plugin.saveSettings();
 // @ts-ignore
-            this.updateFieldPreview(preview, this.plugin.settings.fields[index]);
+            this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]);
+            this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]);
           });
       });
 
@@ -405,7 +425,8 @@ export class PaperSettingTab extends PluginSettingTab {
             this.plugin.settings.fields[index].patternColor = value;
             await this.plugin.saveSettings();
 // @ts-ignore
-            this.updateFieldPreview(preview, this.plugin.settings.fields[index]);
+            this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]);
+            this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]);
           });
       });
 
@@ -433,7 +454,8 @@ export class PaperSettingTab extends PluginSettingTab {
 // @ts-ignore
             await this.plugin.saveSettings();
 // @ts-ignore
-            this.updateFieldPreview(preview, this.plugin.settings.fields[index]);
+            this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]);
+            this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]);
           });
 // @ts-ignore
       });
@@ -456,7 +478,8 @@ export class PaperSettingTab extends PluginSettingTab {
             this.plugin.settings.fields[index].roundness = value;
             await this.plugin.saveSettings();
 // @ts-ignore
-            this.updateFieldPreview(preview, this.plugin.settings.fields[index]);
+            this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]);
+            this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]);
 // @ts-ignore
           });
 // @ts-ignore
@@ -478,7 +501,8 @@ export class PaperSettingTab extends PluginSettingTab {
 // @ts-ignore
             await this.plugin.saveSettings();
 // @ts-ignore
-            this.updateFieldPreview(preview, this.plugin.settings.fields[index]);
+            this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]);
+            this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]);
 // @ts-ignore
           });
 // @ts-ignore
@@ -502,7 +526,8 @@ export class PaperSettingTab extends PluginSettingTab {
             this.plugin.settings.fields[index].opacity = value;
             await this.plugin.saveSettings();
 // @ts-ignore
-            this.updateFieldPreview(preview, this.plugin.settings.fields[index]);
+            this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]);
+            this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]);
           });
           
       });
@@ -513,9 +538,9 @@ export class PaperSettingTab extends PluginSettingTab {
       .setName('标题字体')
       .addDropdown(dropdown => {
         const fontOptions = [
-          { value: 1, label: 'Virgil (手写)' },
-          { value: 2, label: 'Helvetica (你衬线)' },
-          { value: 3, label: 'Cascadia (等宽)' },
+          { value: 1, label: '手写风格' },
+          { value: 2, label: '无衬线' },
+          { value: 3, label: '等宽字体' },
           { value: 4, label: 'Comic Sans' },
         ];
         fontOptions.forEach(opt => dropdown.addOption(opt.value.toString(), opt.label));
@@ -526,7 +551,8 @@ export class PaperSettingTab extends PluginSettingTab {
             this.plugin.settings.fields[index].titleFontFamily = parseInt(value);
             await this.plugin.saveSettings();
 // @ts-ignore
-            this.updateFieldPreview(preview, this.plugin.settings.fields[index]);
+            this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]);
+            this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]);
           });
       });
 
@@ -540,7 +566,8 @@ export class PaperSettingTab extends PluginSettingTab {
             this.plugin.settings.fields[index].titleFontSize = value;
             await this.plugin.saveSettings();
 // @ts-ignore
-            this.updateFieldPreview(preview, this.plugin.settings.fields[index]);
+            this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]);
+            this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]);
           });
       });
 
@@ -548,9 +575,9 @@ export class PaperSettingTab extends PluginSettingTab {
       .setName('正文字体')
       .addDropdown(dropdown => {
         const fontOptions = [
-          { value: 1, label: 'Virgil (手写)' },
-          { value: 2, label: 'Helvetica (无衬线)' },
-          { value: 3, label: 'Cascadia (等宽)' },
+          { value: 1, label: '手写风格' },
+          { value: 2, label: '无衬线' },
+          { value: 3, label: '等宽字体' },
           { value: 4, label: 'Comic Sans' },
         ];
         fontOptions.forEach(opt => dropdown.addOption(opt.value.toString(), opt.label));
@@ -561,7 +588,8 @@ export class PaperSettingTab extends PluginSettingTab {
             this.plugin.settings.fields[index].metaFontFamily = parseInt(value);
             await this.plugin.saveSettings();
 // @ts-ignore
-            this.updateFieldPreview(preview, this.plugin.settings.fields[index]);
+            this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]);
+            this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]);
           });
       });
 
@@ -575,7 +603,8 @@ export class PaperSettingTab extends PluginSettingTab {
             this.plugin.settings.fields[index].metaFontSize = value;
             await this.plugin.saveSettings();
 // @ts-ignore
-            this.updateFieldPreview(preview, this.plugin.settings.fields[index]);
+            this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]);
+            this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]);
           });
       });
 
@@ -585,35 +614,65 @@ export class PaperSettingTab extends PluginSettingTab {
     new Setting(controls)
       .setName('卡片宽度')
       .addSlider(slider => {
-        slider.setLimits(200, 500, 10).setValue(field.cardWidth || 280).setDynamicTooltip()
+        slider.setLimits(150, 800, 10).setValue(field.cardWidth || 280).setDynamicTooltip()
 // @ts-ignore
           .onChange(async value => {
 // @ts-ignore
             this.plugin.settings.fields[index].cardWidth = value;
             await this.plugin.saveSettings();
 // @ts-ignore
-            this.updateFieldPreview(preview, this.plugin.settings.fields[index]);
+            this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]);
+            this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]);
           });
       });
 
     new Setting(controls)
       .setName('卡片高度')
       .addSlider(slider => {
-        slider.setLimits(120, 400, 10).setValue(field.cardHeight || 180).setDynamicTooltip()
+        slider.setLimits(100, 600, 10).setValue(field.cardHeight || 180).setDynamicTooltip()
 // @ts-ignore
           .onChange(async value => {
 // @ts-ignore
             this.plugin.settings.fields[index].cardHeight = value;
             await this.plugin.saveSettings();
 // @ts-ignore
-            this.updateFieldPreview(preview, this.plugin.settings.fields[index]);
+            this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]);
+            this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]);
           });
       });
 
   }
 
+  updateFontPreview(preview: HTMLElement, field: FieldStyle): void {
+    const fontFamilyMap: Record<number, string> = {
+      1: '"Comic Sans MS", "Chalkboard SE", "Comic Neue", cursive, sans-serif', // Virgil 风格 (手写)
+      2: 'Helvetica, Arial, "Noto Sans", sans-serif', // Helvetica 风格 (无衬线)
+      3: '"Cascadia Code", "Courier New", "Fira Code", monospace', // Cascadia 风格 (等宽)
+      4: '"Comic Sans MS", cursive, sans-serif', // Comic Sans
+    };
+
+    preview.innerHTML =
+      '<div style="height: 100%;">' +
+        '<div style="margin-bottom: 16px; color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;">字体预览</div>' +
+        '<div style="margin-bottom: 24px;">' +
+          '<div style="font-size: ' + (field.titleFontSize || 14) + 'px; font-family: ' + fontFamilyMap[field.titleFontFamily] + '; color: ' + field.textColor + '; margin-bottom: 8px; font-weight: 600;">' +
+            '论文标题字体效果 Title Font Preview' +
+          '</div>' +
+          '<div style="font-size: ' + (field.metaFontSize || 11) + 'px; font-family: ' + fontFamilyMap[field.metaFontFamily] + '; color: ' + field.textColor + '; opacity: 0.85;">' +
+            '这是正文字体效果示例 · Meta Font Example · 作者名 · arXiv · 2024' +
+          '</div>' +
+        '</div>' +
+        '<div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--background-modifier-border);">' +
+          '<div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">字体设置信息</div>' +
+          '<div style="font-size: 11px; color: var(--text-muted);">' +
+            '标题: ' + (field.titleFontSize || 14) + 'px · ' +
+            '正文: ' + (field.metaFontSize || 11) + 'px' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+  }
+
   updateFieldPreview(preview: HTMLElement, field: FieldStyle): void {
-    // 计算圆角对应的像素值
     const roundnessMap: Record<number, string> = {
       0: '0px',
       1: '4px',
@@ -621,45 +680,50 @@ export class PaperSettingTab extends PluginSettingTab {
       3: '16px',
     };
 
-    // 模拟 Excalidraw 字体样式的 CSS
     const fontFamilyMap: Record<number, string> = {
-      1: 'Virgil, "Comic Sans MS", cursive, sans-serif',
-      2: 'Helvetica, Arial, sans-serif',
-      3: 'Cascadia, "Courier New", monospace',
-      4: 'Comic Sans MS, cursive, sans-serif',
+      1: '"Comic Sans MS", "Chalkboard SE", "Comic Neue", cursive, sans-serif', // Virgil 风格 (手写)
+      2: 'Helvetica, Arial, "Noto Sans", sans-serif', // Helvetica 风格 (无衬线)
+      3: '"Cascadia Code", "Courier New", "Fira Code", monospace', // Cascadia 风格 (等宽)
+      4: '"Comic Sans MS", cursive, sans-serif', // Comic Sans
     };
 
+    const scaleFactor = 0.4;
+    const previewWidth = (field.cardWidth || 280) * scaleFactor;
+    const previewHeight = (field.cardHeight || 180) * scaleFactor;
+
+    preview.style.width = previewWidth + 'px';
+    preview.style.height = previewHeight + 'px';
+    preview.style.minWidth = previewWidth + 'px';
+    preview.style.maxWidth = previewWidth + 'px';
+    preview.style.minHeight = previewHeight + 'px';
+    preview.style.maxHeight = previewHeight + 'px';
     preview.style.background = field.backgroundColor;
-    preview.style.border = `2px solid ${field.borderColor}`;
+    preview.style.border = '2px solid ' + field.borderColor;
     preview.style.borderRadius = roundnessMap[field.roundness] || '8px';
     preview.style.opacity = (field.opacity / 100).toString();
     preview.style.transition = 'all 0.2s ease';
+    preview.style.overflow = 'hidden';
+    preview.style.display = 'flex';
+    preview.style.alignItems = 'center';
+    preview.style.justifyContent = 'center';
 
-    // 模拟粗糙度（通过阴影和边框样式）
     if (field.roughness > 0) {
-      preview.style.boxShadow = `${field.roughness}px ${field.roughness}px 0 rgba(0,0,0,0.1)`;
+      preview.style.boxShadow = field.roughness + 'px ' + field.roughness + 'px 0 rgba(0,0,0,0.1)';
     } else {
       preview.style.boxShadow = 'none';
     }
 
-    preview.innerHTML = `
-      <div style="color: ${field.textColor}; padding: 16px;">
-        <strong style="
-          font-size: ${field.titleFontSize}px;
-          font-family: ${fontFamilyMap[field.titleFontFamily]};
-          display: block;
-          margin-bottom: 8px;
-        ">${field.name}</strong>
-        <div style="
-          font-size: ${field.metaFontSize}px;
-          font-family: ${fontFamilyMap[field.metaFontFamily]};
-          opacity: 0.85;
-        ">
-          论文标题示例<br>
-          arXiv · 2024 · 作者名
-        </div>
-      </div>
-    `;
+    const scaledTitleFontSize = (field.titleFontSize || 14) * scaleFactor;
+    const scaledMetaFontSize = (field.metaFontSize || 11) * scaleFactor;
+    const scaledPadding = 16 * scaleFactor;
+    const sizeText = (field.cardWidth || 280) + ' x ' + (field.cardHeight || 180) + 'px';
+
+    preview.innerHTML =
+      '<div style="color: ' + field.textColor + '; padding: ' + scaledPadding + 'px; text-align: center; width: 100%;">' +
+        '<strong style="font-size: ' + scaledTitleFontSize + 'px; font-family: ' + fontFamilyMap[field.titleFontFamily] + '; display: block; margin-bottom: ' + (8 * scaleFactor) + 'px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + field.name + '</strong>' +
+        '<div style="font-size: ' + scaledMetaFontSize + 'px; font-family: ' + fontFamilyMap[field.metaFontFamily] + '; opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">TITLE EXAMPLE</div>' +
+        '<div style="margin-top: ' + (8 * scaleFactor) + 'px; font-size: ' + (10 * scaleFactor) + 'px; opacity: 0.6;">' + sizeText + '</div>' +
+      '</div>';
   }
 
   addSectionHeader(containerEl: HTMLElement, text: string): void {
