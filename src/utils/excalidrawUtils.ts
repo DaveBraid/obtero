@@ -1,4 +1,4 @@
-import { App, TFile, normalizePath } from 'obsidian';
+import { App, TFile } from 'obsidian';
 import * as LZString from 'lz-string';
 import { MyPluginSettings } from '../settings';
 import { PaperInfo } from '../types';
@@ -32,6 +32,7 @@ interface ExcalidrawElement {
   textAlign?: string;
   verticalAlign?: string;
   baseline?: number;
+  seed?: number;
 }
 
 export async function insertPaperToExcalidraw(
@@ -40,14 +41,10 @@ export async function insertPaperToExcalidraw(
   paper: PaperInfo,
   file: TFile
 ): Promise<void> {
-  // Auto-create the excalidraw file if it doesn't exist yet
   const excalidrawFile = await ensureExcalidrawFile(app, settings);
-
   const raw = await app.vault.read(excalidrawFile);
 
-  // Determine format: plain json or lz-compressed-json
   let data: { elements: ExcalidrawElement[]; [key: string]: unknown };
-  // Track which LZ method was used so we can write back in the same format
   type LZMethod = 'base64' | 'encodedURI' | 'none';
   let lzMethod: LZMethod = 'none';
 
@@ -57,10 +54,7 @@ export async function insertPaperToExcalidraw(
   if (plainJsonMatch && plainJsonMatch[1]) {
     data = JSON.parse(plainJsonMatch[1]) as typeof data;
   } else if (compressedMatch && compressedMatch[1]) {
-    // Strip ALL whitespace (the plugin may wrap long base64 lines)
     const payload = compressedMatch[1].replace(/\s/g, '');
-
-    // Try compressToBase64 first, then compressToEncodedURIComponent
     let decompressed = LZString.decompressFromBase64(payload);
     if (decompressed) {
       lzMethod = 'base64';
@@ -81,161 +75,143 @@ export async function insertPaperToExcalidraw(
 
   if (!Array.isArray(data.elements)) data.elements = [];
 
-    // Count existing cards by unique non-empty groupIds
-    const existingGroups = new Set(
-      data.elements
-        .filter(e => !e.isDeleted && e.groupIds.length > 0)
-        .flatMap(e => e.groupIds)
-    );
-    const cardCount = existingGroups.size;
+  // Count existing cards
+  const existingGroups = new Set(
+    data.elements
+      .filter(e => !e.isDeleted && e.groupIds.length > 0)
+      .flatMap(e => e.groupIds)
+  );
+  const cardCount = existingGroups.size;
 
-    // Get card style from settings
-    const style = settings.cardStyle;
+  // 获取领域样式
+  const fieldName = paper.field || settings.defaultField;
+  const fieldStyle = settings.fields.find(f => f.name === fieldName) || settings.fields[0];
 
-    // Card dimensions from settings
-    const cardW = style.cardWidth;
-    const headerH = style.headerHeight;
-    const bodyH = style.bodyHeight;
-    const totalCardH = headerH + bodyH;
+  if (!fieldStyle) {
+    throw new Error('未找到领域样式配置');
+  }
 
-    const cols = 3;
-    const col = cardCount % cols;
-    const row = Math.floor(cardCount / cols);
+  // Card dimensions
+  const cardW = 280;
+  const cardH = 180;
+  const padding = 12;
 
-    // Calculate position with dynamic spacing based on card size
-    const cardSpacingX = cardW + 30; // 卡片宽度 + 间距
-    const cardSpacingY = totalCardH + 30; // 卡片总高度 + 间距
-    const x = col * cardSpacingX + 20;
-    const y = row * cardSpacingY + 20;
+  const cols = 3;
+  const col = cardCount % cols;
+  const row = Math.floor(cardCount / cols);
 
-    const groupId = genId();
-    const headerId = genId();
-    const bodyId = genId();
-    const titleTextId = genId();
-    const metaTextId = genId();
+  const cardSpacingX = cardW + 30;
+  const cardSpacingY = cardH + 30;
+  const x = col * cardSpacingX + 20;
+  const y = row * cardSpacingY + 20;
 
-    // Build meta text: journal · date, then institutions (or authors)
-    const metaLines: string[] = [];
-    const journalDate = [paper.journal, paper.date].filter(Boolean).join(' · ');
-    if (journalDate) metaLines.push(truncate(journalDate, 45));
-    if (paper.institutions.length > 0) {
-      metaLines.push(truncate(paper.institutions.slice(0, 2).join('; '), 50));
-    } else if (paper.authors.length > 0) {
-      metaLines.push(truncate(paper.authors.slice(0, 3).join(', '), 50));
-    }
-    const metaText = metaLines.join('\n');
+  const groupId = genId();
+  const cardId = genId();
+  const titleTextId = genId();
+  const metaTextId = genId();
 
-    // Header rectangle (使用用户自定义样式)
-    data.elements.push({
-      id: headerId,
-      type: 'rectangle',
-      x,
-      y,
-      width: cardW,
-      height: headerH,
-      angle: 0,
-      strokeColor: style.headerBorderColor,
-      backgroundColor: style.headerBackgroundColor,
-      fillStyle: 'solid',
-      strokeWidth: 1,
-      strokeStyle: 'solid',
-      roughness: style.headerRoughness,
-      opacity: style.headerOpacity,
-      groupIds: [groupId],
-      roundness: style.headerRoundness > 0 ? { type: style.headerRoundness } : null,
-      isDeleted: false,
-      boundElements: [{ id: titleTextId, type: 'text' }],
-      link: `[[${file.basename}]]`,
-      locked: false,
-    });
+  // 构建元文本
+  const metaLines: string[] = [];
+  const journalDate = [paper.journal, paper.date].filter(Boolean).join(' · ');
+  if (journalDate) metaLines.push(truncate(journalDate, 50));
+  if (paper.institutions.length > 0) {
+    metaLines.push(truncate(paper.institutions.slice(0, 2).join('; '), 60));
+  } else if (paper.authors.length > 0) {
+    metaLines.push(truncate(paper.authors.slice(0, 3).join(', '), 60));
+  }
+  const metaText = metaLines.join('\n');
 
-    // Title text (white, bound to header)
-    data.elements.push({
-      id: titleTextId,
-      type: 'text',
-      x: x + 8,
-      y: y + 4,
-      width: cardW - 16,
-      height: headerH - 8,
-      angle: 0,
-      strokeColor: style.headerTextColor,
-      backgroundColor: 'transparent',
-      fillStyle: 'hachure',
-      strokeWidth: 1,
-      strokeStyle: 'solid',
-      roughness: 0,
-      opacity: 100,
-      groupIds: [groupId],
-      roundness: null,
-      isDeleted: false,
-      boundElements: null,
-      containerId: headerId,
-      text: truncate(paper.title, 80),
-      fontSize: style.titleFontSize,
-      fontFamily: style.titleFontFamily,
-      textAlign: 'center',
-      verticalAlign: 'middle',
-      baseline: 14,
-      link: null,
-      locked: false,
-    });
+  // 单个卡片矩形
+  data.elements.push({
+    id: cardId,
+    type: 'rectangle',
+    x,
+    y,
+    width: cardW,
+    height: cardH,
+    angle: 0,
+    strokeColor: fieldStyle.borderColor,
+    backgroundColor: fieldStyle.backgroundColor,
+    fillStyle: fieldStyle.backgroundPattern || 'solid',
+    strokeWidth: 2,
+    strokeStyle: 'solid',
+    roughness: fieldStyle.roughness,
+    opacity: fieldStyle.opacity,
+    groupIds: [groupId],
+    roundness: fieldStyle.roundness > 0 ? { type: fieldStyle.roundness } : null,
+    isDeleted: false,
+    boundElements: [
+      { id: titleTextId, type: 'text' },
+      { id: metaTextId, type: 'text' }
+    ],
+    link: `[[${file.basename}]]`,
+    locked: false,
+    seed: Math.floor(Math.random() * 10000),
+  });
 
-    // Body rectangle (使用用户自定义样式)
-    data.elements.push({
-      id: bodyId,
-      type: 'rectangle',
-      x,
-      y: y + headerH,
-      width: cardW,
-      height: bodyH,
-      angle: 0,
-      strokeColor: style.bodyBorderColor,
-      backgroundColor: style.bodyBackgroundColor,
-      fillStyle: 'solid',
-      strokeWidth: 1,
-      strokeStyle: 'solid',
-      roughness: style.bodyRoughness,
-      opacity: style.bodyOpacity,
-      groupIds: [groupId],
-      roundness: style.bodyRoundness > 0 ? { type: style.bodyRoundness } : null,
-      isDeleted: false,
-      boundElements: [{ id: metaTextId, type: 'text' }],
-      link: null,
-      locked: false,
-    });
+  // 标题文本（上方）
+  data.elements.push({
+    id: titleTextId,
+    type: 'text',
+    x: x + padding,
+    y: y + padding,
+    width: cardW - padding * 2,
+    height: cardH / 2 - padding,
+    angle: 0,
+    strokeColor: fieldStyle.textColor,
+    backgroundColor: 'transparent',
+    fillStyle: 'solid',
+    strokeWidth: 1,
+    strokeStyle: 'solid',
+    roughness: 0,
+    opacity: 100,
+    groupIds: [groupId],
+    roundness: null,
+    isDeleted: false,
+    boundElements: null,
+    containerId: cardId,
+    text: truncate(paper.title, 80),
+    fontSize: 14,
+    fontFamily: 1,
+    textAlign: 'center',
+    verticalAlign: 'top',
+    baseline: 14,
+    link: null,
+    locked: false,
+  });
 
-    // Meta text (使用用户自定义样式)
-    data.elements.push({
-      id: metaTextId,
-      type: 'text',
-      x: x + 8,
-      y: y + headerH + 8,
-      width: cardW - 16,
-      height: bodyH - 16,
-      angle: 0,
-      strokeColor: style.bodyTextColor,
-      backgroundColor: 'transparent',
-      fillStyle: 'hachure',
-      strokeWidth: 1,
-      strokeStyle: 'solid',
-      roughness: 0,
-      opacity: 100,
-      groupIds: [groupId],
-      roundness: null,
-      isDeleted: false,
-      boundElements: null,
-      containerId: bodyId,
-      text: metaText,
-      fontSize: style.metaFontSize,
-      fontFamily: style.metaFontFamily,
-      textAlign: 'left',
-      verticalAlign: 'top',
-      baseline: 13,
-      link: null,
-      locked: false,
-    });
+  // 元信息文本（下方）
+  data.elements.push({
+    id: metaTextId,
+    type: 'text',
+    x: x + padding,
+    y: y + cardH / 2 + padding / 2,
+    width: cardW - padding * 2,
+    height: cardH / 2 - padding * 2,
+    angle: 0,
+    strokeColor: fieldStyle.textColor,
+    backgroundColor: 'transparent',
+    fillStyle: 'solid',
+    strokeWidth: 1,
+    strokeStyle: 'solid',
+    roughness: 0,
+    opacity: 100,
+    groupIds: [groupId],
+    roundness: null,
+    isDeleted: false,
+    boundElements: null,
+    containerId: cardId,
+    text: metaText,
+    fontSize: 11,
+    fontFamily: 1,
+    textAlign: 'left',
+    verticalAlign: 'top',
+    baseline: 13,
+    link: null,
+    locked: false,
+  });
 
-  // Write back in the same format (compressed or plain)
+  // 写回文件
   const newJson = JSON.stringify(data);
   let newContent: string;
   if (lzMethod !== 'none') {

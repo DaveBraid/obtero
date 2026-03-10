@@ -11,12 +11,14 @@ export class AddPaperModal extends Modal {
   private results: PaperInfo[] = [];
   private selected: PaperInfo | null = null;
   private category: string;
+  private field: string; // 领域
   private onComplete?: () => void;
 
   constructor(app: App, plugin: MyPlugin, onComplete?: () => void) {
     super(app);
     this.plugin = plugin;
     this.category = '待阅读';
+    this.field = plugin.settings.defaultField;
     this.onComplete = onComplete;
   }
 
@@ -134,6 +136,7 @@ export class AddPaperModal extends Modal {
     if (p.arxivId) row('arXiv ID', p.arxivId);
     if (p.doi) row('DOI', p.doi);
 
+    // 论文类别
     const categories = ['待阅读', ...this.plugin.settings.labels];
     new Setting(contentEl)
       .setName('论文类别')
@@ -143,6 +146,41 @@ export class AddPaperModal extends Modal {
         drop.setValue(this.category).onChange(v => {
           this.category = v;
         });
+      });
+
+    // 研究领域
+    const fieldOptions = this.plugin.settings.fields.map(f => f.name);
+    new Setting(contentEl)
+      .setName('研究领域')
+      .setDesc('选择该论文所属领域（决定卡片样式）')
+      .addDropdown(drop => {
+        fieldOptions.forEach(f => drop.addOption(f, f));
+        drop.setValue(this.field).onChange(v => {
+          this.field = v;
+        });
+      })
+      .addButton(btn => {
+        btn
+          .setButtonText('+ 新建')
+          .onClick(() => {
+            const newFieldName = '新领域';
+            const newField = {
+              name: newFieldName,
+              backgroundColor: '#ffffff',
+              backgroundPattern: 'solid' as const,
+              patternColor: '#cccccc',
+              textColor: '#000000',
+              borderColor: '#000000',
+              roughness: 0,
+              opacity: 100,
+              roundness: 2,
+            };
+            this.plugin.settings.fields.push(newField);
+            this.plugin.saveSettings();
+            this.field = newFieldName;
+            this.showDetailPage(); // 刷新页面
+            new Notice(`已创建新领域「${newFieldName}」，可在设置中自定义样式`);
+          });
       });
 
     const btnRow = contentEl.createDiv({ cls: 'pm-btn-row' });
@@ -157,6 +195,10 @@ export class AddPaperModal extends Modal {
 
   private async doAdd(): Promise<void> {
     if (!this.selected) return;
+
+    // 添加领域信息到 PaperInfo
+    this.selected.field = this.field;
+
     try {
       const file = await createPaperFile(
         this.app,

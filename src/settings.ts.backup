@@ -253,8 +253,6 @@ export class PaperSettingTab extends PluginSettingTab {
       nameInput.style.color = 'var(--text-normal)';
       nameInput.style.width = '300px';
       nameInput.addEventListener('change', async () => {
-// @ts-ignore
-// @ts-ignore
         if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index].name = nameInput.value;
         await this.plugin.saveSettings();
       });
@@ -302,14 +300,9 @@ export class PaperSettingTab extends PluginSettingTab {
       .addColorPicker(colorPicker => {
         colorPicker
           .setValue(field.backgroundColor)
-// @ts-ignore
           .onChange(async value => {
-// @ts-ignore
-// @ts-ignore
             this.plugin.settings.fields[index].backgroundColor = value;
-// @ts-ignore
             await this.plugin.saveSettings();
-// @ts-ignore
             this.updateFieldPreview(preview, this.plugin.settings.fields[index]);
           });
       });
@@ -318,103 +311,60 @@ export class PaperSettingTab extends PluginSettingTab {
     new Setting(controls)
       .setName('文字色')
       .addColorPicker(colorPicker => {
-// @ts-ignore
         colorPicker
-// @ts-ignore
           .setValue(field.textColor)
-// @ts-ignore
-// @ts-ignore
-// @ts-ignore
           .onChange(async value => {
-// @ts-ignore
             this.plugin.settings.fields[index].textColor = value;
             await this.plugin.saveSettings();
-// @ts-ignore
             this.updateFieldPreview(preview, this.plugin.settings.fields[index]);
           });
       });
 
     // 边框色
     new Setting(controls)
-// @ts-ignore
       .setName('边框色')
-// @ts-ignore
       .addColorPicker(colorPicker => {
-// @ts-ignore
-// @ts-ignore
-// @ts-ignore
         colorPicker
-// @ts-ignore
           .setValue(field.borderColor)
-// @ts-ignore
           .onChange(async value => {
-// @ts-ignore
             this.plugin.settings.fields[index].borderColor = value;
             await this.plugin.saveSettings();
-// @ts-ignore
             this.updateFieldPreview(preview, this.plugin.settings.fields[index]);
           });
       });
 
-// @ts-ignore
     // 纹理色
-// @ts-ignore
     new Setting(controls)
-// @ts-ignore
-// @ts-ignore
-// @ts-ignore
       .setName('纹理色')
-// @ts-ignore
       .addColorPicker(colorPicker => {
-// @ts-ignore
         colorPicker
-// @ts-ignore
           .setValue(field.patternColor || '#cccccc')
           .onChange(async value => {
-// @ts-ignore
             this.plugin.settings.fields[index].patternColor = value;
             await this.plugin.saveSettings();
-// @ts-ignore
             this.updateFieldPreview(preview, this.plugin.settings.fields[index]);
           });
       });
 
     // 纹理类型
     new Setting(controls)
-// @ts-ignore
       .setName('纹理类型')
-// @ts-ignore
       .addDropdown(dropdown => {
-// @ts-ignore
-// @ts-ignore
-// @ts-ignore
         dropdown.addOption('solid', '纯色');
-// @ts-ignore
         dropdown.addOption('dots', '点阵');
-// @ts-ignore
         dropdown.addOption('grid', '网格');
-// @ts-ignore
         dropdown.addOption('lines', '线条');
         dropdown
           .setValue(field.backgroundPattern || 'solid')
           .onChange(async value => {
-// @ts-ignore
             this.plugin.settings.fields[index].backgroundPattern = value as any;
-// @ts-ignore
             await this.plugin.saveSettings();
-// @ts-ignore
             this.updateFieldPreview(preview, this.plugin.settings.fields[index]);
           });
-// @ts-ignore
       });
-// @ts-ignore
-// @ts-ignore
 
-// @ts-ignore
-// @ts-ignore
     // 圆角
     new Setting(controls)
-// @ts-ignore
       .setName('圆角')
       .addSlider(slider => {
         slider
@@ -422,56 +372,38 @@ export class PaperSettingTab extends PluginSettingTab {
           .setValue(field.roundness)
           .setDynamicTooltip()
           .onChange(async value => {
-// @ts-ignore
             this.plugin.settings.fields[index].roundness = value;
             await this.plugin.saveSettings();
-// @ts-ignore
             this.updateFieldPreview(preview, this.plugin.settings.fields[index]);
-// @ts-ignore
           });
-// @ts-ignore
       });
 
-// @ts-ignore
     // 粗糙度
     new Setting(controls)
       .setName('粗糙度')
-// @ts-ignore
       .addSlider(slider => {
         slider
           .setLimits(0, 2, 1)
           .setValue(field.roughness)
           .setDynamicTooltip()
           .onChange(async value => {
-// @ts-ignore
             this.plugin.settings.fields[index].roughness = value;
-// @ts-ignore
             await this.plugin.saveSettings();
-// @ts-ignore
             this.updateFieldPreview(preview, this.plugin.settings.fields[index]);
-// @ts-ignore
           });
-// @ts-ignore
       });
-// @ts-ignore
 
     // 透明度
-// @ts-ignore
     new Setting(controls)
-// @ts-ignore
       .setName('透明度')
       .addSlider(slider => {
         slider
           .setLimits(0, 100, 5)
           .setValue(field.opacity)
           .setDynamicTooltip()
-// @ts-ignore
           .onChange(async value => {
-// @ts-ignore
-// @ts-ignore
             this.plugin.settings.fields[index].opacity = value;
             await this.plugin.saveSettings();
-// @ts-ignore
             this.updateFieldPreview(preview, this.plugin.settings.fields[index]);
           });
       });

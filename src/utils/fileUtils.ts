@@ -122,6 +122,7 @@ function buildPaperContent(paper: PaperInfo): string {
         .join(', ')}]`
     );
   }
+  if (paper.field) lines.push(`field: "${escapeYaml(paper.field)}"`);
   if (paper.arxivId) lines.push(`arxivId: "${paper.arxivId}"`);
   if (paper.doi) lines.push(`doi: "${paper.doi}"`);
   lines.push('---', '');
@@ -131,6 +132,9 @@ function buildPaperContent(paper: PaperInfo): string {
   lines.push(`**作者**：${paper.authors.join('; ')}  `);
   if (paper.institutions.length > 0) {
     lines.push(`**作者单位**：${paper.institutions.join('; ')}  `);
+  }
+  if (paper.field) {
+    lines.push(`**研究领域**：${paper.field}  `);
   }
   if (paper.abstract) {
     lines.push('', '## 摘要', '', paper.abstract);
