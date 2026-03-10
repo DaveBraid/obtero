@@ -163,8 +163,41 @@ export class AddPaperModal extends Modal {
         btn
           .setButtonText('+ 新建')
           .onClick(() => {
-            const newFieldName = '新领域';
-            const newField = {
+            // 创建一个简单的模态框让用户输入新领域名称
+            const modal = new Modal(this.app);
+            modal.contentEl.createEl('h2', { text: '创建新领域' });
+
+            const input = modal.contentEl.createEl('input', {
+              type: 'text',
+              placeholder: '输入新领域名称',
+            });
+            input.style.width = '100%';
+            input.style.marginTop = '10px';
+            input.style.marginBottom = '10px';
+            input.focus();
+
+            const buttonContainer = modal.contentEl.createDiv();
+            buttonContainer.style.display = 'flex';
+            buttonContainer.style.justifyContent = 'flex-end';
+            buttonContainer.style.gap = '10px';
+
+            const cancelBtn = buttonContainer.createEl('button', { text: '取消' });
+            cancelBtn.addEventListener('click', () => modal.close());
+
+            const confirmBtn = buttonContainer.createEl('button', {
+              text: '创建',
+              cls: 'mod-cta',
+            });
+            confirmBtn.addEventListener('click', () => {
+              const newFieldName = input.value.trim() || '新领域';
+
+              // 检查是否已存在同名领域
+              if (this.plugin.settings.fields.some(f => f.name === newFieldName)) {
+                new Notice('领域名称已存在，请使用其他名称');
+                return;
+              }
+
+              const newField = {
               name: newFieldName,
               backgroundColor: '#ffffff',
               backgroundPattern: 'solid' as const,
@@ -178,12 +211,25 @@ export class AddPaperModal extends Modal {
               titleFontFamily: 1,
               metaFontSize: 11,
               metaFontFamily: 1,
+              cardWidth: 280,
+              cardHeight: 180,
             };
-            this.plugin.settings.fields.push(newField);
-            this.plugin.saveSettings();
-            this.field = newFieldName;
-            this.showDetailPage(); // 刷新页面
-            new Notice(`已创建新领域「${newFieldName}」，可在设置中自定义样式`);
+              this.plugin.settings.fields.push(newField);
+              this.plugin.saveSettings();
+              this.field = newFieldName;
+              this.showDetailPage(); // 刷新页面
+              new Notice(`已创建新领域「${newFieldName}」`);
+              modal.close();
+            });
+
+            // 添加回车键支持
+            input.addEventListener('keydown', (e) => {
+              if (e.key === 'Enter') {
+                confirmBtn.click();
+              }
+            });
+
+            modal.open();
           });
       });
 

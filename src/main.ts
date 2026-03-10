@@ -48,6 +48,15 @@ export default class PaperPlugin extends Plugin {
       DEFAULT_SETTINGS,
       (await this.loadData()) as Partial<MyPluginSettings>
     );
+
+    // 确保所有领域都有字体属性（数据迁移）
+    this.settings.fields = this.settings.fields.map(field => ({
+      ...field,
+      titleFontSize: field.titleFontSize ?? 14,
+      titleFontFamily: field.titleFontFamily ?? 1,
+      metaFontSize: field.metaFontSize ?? 11,
+      metaFontFamily: field.metaFontFamily ?? 1,
+    }));
   }
 
   async saveSettings(): Promise<void> {

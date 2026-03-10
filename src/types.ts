@@ -28,4 +28,8 @@ export interface FieldStyle {
   titleFontFamily: number;   // 标题字体家族
   metaFontSize: number;      // 元信息字体大小
   metaFontFamily: number;    // 元信息字体家族
+
+  // 卡片尺寸
+  cardWidth: number;         // 卡片宽度
+  cardHeight: number;        // 卡片高度
 }

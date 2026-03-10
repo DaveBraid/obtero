@@ -91,9 +91,9 @@ export async function insertPaperToExcalidraw(
     throw new Error('未找到领域样式配置');
   }
 
-  // Card dimensions
-  const cardW = 280;
-  const cardH = 180;
+  // Card dimensions - 使用领域配置的尺寸
+  const cardW = fieldStyle.cardWidth || 280;
+  const cardH = fieldStyle.cardHeight || 180;
   const padding = 12;
 
   const cols = 3;
