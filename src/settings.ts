@@ -25,9 +25,9 @@ export const DEFAULT_FIELDS: FieldStyle[] = [
     opacity: 100,
     roundness: 2,
   titleFontSize: 14,
-  titleFontFamily: 1,
+  titleFontFamily: 4,
   metaFontSize: 11,
-  metaFontFamily: 1,
+  metaFontFamily: 4,
   cardWidth: 280,
   cardHeight: 180,
     titleTextColor: undefined,
@@ -44,9 +44,9 @@ export const DEFAULT_FIELDS: FieldStyle[] = [
     opacity: 100,
     roundness: 2,
   titleFontSize: 14,
-  titleFontFamily: 1,
+  titleFontFamily: 4,
   metaFontSize: 11,
-  metaFontFamily: 1,
+  metaFontFamily: 4,
   cardWidth: 280,
   cardHeight: 180,
     titleTextColor: undefined,
@@ -63,9 +63,9 @@ export const DEFAULT_FIELDS: FieldStyle[] = [
     opacity: 100,
     roundness: 2,
   titleFontSize: 14,
-  titleFontFamily: 1,
+  titleFontFamily: 4,
   metaFontSize: 11,
-  metaFontFamily: 1,
+  metaFontFamily: 4,
   cardWidth: 280,
   cardHeight: 180,
     titleTextColor: undefined,
@@ -82,9 +82,9 @@ export const DEFAULT_FIELDS: FieldStyle[] = [
     opacity: 100,
     roundness: 2,
   titleFontSize: 14,
-  titleFontFamily: 1,
+  titleFontFamily: 4,
   metaFontSize: 11,
-  metaFontFamily: 1,
+  metaFontFamily: 4,
   cardWidth: 280,
   cardHeight: 180,
     titleTextColor: undefined,
@@ -336,9 +336,9 @@ export class PaperSettingTab extends PluginSettingTab {
         opacity: 100,
         roundness: 2,
         titleFontSize: 14,
-        titleFontFamily: 1,
+        titleFontFamily: 4,
         metaFontSize: 11,
-        metaFontFamily: 1,
+        metaFontFamily: 4,
         cardWidth: 280,
         cardHeight: 180,
         titleTextColor: undefined,
@@ -439,7 +439,7 @@ export class PaperSettingTab extends PluginSettingTab {
     // 样式控制
     const controls = containerEl.createDiv({ cls: 'pm-field-controls' });
     controls.style.display = 'grid';
-    controls.style.gridTemplateColumns = 'repeat(2, 1fr)';
+    controls.style.gridTemplateColumns = 'repeat(3, 1fr)';
     controls.style.gap = '12px';
     controls.style.marginTop = '12px';
 
@@ -460,27 +460,6 @@ export class PaperSettingTab extends PluginSettingTab {
             this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
             this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
             fontPreview.style.background = value;
-          });
-      });
-
-    // 文字色
-    new Setting(controls)
-      .setName('文字色')
-      .addColorPicker(colorPicker => {
-// @ts-ignore
-        colorPicker
-// @ts-ignore
-          .setValue(field.textColor)
-// @ts-ignore
-// @ts-ignore
-// @ts-ignore
-          .onChange(async value => {
-// @ts-ignore
-            this.plugin.settings.fields[index].textColor = value;
-            await this.plugin.saveSettings();
-// @ts-ignore
-            this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
-            this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
           });
       });
 
@@ -633,7 +612,7 @@ export class PaperSettingTab extends PluginSettingTab {
           
       });
           // 字体设置
-    this.addSubHeader(controls, '字体');
+    this.addProminentSubHeader(controls, '字体');
 
     new Setting(controls)
       .setName('标题字体')
@@ -709,8 +688,38 @@ export class PaperSettingTab extends PluginSettingTab {
           });
       });
 
+    // 标题颜色
+    new Setting(controls)
+      .setName('标题颜色')
+      .addColorPicker(colorPicker => {
+        colorPicker
+          .setValue(field.titleTextColor || field.textColor)
+          .onChange(async value => {
+// @ts-ignore
+            this.plugin.settings.fields[index].titleTextColor = value;
+            await this.plugin.saveSettings();
+            this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
+            this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
+          });
+      });
+
+    // 正文颜色
+    new Setting(controls)
+      .setName('正文颜色')
+      .addColorPicker(colorPicker => {
+        colorPicker
+          .setValue(field.metaTextColor || field.textColor)
+          .onChange(async value => {
+// @ts-ignore
+            this.plugin.settings.fields[index].metaTextColor = value;
+            await this.plugin.saveSettings();
+            this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
+            this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
+          });
+      });
+
     // 卡片尺寸设置
-    this.addSubHeader(controls, '卡片尺寸');
+    this.addProminentSubHeader(controls, '卡片尺寸');
 
     new Setting(controls)
       .setName('卡片宽度')
@@ -756,10 +765,10 @@ export class PaperSettingTab extends PluginSettingTab {
       '<div style="height: 100%;">' +
         '<div style="margin-bottom: 16px; color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;">字体预览</div>' +
         '<div style="margin-bottom: 24px;">' +
-          '<div style="font-size: ' + (field.titleFontSize || 14) + 'px; font-family: ' + fontFamilyMap[field.titleFontFamily] + '; color: ' + field.textColor + '; margin-bottom: 8px; font-weight: 600;">' +
+          '<div style="font-size: ' + (field.titleFontSize || 14) + 'px; font-family: ' + fontFamilyMap[field.titleFontFamily] + '; color: ' + (field.titleTextColor || field.textColor) + '; margin-bottom: 8px; font-weight: 600;">' +
             '论文标题字体效果 Title Font Preview' +
           '</div>' +
-          '<div style="font-size: ' + (field.metaFontSize || 11) + 'px; font-family: ' + fontFamilyMap[field.metaFontFamily] + '; color: ' + field.textColor + '; opacity: 0.85;">' +
+          '<div style="font-size: ' + (field.metaFontSize || 11) + 'px; font-family: ' + fontFamilyMap[field.metaFontFamily] + '; color: ' + (field.metaTextColor || field.textColor) + '; opacity: 0.85;">' +
             '这是正文字体效果示例 · Meta Font Example · 作者名 · arXiv · 2024' +
           '</div>' +
         '</div>' +
@@ -820,7 +829,7 @@ export class PaperSettingTab extends PluginSettingTab {
     const sizeText = (field.cardWidth || 280) + ' x ' + (field.cardHeight || 180) + 'px';
 
     preview.innerHTML =
-      '<div style="color: ' + field.textColor + '; padding: ' + scaledPadding + 'px; text-align: center; width: 100%;">' +
+      '<div style="color: ' + (field.titleTextColor || field.textColor) + '; padding: ' + scaledPadding + 'px; text-align: center; width: 100%;">' +
         '<strong style="font-size: ' + scaledTitleFontSize + 'px; font-family: ' + fontFamilyMap[field.titleFontFamily] + '; display: block; margin-bottom: ' + (8 * scaleFactor) + 'px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + field.name + '</strong>' +
         '<div style="font-size: ' + scaledMetaFontSize + 'px; font-family: ' + fontFamilyMap[field.metaFontFamily] + '; opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">TITLE EXAMPLE</div>' +
         '<div style="margin-top: ' + (8 * scaleFactor) + 'px; font-size: ' + (10 * scaleFactor) + 'px; opacity: 0.6;">' + sizeText + '</div>' +
@@ -846,5 +855,19 @@ export class PaperSettingTab extends PluginSettingTab {
     header.style.color = 'var(--text-muted)';
     header.style.textTransform = 'uppercase';
     header.style.letterSpacing = '0.05em';
+  }
+
+  addProminentSubHeader(containerEl: HTMLElement, text: string): void {
+    const header = containerEl.createEl('h4', { text });
+    header.style.marginTop = '20px';
+    header.style.marginBottom = '12px';
+    header.style.fontSize = '1.1em';
+    header.style.fontWeight = '700';
+    header.style.color = 'var(--text-normal)';
+    header.style.textTransform = 'none';
+    header.style.letterSpacing = '0em';
+    header.style.display = 'block';
+    header.style.width = '100%';
+    header.style.gridColumn = '1 / -1';
   }
 }
