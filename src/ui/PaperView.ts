@@ -73,33 +73,54 @@ export class PaperView extends ItemView {
     root.addClass('pm-view');
 
     if (!this.plugin.settings.workspaceFolder) {
-      root.createEl('p', { text: '尚未设置工作文件夹' });
-      root
-        .createEl('button', { text: '立即设置', cls: 'mod-cta pm-btn-full' })
-        .addEventListener('click', () => {
-          new SetupModal(this.app, this.plugin, () => this.render()).open();
-        });
+      this.renderSetupPrompt(root);
       return;
     }
 
-    // ── 顶部操作栏 ──
+    this.renderToolbar(root);
+    this.renderPaperList(root);
+  }
+
+  private renderSetupPrompt(root: HTMLElement): void {
+    root.createEl('div', {
+      text: '尚未设置工作文件夹',
+      cls: 'pm-empty'
+    });
+    root
+      .createEl('button', {
+        text: '立即设置',
+        cls: 'mod-cta pm-btn-full'
+      })
+      .addEventListener('click', () => {
+        new SetupModal(this.app, this.plugin, () => this.render()).open();
+      });
+  }
+
+  private renderToolbar(root: HTMLElement): void {
     const toolbar = root.createDiv({ cls: 'pm-toolbar' });
     toolbar
-      .createEl('button', { text: '➕ 添加论文', cls: 'mod-cta pm-btn-add' })
+      .createEl('button', {
+        text: '➕ 添加论文',
+        cls: 'mod-cta pm-btn-add'
+      })
       .addEventListener('click', () =>
         new AddPaperModal(this.app, this.plugin, () => this.render()).open()
       );
     toolbar
-      .createEl('button', { text: '刷新', cls: 'pm-btn-refresh' })
+      .createEl('button', {
+        text: '刷新',
+        cls: 'pm-btn-refresh'
+      })
       .addEventListener('click', () => this.render());
+  }
 
-    // ── 各类别论文列表 ──
+  private renderPaperList(root: HTMLElement): void {
     const byCategory = getPapersByCategory(this.app, this.plugin.settings);
 
     for (const [label, files] of Object.entries(byCategory)) {
       const section = root.createDiv({ cls: 'pm-section' });
 
-      // 区块标题：类别名 + 数量
+      // Section header
       const header = section.createDiv({ cls: 'pm-section-header' });
       header.createSpan({ cls: 'pm-section-title', text: label });
       header.createSpan({ cls: 'pm-section-count', text: String(files.length) });
@@ -109,124 +130,140 @@ export class PaperView extends ItemView {
         continue;
       }
 
+      // Paper list
       const list = section.createDiv({ cls: 'pm-paper-list' });
       for (const file of files) {
-        const item = list.createDiv({ cls: 'pm-paper-item' });
-        // 显示标题：去掉「粗读」-、「精读」-等前缀
-        const displayName = file.basename.replace(/^【.+?】-/, '');
-        item.createSpan({ cls: 'pm-paper-title', text: displayName });
-        item.addEventListener('click', async (e) => {
-          // If the click was on the menu button, don't open file
-          if ((e.target as HTMLElement).closest('.pm-item-menu-btn')) return;
-          const leaf = this.app.workspace.getLeaf(false);
-          await leaf.openFile(file as TFile);
-        });
-
-        // "..." context menu button — shown on ALL paper items
-        const menuBtn = item.createEl('button', {
-          cls: 'pm-item-menu-btn',
-          text: '…',
-          attr: { title: '更多操作' },
-        });
-        menuBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const menu = new Menu();
-
-          // Move-to options (skip the current category)
-          const allCategories = ['待阅读', ...this.plugin.settings.labels];
-          for (const targetLabel of allCategories) {
-            if (targetLabel === label) continue;
-            menu.addItem(mi =>
-              mi.setTitle(`移至「${targetLabel}」`).onClick(async () => {
-                try {
-                  await movePaper(
-                    this.app,
-                    this.plugin.settings,
-                    file as TFile,
-                    targetLabel
-                  );
-                  new Notice(`已将「${displayName}」移至「${targetLabel}」`);
-                  await this.render();
-                } catch (err) {
-                  new Notice('移动失败：' + (err as Error).message);
-                }
-              })
-            );
-          }
-
-          menu.addSeparator();
-
-          // Add card to Excalidraw
-          menu.addItem(mi =>
-            mi.setTitle('添加卡片到 Excalidraw').onClick(async () => {
-              const fm = this.app.metadataCache.getFileCache(file as TFile)?.frontmatter;
-              const paperInfo: PaperInfo = {
-                title: fm?.title ?? displayName,
-                journal: fm?.journal ?? '',
-                date: fm?.date ?? '',
-                authors: Array.isArray(fm?.authors) ? fm.authors : [],
-                institutions: Array.isArray(fm?.institutions) ? fm.institutions : [],
-                arxivId: fm?.arxivId,
-                doi: fm?.doi,
-              };
-              try {
-                await insertPaperToExcalidraw(
-                  this.app,
-                  this.plugin.settings,
-                  paperInfo,
-                  file as TFile
-                );
-                new Notice(`已将「${displayName}」添加到 Excalidraw`);
-                // Open the excalidraw file so the user sees the new card
-                const excalidrawPath = resolveExcalidrawPath(this.plugin.settings);
-                const excalidrawFile = this.app.vault.getAbstractFileByPath(excalidrawPath);
-                if (excalidrawFile instanceof TFile) {
-                  // Check if the file is already open in any leaf (regardless of view type)
-                  let existingLeaf = null;
-                  this.app.workspace.iterateAllLeaves((leaf: any) => {
-                    const view = leaf.view as any;
-                    if (view.file?.path === excalidrawFile.path) {
-                      existingLeaf = leaf;
-                      return true; // Stop iteration
-                    }
-                    return false; // Continue iteration
-                  });
-
-                  if (existingLeaf) {
-                    // File is already open, just reveal it
-                    this.app.workspace.revealLeaf(existingLeaf);
-                  } else {
-                    // File not open, create new leaf
-                    const leaf = this.app.workspace.getLeaf(false);
-                    await leaf.openFile(excalidrawFile);
-                  }
-                }
-              } catch (err) {
-                new Notice('添加失败：' + (err as Error).message);
-              }
-            })
-          );
-
-          menu.addSeparator();
-
-          // Delete paper
-          menu.addItem(mi =>
-            mi.setTitle('🗑️ 删除论文').onClick(() => {
-              new DeleteConfirmModal(this.app, displayName, async () => {
-                try {
-                  await this.app.vault.delete(file as TFile);
-                  new Notice(`已删除「${displayName}」`);
-                  await this.render();
-                } catch (err) {
-                  new Notice('删除失败：' + (err as Error).message);
-                }
-              }).open();
-            })
-          );
-
-          menu.showAtMouseEvent(e);
-        });
+        this.renderPaperItem(list, file as TFile, label);
       }
+    }
+  }
+
+  private renderPaperItem(list: HTMLElement, file: TFile, category: string): void {
+    const item = list.createDiv({ cls: 'pm-paper-item' });
+
+    // Display title (remove prefix like "【粗读】-")
+    const displayName = file.basename.replace(/^【.+?】-/, '');
+    item.createSpan({ cls: 'pm-paper-title', text: displayName });
+
+    // Click to open
+    item.addEventListener('click', async (e) => {
+      if ((e.target as HTMLElement).closest('.pm-item-menu-btn')) return;
+      const leaf = this.app.workspace.getLeaf(false);
+      await leaf.openFile(file);
+    });
+
+    // Menu button
+    const menuBtn = item.createEl('button', {
+      cls: 'pm-item-menu-btn',
+      text: '…',
+      attr: { title: '更多操作' },
+    });
+    menuBtn.addEventListener('click', (e) => {
+      this.showContextMenu(e, file, displayName, category);
+    });
+  }
+
+  private showContextMenu(e: MouseEvent, file: TFile, displayName: string, currentCategory: string): void {
+    e.stopPropagation();
+    const menu = new Menu();
+
+    // Move options
+    const allCategories = ['待阅读', ...this.plugin.settings.labels];
+    for (const targetLabel of allCategories) {
+      if (targetLabel === currentCategory) continue;
+
+      menu.addItem(mi =>
+        mi.setTitle(`移至「${targetLabel}」`).onClick(async () => {
+          try {
+            await movePaper(
+              this.app,
+              this.plugin.settings,
+              file,
+              targetLabel
+            );
+            new Notice(`已移至「${targetLabel}」`);
+            await this.render();
+          } catch (err) {
+            new Notice('移动失败：' + (err as Error).message);
+          }
+        })
+      );
+    }
+
+    menu.addSeparator();
+
+    // Add to Excalidraw
+    menu.addItem(mi =>
+      mi.setTitle('添加到 Excalidraw').onClick(async () => {
+        await this.addToExcalidraw(file, displayName);
+      })
+    );
+
+    menu.addSeparator();
+
+    // Delete
+    menu.addItem(mi =>
+      mi.setTitle('🗑️ 删除').onClick(() => {
+        new DeleteConfirmModal(this.app, displayName, async () => {
+          try {
+            await this.app.vault.delete(file);
+            new Notice(`已删除「${displayName}」`);
+            await this.render();
+          } catch (err) {
+            new Notice('删除失败：' + (err as Error).message);
+          }
+        }).open();
+      })
+    );
+
+    menu.showAtMouseEvent(e);
+  }
+
+  private async addToExcalidraw(file: TFile, displayName: string): Promise<void> {
+    const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
+    const paperInfo: PaperInfo = {
+      title: fm?.title ?? displayName,
+      journal: fm?.journal ?? '',
+      date: fm?.date ?? '',
+      authors: Array.isArray(fm?.authors) ? fm.authors : [],
+      institutions: Array.isArray(fm?.institutions) ? fm.institutions : [],
+      arxivId: fm?.arxivId,
+      doi: fm?.doi,
+    };
+
+    try {
+      await insertPaperToExcalidraw(
+        this.app,
+        this.plugin.settings,
+        paperInfo,
+        file
+      );
+      new Notice(`已添加到 Excalidraw`);
+
+      // Open Excalidraw file (reuse existing tab if possible)
+      const excalidrawPath = resolveExcalidrawPath(this.plugin.settings);
+      const excalidrawFile = this.app.vault.getAbstractFileByPath(excalidrawPath);
+
+      if (excalidrawFile instanceof TFile) {
+        let existingLeaf = null;
+        this.app.workspace.iterateAllLeaves((leaf: any) => {
+          const view = leaf.view as any;
+          if (view.file?.path === excalidrawFile.path) {
+            existingLeaf = leaf;
+            return true;
+          }
+          return false;
+        });
+
+        if (existingLeaf) {
+          this.app.workspace.revealLeaf(existingLeaf);
+        } else {
+          const leaf = this.app.workspace.getLeaf(false);
+          await leaf.openFile(excalidrawFile);
+        }
+      }
+    } catch (err) {
+      new Notice('添加失败：' + (err as Error).message);
     }
   }
 }

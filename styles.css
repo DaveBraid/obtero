@@ -1,74 +1,116 @@
-/* ── Paper Plugin ────────────────────────────────────────────────────── */
+/* ── Paper Plugin - Apple HIG Style ───────────────────────────────────── */
 
-.pm-view {
-  padding: 12px;
-  overflow-y: auto;
+/* ── Design Tokens ──────────────────────────────────────────────────────── */
+:root {
+  --pm-spacing-xs: 4px;
+  --pm-spacing-sm: 8px;
+  --pm-spacing-md: 12px;
+  --pm-spacing-lg: 16px;
+  --pm-spacing-xl: 24px;
+
+  --pm-radius-sm: 4px;
+  --pm-radius-md: 6px;
+  --pm-radius-lg: 8px;
+  --pm-radius-xl: 12px;
+
+  --pm-font-size-xs: 0.75em;      /* 12px */
+  --pm-font-size-sm: 0.813em;     /* 13px */
+  --pm-font-size-md: 0.875em;     /* 14px */
+  --pm-font-size-lg: 1em;         /* 16px */
+
+  --pm-transition-fast: 0.15s ease;
+  --pm-transition-normal: 0.2s ease;
+
+  --pm-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --pm-shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --pm-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.12);
 }
 
-/* Top toolbar */
+/* ── Main View ─────────────────────────────────────────────────────────── */
+.pm-view {
+  padding: var(--pm-spacing-lg);
+  overflow-y: auto;
+  background: var(--background-primary);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.5;
+}
+
+/* ── Toolbar (Clean & Minimal) ──────────────────────────────────────────── */
 .pm-toolbar {
   display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
+  gap: var(--pm-spacing-sm);
+  margin-bottom: var(--pm-spacing-xl);
+  padding: var(--pm-spacing-sm) 0;
 }
 
 .pm-btn-add {
   flex: 1;
+  font-weight: 500;
+  transition: var(--pm-transition-fast);
 }
 
 .pm-btn-refresh {
   flex-shrink: 0;
+  padding: var(--pm-spacing-sm) var(--pm-spacing-md);
+  font-size: var(--pm-font-size-sm);
+  transition: var(--pm-transition-fast);
 }
 
 .pm-btn-full {
   display: block;
   width: 100%;
+  font-weight: 500;
 }
 
-/* Category sections */
+/* ── Section Headers (Visual Hierarchy) ──────────────────────────────────── */
 .pm-section {
-  margin-bottom: 16px;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 6px;
-  overflow: hidden;
+  margin-bottom: var(--pm-spacing-xl);
 }
 
 .pm-section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 10px;
-  background: var(--background-secondary);
-  border-bottom: 1px solid var(--background-modifier-border);
+  padding: var(--pm-spacing-sm) var(--pm-spacing-sm);
+  margin-bottom: var(--pm-spacing-sm);
 }
 
 .pm-section-title {
   font-weight: 600;
-  font-size: 0.9em;
+  font-size: var(--pm-font-size-md);
+  color: var(--text-normal);
+  letter-spacing: -0.01em;
 }
 
 .pm-section-count {
   background: var(--interactive-accent);
   color: var(--text-on-accent);
-  border-radius: 10px;
-  padding: 1px 7px;
-  font-size: 0.78em;
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: var(--pm-font-size-xs);
   font-weight: 600;
+  min-width: 20px;
+  text-align: center;
+  box-shadow: var(--pm-shadow-sm);
 }
 
-/* Paper list inside section */
+/* ── Paper List (Clean List Design) ─────────────────────────────────────── */
 .pm-paper-list {
-  padding: 4px 0;
+  background: var(--background-secondary);
+  border-radius: var(--pm-radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--background-modifier-border);
 }
 
 .pm-paper-item {
   display: flex;
   align-items: center;
-  padding: 5px 10px;
+  padding: var(--pm-spacing-md);
   cursor: pointer;
   border-bottom: 1px solid var(--background-modifier-border);
-  transition: background 0.1s;
-  gap: 6px;
+  transition: background var(--pm-transition-fast);
+  gap: var(--pm-spacing-sm);
+  position: relative;
 }
 
 .pm-paper-item:last-child {
@@ -79,111 +121,151 @@
   background: var(--background-modifier-hover);
 }
 
+.pm-paper-item:active {
+  background: var(--background-modifier-active-hover);
+  transition: none;
+}
+
 .pm-paper-title {
-  font-size: 0.85em;
+  font-size: var(--pm-font-size-md);
   color: var(--text-normal);
   flex: 1;
   word-break: break-word;
+  line-height: 1.4;
+  font-weight: 400;
 }
 
+/* ── Action Buttons (Subtle & Clear) ────────────────────────────────────── */
 .pm-move-btn {
   flex-shrink: 0;
-  font-size: 0.75em;
-  padding: 2px 7px;
-  border-radius: 4px;
+  font-size: var(--pm-font-size-xs);
+  padding: var(--pm-spacing-xs) var(--pm-spacing-sm);
+  border-radius: var(--pm-radius-sm);
   border: 1px solid var(--background-modifier-border);
-  background: var(--background-secondary);
+  background: var(--background-primary);
   color: var(--text-muted);
   cursor: pointer;
   white-space: nowrap;
+  font-weight: 500;
+  transition: var(--pm-transition-fast);
 }
 
 .pm-move-btn:hover {
   background: var(--background-modifier-hover);
   color: var(--text-normal);
+  border-color: var(--background-modifier-border-hover);
 }
 
 .pm-item-menu-btn {
   flex-shrink: 0;
-  font-size: 1em;
+  font-size: 1.1em;
   line-height: 1;
-  padding: 1px 6px;
-  border-radius: 4px;
+  padding: var(--pm-spacing-xs) var(--pm-spacing-sm);
+  border-radius: var(--pm-radius-sm);
   border: 1px solid transparent;
   background: transparent;
-  color: var(--text-muted);
+  color: var(--text-faint);
   cursor: pointer;
   white-space: nowrap;
+  transition: var(--pm-transition-fast);
+  opacity: 0;
+}
+
+.pm-paper-item:hover .pm-item-menu-btn {
+  opacity: 1;
 }
 
 .pm-item-menu-btn:hover {
-  border-color: var(--background-modifier-border);
   background: var(--background-modifier-hover);
   color: var(--text-normal);
 }
 
-.pm-empty {
-  padding: 8px 10px;
-  font-size: 0.82em;
-  color: var(--text-muted);
-  font-style: italic;
+.pm-item-menu-btn:active {
+  transform: scale(0.95);
 }
 
-/* Search results container */
+/* ── Empty State (Friendly & Clear) ─────────────────────────────────────── */
+.pm-empty {
+  padding: var(--pm-spacing-xl);
+  font-size: var(--pm-font-size-md);
+  color: var(--text-muted);
+  text-align: center;
+  font-weight: 400;
+}
+
+/* ── Search Results (Card Design) ────────────────────────────────────────── */
 .pm-search-results {
-  margin-top: 12px;
-  max-height: 380px;
+  margin-top: var(--pm-spacing-md);
+  max-height: 400px;
   overflow-y: auto;
+  padding: var(--pm-spacing-sm);
 }
 
 .pm-search-loading {
   color: var(--text-muted);
   font-style: italic;
+  text-align: center;
+  padding: var(--pm-spacing-lg);
 }
 
-/* Individual result card */
 .pm-result-item {
-  padding: 8px 10px;
-  margin: 4px 0;
+  padding: var(--pm-spacing-md);
+  margin-bottom: var(--pm-spacing-sm);
   border: 1px solid var(--background-modifier-border);
-  border-radius: 6px;
+  border-radius: var(--pm-radius-md);
   cursor: pointer;
-  transition: background 0.1s;
+  transition: all var(--pm-transition-fast);
+  background: var(--background-secondary);
 }
 
 .pm-result-item:hover {
   background: var(--background-modifier-hover);
+  border-color: var(--background-modifier-border-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--pm-shadow-md);
+}
+
+.pm-result-item:active {
+  transform: translateY(0);
+  transition: none;
 }
 
 .pm-result-title {
   font-weight: 600;
-  font-size: 0.9em;
-  margin-bottom: 3px;
+  font-size: var(--pm-font-size-md);
+  margin-bottom: var(--pm-spacing-xs);
+  color: var(--text-normal);
+  line-height: 1.4;
 }
 
 .pm-result-meta {
-  font-size: 0.78em;
+  font-size: var(--pm-font-size-xs);
   color: var(--text-muted);
+  margin-bottom: var(--pm-spacing-xs);
 }
 
 .pm-result-authors {
-  font-size: 0.78em;
+  font-size: var(--pm-font-size-xs);
   color: var(--text-accent);
-  margin-top: 2px;
+  margin-top: var(--pm-spacing-xs);
 }
 
-/* Paper detail */
+/* ── Paper Detail (Form Layout) ─────────────────────────────────────────── */
 .pm-detail {
-  margin: 8px 0 12px;
+  margin: var(--pm-spacing-md) 0;
 }
 
 .pm-detail-row {
   display: flex;
   align-items: flex-start;
-  padding: 5px 0;
+  padding: var(--pm-spacing-sm) 0;
   border-bottom: 1px solid var(--background-modifier-border);
-  font-size: 0.9em;
-  gap: 8px;
+  font-size: var(--pm-font-size-md);
+  gap: var(--pm-spacing-sm);
+}
+
+.pm-detail-row:last-child {
+  border-bottom: none;
 }
 
 .pm-detail-label {
@@ -191,41 +273,108 @@
   min-width: 80px;
   color: var(--text-muted);
   flex-shrink: 0;
+  font-size: var(--pm-font-size-sm);
 }
 
 .pm-detail-value {
   flex: 1;
   word-break: break-word;
+  color: var(--text-normal);
 }
 
-/* Button row */
+/* ── Button Row ────────────────────────────────────────────────────────── */
 .pm-btn-row {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
-  margin-top: 12px;
+  gap: var(--pm-spacing-sm);
+  margin-top: var(--pm-spacing-lg);
+  padding-top: var(--pm-spacing-md);
+  border-top: 1px solid var(--background-modifier-border);
 }
 
-/* ── Card Style Preview ───────────────────────────────────────────────── */
-
+/* ── Card Style Preview ──────────────────────────────────────────────────── */
 .pm-card-style-preview {
-  margin: 16px 0;
-  padding: 16px;
+  margin: var(--pm-spacing-lg) 0;
+  padding: var(--pm-spacing-lg);
   background: var(--background-secondary);
   border: 1px solid var(--background-modifier-border);
-  border-radius: 8px;
+  border-radius: var(--pm-radius-lg);
 }
 
 .pm-preview-card {
-  margin: 12px auto;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
+  margin: var(--pm-spacing-md) auto;
+  box-shadow: var(--pm-shadow-md);
+  transition: all var(--pm-transition-normal);
+  border-radius: var(--pm-radius-md);
+}
+
+.pm-preview-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--pm-shadow-lg);
 }
 
 .pm-preview-header {
-  transition: all 0.2s ease;
+  transition: all var(--pm-transition-normal);
+  border-radius: var(--pm-radius-md) var(--pm-radius-md) 0 0;
 }
 
 .pm-preview-body {
-  transition: all 0.2s ease;
+  transition: all var(--pm-transition-normal);
+  border-radius: 0 0 var(--pm-radius-md) var(--pm-radius-md);
+}
+
+/* ── Scrollbar Styling (Subtle & Clean) ──────────────────────────────────── */
+.pm-view::-webkit-scrollbar,
+.pm-search-results::-webkit-scrollbar {
+  width: 8px;
+}
+
+.pm-view::-webkit-scrollbar-track,
+.pm-search-results::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.pm-view::-webkit-scrollbar-thumb,
+.pm-search-results::-webkit-scrollbar-thumb {
+  background: var(--background-modifier-border);
+  border-radius: 4px;
+}
+
+.pm-view::-webkit-scrollbar-thumb:hover,
+.pm-search-results::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* ── Focus States (Accessibility) ─────────────────────────────────────────── */
+.pm-btn-add:focus,
+.pm-btn-refresh:focus,
+.pm-move-btn:focus,
+.pm-item-menu-btn:focus {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+.pm-result-item:focus {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+/* ── Animations (Smooth & Natural) ───────────────────────────────────────── */
+@keyframes pm-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pm-paper-item {
+  animation: pm-fade-in 0.2s ease;
+}
+
+.pm-result-item {
+  animation: pm-fade-in 0.2s ease;
 }

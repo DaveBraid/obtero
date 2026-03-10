@@ -86,12 +86,15 @@ export class PaperSettingTab extends PluginSettingTab {
   display(): void {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl('h2', { text: '论文管理插件设置' });
+    containerEl.createEl('h2', { text: '论文管理' });
+
+    // ── 基本设置 ────────────────────────────────────────────────────────
+    this.addSectionHeader(containerEl, '基本设置');
 
     // 工作文件夹
     new Setting(containerEl)
       .setName('工作文件夹')
-      .setDesc('插件用于存储论文的文件夹名称（设置后需重新初始化）')
+      .setDesc('用于存储和管理论文的文件夹')
       .addText(text =>
         text
           .setPlaceholder('例如：论文管理')
@@ -102,24 +105,27 @@ export class PaperSettingTab extends PluginSettingTab {
           })
       );
 
-    // 未读论文文件夹
+    // 文件夹设置组
+    this.addSubHeader(containerEl, '文件夹命名');
+
     new Setting(containerEl)
-      .setName('未读论文文件夹名称')
+      .setName('未读论文')
       .addText(text =>
         text
           .setValue(this.plugin.settings.unreadFolderName)
+          .setPlaceholder('未阅读论文列表')
           .onChange(async value => {
             this.plugin.settings.unreadFolderName = value.trim();
             await this.plugin.saveSettings();
           })
       );
 
-    // 已读论文文件夹
     new Setting(containerEl)
-      .setName('已读论文文件夹名称')
+      .setName('已读论文')
       .addText(text =>
         text
           .setValue(this.plugin.settings.readFolderName)
+          .setPlaceholder('已阅读论文列表')
           .onChange(async value => {
             this.plugin.settings.readFolderName = value.trim();
             await this.plugin.saveSettings();
@@ -127,12 +133,15 @@ export class PaperSettingTab extends PluginSettingTab {
       );
 
     // 阅读标签
+    this.addSubHeader(containerEl, '阅读分类');
+
     new Setting(containerEl)
-      .setName('阅读标签')
-      .setDesc('逗号分隔，例如：粗读,精读')
+      .setName('分类标签')
+      .setDesc('用逗号分隔，例如：粗读,精读')
       .addText(text =>
         text
           .setValue(this.plugin.settings.labels.join(','))
+          .setPlaceholder('粗读,精读')
           .onChange(async value => {
             this.plugin.settings.labels = value
               .split(',')
@@ -142,27 +151,19 @@ export class PaperSettingTab extends PluginSettingTab {
           })
       );
 
-    // IEEE API Key
-    new Setting(containerEl)
-      .setName('IEEE Xplore API Key')
-      .setDesc('用于搜索 IEEE 数据库（可选）。申请地址：developer.ieee.org')
-      .addText(text =>
-        text
-          .setPlaceholder('输入 IEEE API Key')
-          .setValue(this.plugin.settings.ieeeApiKey)
-          .onChange(async value => {
-            this.plugin.settings.ieeeApiKey = value.trim();
-            await this.plugin.saveSettings();
-          })
-      );
+    // ── Excalidraw 集成 ──────────────────────────────────────────────────
+    this.addSectionHeader(containerEl, 'Excalidraw 集成');
+    containerEl.createEl('p', {
+      text: '论文卡片将自动添加到指定的 Excalidraw 文件中',
+      cls: 'setting-item-description'
+    });
 
-    // Excalidraw 文件路径
     new Setting(containerEl)
-      .setName('Excalidraw 文件路径')
-      .setDesc('论文卡片将插入到该 Excalidraw 文件中（相对于 vault 根目录，留空则使用工作文件夹下默认文件）')
+      .setName('Excalidraw 文件')
+      .setDesc('留空则使用默认位置')
       .addText(text =>
         text
-          .setPlaceholder('例如：Papers/论文关系图.md')
+          .setPlaceholder('Papers/论文关系图.md')
           .setValue(this.plugin.settings.excalidrawFilePath)
           .onChange(async value => {
             this.plugin.settings.excalidrawFilePath = value.trim();
@@ -170,97 +171,47 @@ export class PaperSettingTab extends PluginSettingTab {
           })
       );
 
-    // ========== 卡片样式配置区域 ==========
-    containerEl.createEl('h3', { text: '卡片样式设置' });
+    // ── 数据源 ────────────────────────────────────────────────────────────
+    this.addSectionHeader(containerEl, '数据源');
+
+    new Setting(containerEl)
+      .setName('IEEE Xplore API Key')
+      .setDesc('用于搜索 IEEE 数据库（可选）')
+      .addText(text =>
+        text
+          .setPlaceholder('输入 API Key')
+          .setValue(this.plugin.settings.ieeeApiKey)
+          .onChange(async value => {
+            this.plugin.settings.ieeeApiKey = value.trim();
+            await this.plugin.saveSettings();
+          })
+      );
+
+    // ── 卡片样式 ──────────────────────────────────────────────────────────
+    this.addSectionHeader(containerEl, '卡片样式');
     containerEl.createEl('p', {
-      text: '自定义论文卡片的颜色、形状等样式。设置更改后仅影响新添加的卡片。',
+      text: '自定义论文卡片的外观。更改仅影响新添加的卡片。',
       cls: 'setting-item-description'
     });
 
-    // 实时预览区域
+    // 实时预览
     const previewContainer = containerEl.createDiv({ cls: 'pm-card-style-preview' });
     this.createCardPreview(previewContainer);
 
-    // 标题区域设置
-    containerEl.createEl('h4', { text: '标题区域' });
+    // 颜色设置
+    this.addSubHeader(containerEl, '颜色');
 
-    this.addColorSetting(containerEl, '标题背景色', 'headerBackgroundColor', previewContainer);
-    this.addColorSetting(containerEl, '标题文字色', 'headerTextColor', previewContainer);
-    this.addColorSetting(containerEl, '标题边框色', 'headerBorderColor', previewContainer);
+    this.addColorSetting(containerEl, '标题背景', 'headerBackgroundColor', previewContainer);
+    this.addColorSetting(containerEl, '标题文字', 'headerTextColor', previewContainer);
+    this.addColorSetting(containerEl, '正文背景', 'bodyBackgroundColor', previewContainer);
+    this.addColorSetting(containerEl, '正文字字', 'bodyTextColor', previewContainer);
 
-    new Setting(containerEl)
-      .setName('标题圆角')
-      .setDesc('0=无圆角, 3=大圆角')
-      .addSlider(slider =>
-        slider
-          .setLimits(0, 3, 1)
-          .setValue(this.plugin.settings.cardStyle.headerRoundness)
-          .setDynamicTooltip()
-          .onChange(async value => {
-            this.plugin.settings.cardStyle.headerRoundness = value;
-            await this.plugin.saveSettings();
-            this.updateCardPreview(previewContainer);
-          })
-      );
+    // 字体设置
+    this.addSubHeader(containerEl, '字体');
 
-    new Setting(containerEl)
-      .setName('标题透明度')
-      .addSlider(slider =>
-        slider
-          .setLimits(0, 100, 5)
-          .setValue(this.plugin.settings.cardStyle.headerOpacity)
-          .setDynamicTooltip()
-          .onChange(async value => {
-            this.plugin.settings.cardStyle.headerOpacity = value;
-            await this.plugin.saveSettings();
-            this.updateCardPreview(previewContainer);
-          })
-      );
-
-    // 正文区域设置
-    containerEl.createEl('h4', { text: '正文区域' });
-
-    this.addColorSetting(containerEl, '正文背景色', 'bodyBackgroundColor', previewContainer);
-    this.addColorSetting(containerEl, '正文字色', 'bodyTextColor', previewContainer);
-    this.addColorSetting(containerEl, '正文边框色', 'bodyBorderColor', previewContainer);
-
-    new Setting(containerEl)
-      .setName('正文圆角')
-      .setDesc('0=无圆角, 3=大圆角')
-      .addSlider(slider =>
-        slider
-          .setLimits(0, 3, 1)
-          .setValue(this.plugin.settings.cardStyle.bodyRoundness)
-          .setDynamicTooltip()
-          .onChange(async value => {
-            this.plugin.settings.cardStyle.bodyRoundness = value;
-            await this.plugin.saveSettings();
-            this.updateCardPreview(previewContainer);
-          })
-      );
-
-    new Setting(containerEl)
-      .setName('正文透明度')
-      .addSlider(slider =>
-        slider
-          .setLimits(0, 100, 5)
-          .setValue(this.plugin.settings.cardStyle.bodyOpacity)
-          .setDynamicTooltip()
-          .onChange(async value => {
-            this.plugin.settings.cardStyle.bodyOpacity = value;
-            await this.plugin.saveSettings();
-            this.updateCardPreview(previewContainer);
-          })
-      );
-
-    // 文本设置
-    containerEl.createEl('h4', { text: '文本设置' });
-
-    // 标题字体
     this.addFontSetting(containerEl, '标题字体', 'titleFontFamily', previewContainer);
-
     new Setting(containerEl)
-      .setName('标题字体大小')
+      .setName('标题大小')
       .addSlider(slider =>
         slider
           .setLimits(8, 24, 1)
@@ -273,11 +224,9 @@ export class PaperSettingTab extends PluginSettingTab {
           })
       );
 
-    // 正文字体
     this.addFontSetting(containerEl, '正文字体', 'metaFontFamily', previewContainer);
-
     new Setting(containerEl)
-      .setName('正文字体大小')
+      .setName('正文大小')
       .addSlider(slider =>
         slider
           .setLimits(8, 20, 1)
@@ -290,12 +239,11 @@ export class PaperSettingTab extends PluginSettingTab {
           })
       );
 
-    // 卡片尺寸设置
-    containerEl.createEl('h4', { text: '卡片尺寸' });
+    // 尺寸设置
+    this.addSubHeader(containerEl, '尺寸');
 
     new Setting(containerEl)
       .setName('卡片宽度')
-      .setDesc('卡片的总宽度（像素）')
       .addSlider(slider =>
         slider
           .setLimits(200, 500, 10)
@@ -309,8 +257,7 @@ export class PaperSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName('标题区域高度')
-      .setDesc('标题背景的高度（像素）')
+      .setName('标题高度')
       .addSlider(slider =>
         slider
           .setLimits(30, 80, 2)
@@ -324,8 +271,7 @@ export class PaperSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName('正文区域高度')
-      .setDesc('正文背景的高度（像素）')
+      .setName('正文高度')
       .addSlider(slider =>
         slider
           .setLimits(80, 200, 5)
@@ -339,6 +285,29 @@ export class PaperSettingTab extends PluginSettingTab {
       );
   }
 
+  // ── 辅助方法 ──────────────────────────────────────────────────────────
+
+  addSectionHeader(containerEl: HTMLElement, text: string): void {
+    const header = containerEl.createEl('h3', { text });
+    header.style.marginTop = '24px';
+    header.style.marginBottom = '12px';
+    header.style.fontSize = '1.1em';
+    header.style.fontWeight = '600';
+    header.style.color = 'var(--text-normal)';
+    header.style.letterSpacing = '-0.02em';
+  }
+
+  addSubHeader(containerEl: HTMLElement, text: string): void {
+    const header = containerEl.createEl('h4', { text });
+    header.style.marginTop = '16px';
+    header.style.marginBottom = '8px';
+    header.style.fontSize = '0.9em';
+    header.style.fontWeight = '600';
+    header.style.color = 'var(--text-muted)';
+    header.style.textTransform = 'uppercase';
+    header.style.letterSpacing = '0.05em';
+  }
+
   addColorSetting(
     containerEl: HTMLElement,
     name: string,
@@ -348,7 +317,6 @@ export class PaperSettingTab extends PluginSettingTab {
     const style = this.plugin.settings.cardStyle;
     const currentValue = style[configKey];
 
-    // 只处理字符串类型的配置项（颜色）
     if (typeof currentValue !== 'string') return;
 
     new Setting(containerEl)
@@ -382,19 +350,17 @@ export class PaperSettingTab extends PluginSettingTab {
     const style = this.plugin.settings.cardStyle;
     const currentValue = style[configKey];
 
-    // 只处理数字类型的配置项（字体）
     if (typeof currentValue !== 'number') return;
 
     const fontOptions = [
-      { value: 1, label: 'Virgil (手写风格)' },
+      { value: 1, label: 'Virgil (手写)' },
       { value: 2, label: 'Helvetica (无衬线)' },
-      { value: 3, label: 'Cascadia (等宽代码)' },
-      { value: 4, label: 'Comic Sans MS (本地字体)' },
+      { value: 3, label: 'Cascadia (等宽)' },
+      { value: 4, label: 'Comic Sans' },
     ];
 
     new Setting(containerEl)
       .setName(name)
-      .setDesc('选择卡片文本的字体样式')
       .addDropdown(dropdown => {
         fontOptions.forEach(option => {
           dropdown.addOption(option.value.toString(), option.label);
@@ -412,14 +378,14 @@ export class PaperSettingTab extends PluginSettingTab {
 
   createCardPreview(containerEl: HTMLElement): void {
     containerEl.empty();
-    containerEl.createEl('p', { text: '实时预览：', cls: 'setting-item-description' });
+    containerEl.createEl('p', { text: '预览', cls: 'setting-item-description' });
 
     const card = containerEl.createDiv({ cls: 'pm-preview-card' });
     card.style.border = '1px solid #ccc';
     card.style.borderRadius = '8px';
     card.style.padding = '0';
     card.style.maxWidth = '300px';
-    card.style.margin = '10px 0';
+    card.style.margin = '12px 0';
     card.style.overflow = 'hidden';
 
     const header = card.createDiv({ cls: 'pm-preview-header' });
