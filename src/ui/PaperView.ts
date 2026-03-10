@@ -77,8 +77,17 @@ export class PaperView extends ItemView {
       return;
     }
 
-    this.renderToolbar(root);
-    this.renderPaperList(root);
+    // 创建主容器
+    const mainContainer = root.createDiv({ cls: 'pm-main-container' });
+
+    // 左侧区域（原有功能）
+    const leftContainer = mainContainer.createDiv({ cls: 'pm-left-container' });
+    this.renderToolbar(leftContainer);
+    this.renderPaperList(leftContainer);
+
+    // 右侧看板（简化版）
+    const rightContainer = mainContainer.createDiv({ cls: 'pm-right-container' });
+    this.renderDashboard(rightContainer);
   }
 
   private renderSetupPrompt(root: HTMLElement): void {
@@ -265,5 +274,155 @@ export class PaperView extends ItemView {
     } catch (err) {
       new Notice('添加失败：' + (err as Error).message);
     }
+  }
+
+  // ==================== 右侧看板（Apple 风格简化版）====================
+
+  private renderDashboard(container: HTMLElement): void {
+    // 统计
+    this.renderFieldStats(container);
+
+    // 快速操作
+    this.renderQuickActions(container);
+
+    // 最近论文
+    this.renderRecentPapers(container);
+
+    // 阅读进度
+    this.renderReadingProgress(container);
+  }
+
+  private renderFieldStats(container: HTMLElement): void {
+    const byCategory = getPapersByCategory(this.app, this.plugin.settings);
+
+    const section = container.createDiv({ cls: 'pm-dashboard-section' });
+    section.createEl('h4', { text: '统计' });
+
+    const statsList = section.createDiv({ cls: 'pm-stats-list' });
+
+    // 统计各领域论文数量
+    const fieldStats: Record<string, number> = {};
+    for (const field of this.plugin.settings.fields) {
+      fieldStats[field.name] = 0;
+    }
+
+    let totalPapers = 0;
+    for (const [category, files] of Object.entries(byCategory)) {
+      for (const file of files) {
+        const fm = this.app.metadataCache.getFileCache(file as TFile)?.frontmatter;
+        const field = fm?.field || this.plugin.settings.defaultField;
+        if (fieldStats[field] !== undefined) {
+          fieldStats[field]++;
+        }
+        totalPapers++;
+      }
+    }
+
+    // 总数
+    const totalRow = statsList.createDiv({ cls: 'pm-stat-row' });
+    totalRow.createSpan({ cls: 'pm-stat-label', text: '总计' });
+    totalRow.createSpan({ cls: 'pm-stat-value', text: String(totalPapers) });
+
+    // 创建简化的统计行
+    for (const field of this.plugin.settings.fields) {
+      const count = fieldStats[field.name] || 0;
+      if (count > 0) {
+        const row = statsList.createDiv({ cls: 'pm-stat-row' });
+        row.createSpan({ cls: 'pm-stat-label', text: field.name });
+        row.createSpan({ cls: 'pm-stat-value', text: String(count) });
+      }
+    }
+  }
+
+  private renderQuickActions(container: HTMLElement): void {
+    const section = container.createDiv({ cls: 'pm-dashboard-section' });
+
+    const addBtn = section.createEl('button', {
+      cls: 'mod-cta',
+      text: '添加论文'
+    });
+    addBtn.addEventListener('click', () =>
+      new AddPaperModal(this.app, this.plugin, () => this.render()).open()
+    );
+  }
+
+  private renderRecentPapers(container: HTMLElement): void {
+    const byCategory = getPapersByCategory(this.app, this.plugin.settings);
+
+    // 收集所有论文并按时间排序
+    const allPapers: Array<{ file: TFile; mtime: number }> = [];
+    for (const [category, files] of Object.entries(byCategory)) {
+      for (const file of files) {
+        allPapers.push({
+          file: file as TFile,
+          mtime: (file as TFile).stat.mtime
+        });
+      }
+    }
+
+    // 按修改时间降序排序，取前5篇
+    allPapers.sort((a, b) => b.mtime - a.mtime);
+    const recentPapers = allPapers.slice(0, 5);
+
+    if (recentPapers.length === 0) {
+      return;
+    }
+
+    const section = container.createDiv({ cls: 'pm-dashboard-section' });
+    section.createEl('h4', { text: '最近添加' });
+
+    const list = section.createDiv({ cls: 'pm-recent-list' });
+    for (const { file, mtime } of recentPapers) {
+      const displayName = file.basename.replace(/^【.+?】-/, '');
+
+      const item = list.createDiv({ cls: 'pm-recent-item' });
+      item.createSpan({ cls: 'pm-recent-title', text: displayName });
+
+      const timeText = this.formatTimeAgo(mtime);
+      item.createSpan({ cls: 'pm-recent-time', text: timeText });
+
+      // 点击打开
+      item.addEventListener('click', async () => {
+        const leaf = this.app.workspace.getLeaf(false);
+        await leaf.openFile(file);
+      });
+    }
+  }
+
+  private renderReadingProgress(container: HTMLElement): void {
+    const byCategory = getPapersByCategory(this.app, this.plugin.settings);
+
+    const unreadCount = (byCategory['待阅读'] || []).length;
+    const readCategories = this.plugin.settings.labels;
+    const readCount = readCategories.reduce((sum, label) => sum + (byCategory[label]?.length || 0), 0);
+    const total = unreadCount + readCount;
+
+    if (total === 0) {
+      return;
+    }
+
+    const section = container.createDiv({ cls: 'pm-dashboard-section' });
+
+    const readPercent = Math.round((readCount / total) * 100);
+
+    const progressText = section.createDiv({ cls: 'pm-progress-text' });
+    progressText.textContent = `${readCount} / ${total} 篇已读`;
+
+    const progressBar = section.createDiv({ cls: 'pm-progress-bar' });
+    const progressFill = progressBar.createDiv({ cls: 'pm-progress-fill' });
+    progressFill.style.width = `${readPercent}%`;
+  }
+
+  private formatTimeAgo(timestamp: number): string {
+    const now = Date.now();
+    const diff = now - timestamp;
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+    if (days === 0) return '今天';
+    if (days === 1) return '昨天';
+    if (days < 7) return `${days}天前`;
+    if (days < 30) return `${Math.floor(days / 7)}周前`;
+    if (days < 365) return `${Math.floor(days / 30)}月前`;
+    return `${Math.floor(days / 365)}年前`;
   }
 }
