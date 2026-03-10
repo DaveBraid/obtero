@@ -34,4 +34,7 @@ export interface FieldStyle {
   // 卡片尺寸
   cardWidth: number;         // 卡片宽度
   cardHeight: number;        // 卡片高度
+
+  // 标题对齐
+  titleAlignment: 'left' | 'center';  // 标题对齐方式
 }

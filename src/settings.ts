@@ -11,6 +11,9 @@ export interface MyPluginSettings {
   excalidrawFilePath: string;
   fields: FieldStyle[]; // 领域样式列表
   defaultField: string; // 默认领域
+  translateAbstract?: boolean;  // 是否翻译摘要
+  siliconflowApiKey?: string;   // 硅基流动API密钥
+  translationModel?: string;    // 翻译模型名称
 }
 
 export const DEFAULT_FIELDS: FieldStyle[] = [
@@ -30,6 +33,7 @@ export const DEFAULT_FIELDS: FieldStyle[] = [
   metaFontFamily: 4,
   cardWidth: 280,
   cardHeight: 180,
+    titleAlignment: 'left',
     titleTextColor: undefined,
     metaTextColor: undefined,
   },
@@ -49,6 +53,7 @@ export const DEFAULT_FIELDS: FieldStyle[] = [
   metaFontFamily: 4,
   cardWidth: 280,
   cardHeight: 180,
+    titleAlignment: 'left',
     titleTextColor: undefined,
     metaTextColor: undefined,
   },
@@ -68,6 +73,7 @@ export const DEFAULT_FIELDS: FieldStyle[] = [
   metaFontFamily: 4,
   cardWidth: 280,
   cardHeight: 180,
+    titleAlignment: 'left',
     titleTextColor: undefined,
     metaTextColor: undefined,
   },
@@ -87,6 +93,7 @@ export const DEFAULT_FIELDS: FieldStyle[] = [
   metaFontFamily: 4,
   cardWidth: 280,
   cardHeight: 180,
+    titleAlignment: 'left',
     titleTextColor: undefined,
     metaTextColor: undefined,
   },
@@ -101,6 +108,9 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
   excalidrawFilePath: '',
   fields: DEFAULT_FIELDS,
   defaultField: '其他',
+  translateAbstract: false,
+  siliconflowApiKey: '',
+  translationModel: 'Qwen/Qwen2.5-7B-Instruct',
 };
 
 export class PaperSettingTab extends PluginSettingTab {
@@ -204,6 +214,53 @@ export class PaperSettingTab extends PluginSettingTab {
             await this.plugin.saveSettings();
           })
       );
+
+    // ── 摘要翻译 ────────────────────────────────────────────────────────────
+    this.addSectionHeader(containerEl, '摘要翻译');
+
+    new Setting(containerEl)
+      .setName('启用翻译')
+      .setDesc('在创建论文时自动翻译摘要')
+      .addToggle(toggle =>
+        toggle
+          .setValue(this.plugin.settings.translateAbstract || false)
+          .onChange(async value => {
+            this.plugin.settings.translateAbstract = value;
+            await this.plugin.saveSettings();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName('硅基流动 API Key')
+      .setDesc('用于翻译摘要（从 https://cloud.siliconflow.cn 获取）')
+      .addText(text =>
+        text
+          .setPlaceholder('输入 API Key')
+          .setValue(this.plugin.settings.siliconflowApiKey || '')
+          .onChange(async value => {
+            this.plugin.settings.siliconflowApiKey = value.trim();
+            await this.plugin.saveSettings();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName('翻译模型')
+      .setDesc('选择用于翻译的AI模型')
+      .addDropdown(dropdown => {
+        const models = [
+          { value: 'Qwen/Qwen2.5-7B-Instruct', label: 'Qwen2.5-7B (推荐)' },
+          { value: 'Qwen/Qwen2.5-14B-Instruct', label: 'Qwen2.5-14B' },
+          { value: 'Qwen/Qwen2.5-32B-Instruct', label: 'Qwen2.5-32B' },
+          { value: 'Qwen/Qwen2.5-72B-Instruct', label: 'Qwen2.5-72B' },
+          { value: 'deepseek-ai/DeepSeek-V2.5', label: 'DeepSeek-V2.5' },
+        ];
+        models.forEach(m => dropdown.addOption(m.value, m.label));
+        dropdown.setValue(this.plugin.settings.translationModel || 'Qwen/Qwen2.5-7B-Instruct')
+          .onChange(async value => {
+            this.plugin.settings.translationModel = value;
+            await this.plugin.saveSettings();
+          });
+      });
 
     // ── 领域管理 ─────────────────────────────────────────────────────────
     this.addSectionHeader(containerEl, '领域样式');
@@ -341,6 +398,7 @@ export class PaperSettingTab extends PluginSettingTab {
         metaFontFamily: 4,
         cardWidth: 280,
         cardHeight: 180,
+        titleAlignment: 'left',
         titleTextColor: undefined,
         metaTextColor: undefined,
       };
@@ -718,6 +776,24 @@ export class PaperSettingTab extends PluginSettingTab {
           });
       });
 
+    // 标题对齐
+    new Setting(controls)
+      .setName('标题对齐')
+      .setDesc('选择标题文本的对齐方式')
+      .addDropdown(dropdown => {
+        dropdown.addOption('left', '居左');
+        dropdown.addOption('center', '居中');
+        dropdown.setValue(field.titleAlignment || 'left')
+          .onChange(async value => {
+// @ts-ignore
+            this.plugin.settings.fields[index].titleAlignment = value as 'left' | 'center';
+            await this.plugin.saveSettings();
+// @ts-ignore
+            this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
+            this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
+          });
+      });
+
     // 卡片尺寸设置
     this.addProminentSubHeader(controls, '卡片尺寸');
 
@@ -765,7 +841,7 @@ export class PaperSettingTab extends PluginSettingTab {
       '<div style="height: 100%;">' +
         '<div style="margin-bottom: 16px; color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;">字体预览</div>' +
         '<div style="margin-bottom: 24px;">' +
-          '<div style="font-size: ' + (field.titleFontSize || 14) + 'px; font-family: ' + fontFamilyMap[field.titleFontFamily] + '; color: ' + (field.titleTextColor || field.textColor) + '; margin-bottom: 8px; font-weight: 600;">' +
+          '<div style="font-size: ' + (field.titleFontSize || 14) + 'px; font-family: ' + fontFamilyMap[field.titleFontFamily] + '; color: ' + (field.titleTextColor || field.textColor) + '; margin-bottom: 8px; font-weight: 600; text-align: ' + (field.titleAlignment || 'left') + ';">' +
             '论文标题字体效果 Title Font Preview' +
           '</div>' +
           '<div style="font-size: ' + (field.metaFontSize || 11) + 'px; font-family: ' + fontFamilyMap[field.metaFontFamily] + '; color: ' + (field.metaTextColor || field.textColor) + '; opacity: 0.85;">' +

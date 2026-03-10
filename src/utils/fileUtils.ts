@@ -1,6 +1,7 @@
 import { App, TFile, TFolder, normalizePath } from 'obsidian';
 import { MyPluginSettings } from '../settings';
 import { PaperInfo } from '../types';
+import { translateText } from './translationUtils';
 
 export function getExcalidrawPath(settings: MyPluginSettings): string {
   return normalizePath(`${settings.workspaceFolder}/论文关系图.md`);
@@ -100,14 +101,25 @@ export async function createPaperFile(
   if (existing instanceof TFile) return existing;
 
   try {
-    return await app.vault.create(filePath, buildPaperContent(paper));
+    // 翻译摘要（如果启用）
+    let translatedAbstract = '';
+    if (settings.translateAbstract && settings.siliconflowApiKey && paper.abstract) {
+      try {
+        translatedAbstract = await translateText(paper.abstract, settings.siliconflowApiKey, settings.translationModel);
+      } catch (error) {
+        console.error('[PaperPlugin] 翻译失败:', error);
+        // 翻译失败不影响创建文件，只是不添加翻译
+      }
+    }
+
+    return await app.vault.create(filePath, buildPaperContent(paper, translatedAbstract));
   } catch (e) {
     console.error('[PaperPlugin] Failed to create paper file:', e);
     return null;
   }
 }
 
-function buildPaperContent(paper: PaperInfo): string {
+function buildPaperContent(paper: PaperInfo, translatedAbstract: string = ''): string {
   const lines: string[] = ['---'];
   lines.push(`title: "${escapeYaml(paper.title)}"`);
   lines.push(`journal: "${escapeYaml(paper.journal)}"`);
@@ -123,7 +135,10 @@ function buildPaperContent(paper: PaperInfo): string {
     );
   }
   if (paper.field) lines.push(`field: "${escapeYaml(paper.field)}"`);
-  if (paper.arxivId) lines.push(`arxivId: "${paper.arxivId}"`);
+  if (paper.arxivId) {
+    const arxivId = paper.arxivId;
+    lines.push(`arxivId: "[arXiv](https://arxiv.org/abs/${arxivId}), [AlphaXiv](https://alphaxiv.org/abs/${arxivId}), [HTML](https://arxiv.org/html/${arxivId})"`);
+  }
   if (paper.doi) lines.push(`doi: "${paper.doi}"`);
   lines.push('---', '');
   lines.push(`# ${paper.title}`, '');
@@ -137,7 +152,15 @@ function buildPaperContent(paper: PaperInfo): string {
     lines.push(`**研究领域**：${paper.field}  `);
   }
   if (paper.abstract) {
-    lines.push('', '## 摘要', '', paper.abstract);
+    lines.push('', '## 摘要');
+    // 如果有翻译，添加可折叠的中文翻译
+    if (translatedAbstract) {
+      lines.push('', '> [!翻译]-', '> ', '> ## 摘要翻译', '> ');
+      const translatedLines = translatedAbstract.split('\n');
+      translatedLines.forEach(line => lines.push('> ' + line));
+    }
+    // 英文原文作为正文（在可折叠区块外）
+    lines.push('', paper.abstract);
   }
   lines.push('', '## 笔记', '', '');
   return lines.join('\n');

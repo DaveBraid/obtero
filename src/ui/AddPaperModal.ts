@@ -241,6 +241,7 @@ export class AddPaperModal extends Modal {
         metaFontFamily: 1,
         cardWidth: 280,
         cardHeight: 180,
+        titleAlignment: 'left' as 'left' | 'center',
       };
 
       this.plugin.settings.fields.push(newField);
