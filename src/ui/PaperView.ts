@@ -181,8 +181,25 @@ export class PaperView extends ItemView {
                 const excalidrawPath = resolveExcalidrawPath(this.plugin.settings);
                 const excalidrawFile = this.app.vault.getAbstractFileByPath(excalidrawPath);
                 if (excalidrawFile instanceof TFile) {
-                  const leaf = this.app.workspace.getLeaf(false);
-                  await leaf.openFile(excalidrawFile);
+                  // Check if the file is already open in any leaf (regardless of view type)
+                  let existingLeaf = null;
+                  this.app.workspace.iterateAllLeaves((leaf: any) => {
+                    const view = leaf.view as any;
+                    if (view.file?.path === excalidrawFile.path) {
+                      existingLeaf = leaf;
+                      return true; // Stop iteration
+                    }
+                    return false; // Continue iteration
+                  });
+
+                  if (existingLeaf) {
+                    // File is already open, just reveal it
+                    this.app.workspace.revealLeaf(existingLeaf);
+                  } else {
+                    // File not open, create new leaf
+                    const leaf = this.app.workspace.getLeaf(false);
+                    await leaf.openFile(excalidrawFile);
+                  }
                 }
               } catch (err) {
                 new Notice('添加失败：' + (err as Error).message);
