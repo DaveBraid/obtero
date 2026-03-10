@@ -121,6 +121,17 @@ export async function insertPaperToExcalidraw(
   }
   const metaText = metaLines.join('\n');
 
+  // 映射纹理类型到 Excalidraw 的 fillStyle
+  // Excalidraw 支持的 fillStyle: solid, hachure, cross-hatch
+  const patternMap: Record<string, string> = {
+    'solid': 'solid',
+    'dots': 'hachure',      // 点阵映射为 hachure
+    'grid': 'hachure',      // 网格映射为 hachure
+    'lines': 'cross-hatch', // 线条映射为 cross-hatch
+    'cross-hatch': 'cross-hatch',
+  };
+  const fillStyle = patternMap[fieldStyle.backgroundPattern || 'solid'] || 'solid';
+
   // 单个卡片矩形
   data.elements.push({
     id: cardId,
@@ -132,7 +143,7 @@ export async function insertPaperToExcalidraw(
     angle: 0,
     strokeColor: fieldStyle.borderColor,
     backgroundColor: fieldStyle.backgroundColor,
-    fillStyle: fieldStyle.backgroundPattern || 'solid',
+    fillStyle: fillStyle,
     strokeWidth: 2,
     strokeStyle: 'solid',
     roughness: fieldStyle.roughness,
@@ -149,7 +160,7 @@ export async function insertPaperToExcalidraw(
     seed: Math.floor(Math.random() * 10000),
   });
 
-  // 标题文本（上方）
+  // 标题文本（上方）- 使用字段设置的字体
   data.elements.push({
     id: titleTextId,
     type: 'text',
@@ -171,8 +182,8 @@ export async function insertPaperToExcalidraw(
     boundElements: null,
     containerId: cardId,
     text: truncate(paper.title, 80),
-    fontSize: 14,
-    fontFamily: 1,
+    fontSize: fieldStyle.titleFontSize || 14,
+    fontFamily: fieldStyle.titleFontFamily || 1,
     textAlign: 'center',
     verticalAlign: 'top',
     baseline: 14,
@@ -180,7 +191,7 @@ export async function insertPaperToExcalidraw(
     locked: false,
   });
 
-  // 元信息文本（下方）
+  // 元信息文本（下方）- 使用字段设置的字体
   data.elements.push({
     id: metaTextId,
     type: 'text',
@@ -202,8 +213,8 @@ export async function insertPaperToExcalidraw(
     boundElements: null,
     containerId: cardId,
     text: metaText,
-    fontSize: 11,
-    fontFamily: 1,
+    fontSize: fieldStyle.metaFontSize || 11,
+    fontFamily: fieldStyle.metaFontFamily || 1,
     textAlign: 'left',
     verticalAlign: 'top',
     baseline: 13,

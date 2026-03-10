@@ -174,6 +174,10 @@ export class AddPaperModal extends Modal {
               roughness: 0,
               opacity: 100,
               roundness: 2,
+              titleFontSize: 14,
+              titleFontFamily: 1,
+              metaFontSize: 11,
+              metaFontFamily: 1,
             };
             this.plugin.settings.fields.push(newField);
             this.plugin.saveSettings();

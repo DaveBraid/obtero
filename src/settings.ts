@@ -24,6 +24,10 @@ export const DEFAULT_FIELDS: FieldStyle[] = [
     roughness: 0,
     opacity: 100,
     roundness: 2,
+  titleFontSize: 14,
+  titleFontFamily: 1,
+  metaFontSize: 11,
+  metaFontFamily: 1,
   },
   {
     name: '机器学习',
@@ -35,6 +39,10 @@ export const DEFAULT_FIELDS: FieldStyle[] = [
     roughness: 0,
     opacity: 100,
     roundness: 2,
+  titleFontSize: 14,
+  titleFontFamily: 1,
+  metaFontSize: 11,
+  metaFontFamily: 1,
   },
   {
     name: '自然语言处理',
@@ -46,6 +54,10 @@ export const DEFAULT_FIELDS: FieldStyle[] = [
     roughness: 0,
     opacity: 100,
     roundness: 2,
+  titleFontSize: 14,
+  titleFontFamily: 1,
+  metaFontSize: 11,
+  metaFontFamily: 1,
   },
   {
     name: '其他',
@@ -57,6 +69,10 @@ export const DEFAULT_FIELDS: FieldStyle[] = [
     roughness: 0,
     opacity: 100,
     roundness: 2,
+  titleFontSize: 14,
+  titleFontFamily: 1,
+  metaFontSize: 11,
+  metaFontFamily: 1,
   },
 ];
 
@@ -215,6 +231,10 @@ export class PaperSettingTab extends PluginSettingTab {
               roughness: 0,
               opacity: 100,
               roundness: 2,
+  titleFontSize: 14,
+  titleFontFamily: 1,
+  metaFontSize: 11,
+  metaFontFamily: 1,
             };
             this.plugin.settings.fields.push(newField);
             this.plugin.saveSettings();
