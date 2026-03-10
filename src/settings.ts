@@ -247,6 +247,9 @@ export class PaperSettingTab extends PluginSettingTab {
     // 文本设置
     containerEl.createEl('h4', { text: '文本设置' });
 
+    // 标题字体
+    this.addFontSetting(containerEl, '标题字体', 'titleFontFamily', previewContainer);
+
     new Setting(containerEl)
       .setName('标题字体大小')
       .addSlider(slider =>
@@ -260,6 +263,9 @@ export class PaperSettingTab extends PluginSettingTab {
             this.updateCardPreview(previewContainer);
           })
       );
+
+    // 正文字体
+    this.addFontSetting(containerEl, '正文字体', 'metaFontFamily', previewContainer);
 
     new Setting(containerEl)
       .setName('正文字体大小')
@@ -308,6 +314,43 @@ export class PaperSettingTab extends PluginSettingTab {
             this.updateCardPreview(previewContainer);
           })
       );
+  }
+
+  addFontSetting(
+    containerEl: HTMLElement,
+    name: string,
+    configKey: keyof CardStyleConfig,
+    previewContainer: HTMLElement
+  ): void {
+    const style = this.plugin.settings.cardStyle;
+    const currentValue = style[configKey];
+
+    // 只处理数字类型的配置项（字体）
+    if (typeof currentValue !== 'number') return;
+
+    const fontOptions = [
+      { value: 1, label: 'Virgil (手写风格)' },
+      { value: 2, label: 'Helvetica (无衬线)' },
+      { value: 3, label: 'Cascadia (等宽代码)' },
+      { value: 4, label: 'Comic Sans MS (本地字体)' },
+    ];
+
+    new Setting(containerEl)
+      .setName(name)
+      .setDesc('选择卡片文本的字体样式')
+      .addDropdown(dropdown => {
+        fontOptions.forEach(option => {
+          dropdown.addOption(option.value.toString(), option.label);
+        });
+
+        dropdown
+          .setValue(currentValue.toString())
+          .onChange(async value => {
+            (this.plugin.settings.cardStyle[configKey] as number) = parseInt(value);
+            await this.plugin.saveSettings();
+            this.updateCardPreview(previewContainer);
+          });
+      });
   }
 
   createCardPreview(containerEl: HTMLElement): void {
