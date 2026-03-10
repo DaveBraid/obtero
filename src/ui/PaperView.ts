@@ -64,7 +64,23 @@ export class PaperView extends ItemView {
   }
 
   async onOpen(): Promise<void> {
+    // 添加苹果风格进度条动画样式
+    this.addProgressStyles();
     await this.render();
+  }
+
+  private addProgressStyles(): void {
+    if (document.getElementById('pm-progress-styles')) return;
+
+    const style = document.createElement('style');
+    style.id = 'pm-progress-styles';
+    style.textContent = `
+      @keyframes pm-shimmer {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+      }
+    `;
+    document.head.appendChild(style);
   }
 
   async render(): Promise<void> {
@@ -266,11 +282,11 @@ export class PaperView extends ItemView {
     // 统计
     this.renderFieldStats(container);
 
-    // 最近论文
-    this.renderRecentPapers(container);
-
     // 阅读进度
     this.renderReadingProgress(container);
+
+    // 最近论文
+    this.renderRecentPapers(container);
   }
 
   private renderQuickActions(container: HTMLElement): void {
@@ -481,12 +497,59 @@ export class PaperView extends ItemView {
 
     const readPercent = Math.round((readCount / total) * 100);
 
-    const progressText = section.createDiv({ cls: 'pm-progress-text' });
-    progressText.textContent = `${readCount} / ${total} 篇已读`;
+    // 标题和百分比（苹果风格）
+    const header = section.createDiv({ cls: 'pm-progress-header' });
+    header.style.display = 'flex';
+    header.style.justifyContent = 'space-between';
+    header.style.alignItems = 'center';
+    header.style.marginBottom = '12px';
 
+    const titleText = header.createDiv({ cls: 'pm-progress-title' });
+    titleText.textContent = '阅读进度';
+    titleText.style.fontSize = '14px';
+    titleText.style.fontWeight = '600';
+    titleText.style.color = 'var(--text-normal)';
+
+    const percentText = header.createDiv({ cls: 'pm-progress-percent' });
+    percentText.textContent = `${readPercent}%`;
+    percentText.style.fontSize = '20px';
+    percentText.style.fontWeight = '700';
+    percentText.style.color = 'var(--interactive-accent)';
+
+    // 数量说明
+    const detailText = section.createDiv({ cls: 'pm-progress-detail' });
+    detailText.textContent = `已读 ${readCount} 篇，共 ${total} 篇`;
+    detailText.style.fontSize = '13px';
+    detailText.style.color = 'var(--text-muted)';
+    detailText.style.marginBottom = '10px';
+
+    // 苹果风格进度条
     const progressBar = section.createDiv({ cls: 'pm-progress-bar' });
+    progressBar.style.width = '100%';
+    progressBar.style.height = '8px';
+    progressBar.style.backgroundColor = 'var(--background-modifier-border)';
+    progressBar.style.borderRadius = '4px';
+    progressBar.style.overflow = 'hidden';
+    progressBar.style.position = 'relative';
+
     const progressFill = progressBar.createDiv({ cls: 'pm-progress-fill' });
     progressFill.style.width = `${readPercent}%`;
+    progressFill.style.height = '100%';
+    progressFill.style.background = 'var(--interactive-accent)';
+    progressFill.style.borderRadius = '4px';
+    progressFill.style.transition = 'width 0.3s ease';
+    progressFill.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
+    progressFill.style.position = 'relative';
+
+    // 添加光泽效果（苹果风格）
+    const shimmer = progressFill.createDiv();
+    shimmer.style.position = 'absolute';
+    shimmer.style.top = '0';
+    shimmer.style.left = '0';
+    shimmer.style.right = '0';
+    shimmer.style.bottom = '0';
+    shimmer.style.background = 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent)';
+    shimmer.style.animation = 'pm-shimmer 2s infinite';
   }
 
   private formatTimeAgo(timestamp: number): string {
