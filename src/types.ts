@@ -37,4 +37,11 @@ export interface FieldStyle {
 
   // 标题对齐
   titleAlignment: 'left' | 'center';  // 标题对齐方式
+
+  // 论文管理界面专用样式
+  pmBackgroundColor?: string;   // 论文管理界面背景色（浅色模式）
+  pmBorderColor?: string;       // 论文管理界面边框色（浅色模式）
+  pmBackgroundColorDark?: string; // 论文管理界面背景色（深色模式）
+  pmBorderColorDark?: string;     // 论文管理界面边框色（深色模式）
+  pmTextColor?: string;         // 论文管理界面文字颜色
 }

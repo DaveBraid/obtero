@@ -74,6 +74,7 @@
   cursor: pointer;
   border-bottom: 1px solid var(--background-modifier-border);
   gap: var(--pm-spacing-sm);
+  transition: background-color 0.15s ease;
 }
 
 .pm-paper-item:last-child {
@@ -81,13 +82,39 @@
 }
 
 .pm-paper-item:hover {
-  background: var(--background-modifier-hover);
+  filter: brightness(0.95);
+}
+
+.pm-paper-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.pm-paper-title-container {
+  flex: 1;
+  min-width: 0;
 }
 
 .pm-paper-title {
   font-size: 14px;
   color: var(--text-normal);
-  flex: 1;
+  display: block;
+}
+
+/* 领域标签样式 */
+.pm-field-tag {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
 }
 
 .pm-item-menu-btn {

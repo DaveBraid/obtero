@@ -1,4 +1,4 @@
-import { ItemView, Menu, Modal, Notice, TFile, WorkspaceLeaf } from 'obsidian';
+import { App, ItemView, Menu, Modal, Notice, Setting, TFile, WorkspaceLeaf } from 'obsidian';
 import MyPlugin from '../main';
 import { getPapersByCategory, movePaper, resolveExcalidrawPath } from '../utils/fileUtils';
 import { insertPaperToExcalidraw } from '../utils/excalidrawUtils';
@@ -147,9 +147,54 @@ export class PaperView extends ItemView {
   private renderPaperItem(list: HTMLElement, file: TFile, category: string): void {
     const item = list.createDiv({ cls: 'pm-paper-item' });
 
+    // 获取论文的领域信息
+    const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
+    const fieldName = fm?.field || this.plugin.settings.defaultField;
+    const fieldStyle = this.plugin.settings.fields.find(f => f.name === fieldName);
+    const defaultField = this.plugin.settings.fields.find(f => f.name === this.plugin.settings.defaultField);
+    const activeField = fieldStyle || defaultField;
+
+    // 检测当前是否为深色模式
+    const isDarkMode = document.body.hasClass('theme-dark');
+
+    // 设置底色（基于领域 - 使用论文管理界面专用样式，根据主题选择）
+    if (activeField) {
+      const bgColor = isDarkMode
+        ? (activeField.pmBackgroundColorDark || activeField.pmBackgroundColor || activeField.backgroundColor)
+        : (activeField.pmBackgroundColor || activeField.backgroundColor);
+      const borderColor = isDarkMode
+        ? (activeField.pmBorderColorDark || activeField.pmBorderColor || activeField.borderColor)
+        : (activeField.pmBorderColor || activeField.borderColor);
+
+      item.style.backgroundColor = bgColor;
+      item.style.borderLeft = `3px solid ${borderColor}`;
+    }
+
     // Display title (remove prefix like "【粗读】-")
     const displayName = file.basename.replace(/^【.+?】-/, '');
-    item.createSpan({ cls: 'pm-paper-title', text: displayName });
+
+    // 创建标题和标签的容器
+    const contentContainer = item.createDiv({ cls: 'pm-paper-content' });
+    contentContainer.style.display = 'flex';
+    contentContainer.style.alignItems = 'center';
+    contentContainer.style.justifyContent = 'space-between';
+    contentContainer.style.gap = '8px';
+    contentContainer.style.flex = '1';
+    contentContainer.style.minWidth = '0';
+
+    const titleContainer = contentContainer.createDiv({ cls: 'pm-paper-title-container' });
+    titleContainer.style.flex = '1';
+    titleContainer.style.minWidth = '0';
+    titleContainer.createSpan({ cls: 'pm-paper-title', text: displayName });
+
+    // 领域标签
+    const fieldTag = contentContainer.createSpan({ cls: 'pm-field-tag' });
+    fieldTag.textContent = fieldName;
+    fieldTag.style.flexShrink = '0';
+    if (activeField) {
+      fieldTag.style.backgroundColor = activeField.borderColor;
+      fieldTag.style.color = this.getContrastColor(activeField.borderColor);
+    }
 
     // Click to open
     item.addEventListener('click', async (e) => {
@@ -167,6 +212,16 @@ export class PaperView extends ItemView {
     menuBtn.addEventListener('click', (e) => {
       this.showContextMenu(e, file, displayName, category);
     });
+  }
+
+  // 根据背景色获取对比色（黑色或白色）
+  private getContrastColor(hexColor: string): string {
+    const hex = hexColor.replace('#', '');
+    const r = parseInt(hex.substr(0, 2), 16);
+    const g = parseInt(hex.substr(2, 2), 16);
+    const b = parseInt(hex.substr(4, 2), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness > 128 ? '#000000' : '#ffffff';
   }
 
   private showContextMenu(e: MouseEvent, file: TFile, displayName: string, currentCategory: string): void {
@@ -195,6 +250,15 @@ export class PaperView extends ItemView {
         })
       );
     }
+
+    menu.addSeparator();
+
+    // 修改领域
+    menu.addItem(mi =>
+      mi.setTitle('🏷️ 修改领域').onClick(() => {
+        this.showFieldChangeModal(file, displayName);
+      })
+    );
 
     menu.addSeparator();
 
@@ -563,5 +627,77 @@ export class PaperView extends ItemView {
     if (days < 30) return `${Math.floor(days / 7)}周前`;
     if (days < 365) return `${Math.floor(days / 30)}月前`;
     return `${Math.floor(days / 365)}年前`;
+  }
+
+  // 修改领域模态框
+  private showFieldChangeModal(file: TFile, displayName: string): void {
+    const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
+    const currentField = fm?.field || this.plugin.settings.defaultField;
+
+    const modal = new Modal(this.app);
+    modal.contentEl.createEl('h2', { text: '修改论文领域' });
+
+    const desc = modal.contentEl.createDiv();
+    desc.textContent = `正在修改论文「${displayName}」的领域`;
+    desc.style.marginBottom = '16px';
+    desc.style.color = 'var(--text-muted)';
+
+    const fieldOptions = this.plugin.settings.fields.map(f => f.name);
+
+    new Setting(modal.contentEl)
+      .setName('研究领域')
+      .setDesc('选择该论文所属领域')
+      .addDropdown(drop => {
+        fieldOptions.forEach(f => drop.addOption(f, f));
+        drop.setValue(currentField).onChange(v => {
+          // 临时存储选择的领域
+        });
+      });
+
+    const buttonContainer = modal.contentEl.createDiv({ cls: 'modal-button-container' });
+    buttonContainer.style.display = 'flex';
+    buttonContainer.style.justifyContent = 'flex-end';
+    buttonContainer.style.gap = '10px';
+    buttonContainer.style.marginTop = '20px';
+
+    const cancelBtn = buttonContainer.createEl('button', { text: '取消' });
+    cancelBtn.addEventListener('click', () => modal.close());
+
+    const confirmBtn = buttonContainer.createEl('button', {
+      text: '确认修改',
+      cls: 'mod-cta'
+    });
+
+    confirmBtn.addEventListener('click', async () => {
+      const dropdown = modal.contentEl.querySelector('select') as HTMLSelectElement;
+      const newField = dropdown.value;
+
+      if (newField === currentField) {
+        modal.close();
+        return;
+      }
+
+      // 先关闭模态框
+      modal.close();
+
+      try {
+        // 更新文件的 frontmatter
+        await this.app.fileManager.processFrontMatter(file, fm => {
+          fm.field = newField;
+        });
+
+        // 等待一小段时间确保 frontmatter 更新完成
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // 刷新界面
+        await this.render();
+
+        new Notice(`已将「${displayName}」移至领域「${newField}」`);
+      } catch (err) {
+        new Notice('修改失败：' + (err as Error).message);
+      }
+    });
+
+    modal.open();
   }
 }
