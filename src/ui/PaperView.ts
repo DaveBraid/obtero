@@ -123,6 +123,32 @@ export class PaperView extends ItemView {
   private renderPaperList(root: HTMLElement): void {
     const byCategory = getPapersByCategory(this.app, this.plugin.settings);
 
+    // 计算最长领域名称的实际像素宽度，用于统一标签宽度
+    let maxFieldWidth = 0;
+    const measureSpan = document.createElement('span');
+    measureSpan.style.fontSize = '11px';
+    measureSpan.style.fontWeight = '600';
+    measureSpan.style.letterSpacing = '0.05em';
+    measureSpan.style.textTransform = 'uppercase';
+    measureSpan.style.visibility = 'hidden';
+    measureSpan.style.position = 'absolute';
+    measureSpan.style.whiteSpace = 'nowrap';
+    document.body.appendChild(measureSpan);
+    
+    for (const field of this.plugin.settings.fields) {
+      measureSpan.textContent = field.name.toUpperCase();
+      const width = measureSpan.offsetWidth;
+      if (width > maxFieldWidth) {
+        maxFieldWidth = width;
+      }
+    }
+    document.body.removeChild(measureSpan);
+    
+    // 加上 padding (左右各 8px)
+    maxFieldWidth += 16;
+    // 最小宽度 60px
+    maxFieldWidth = Math.max(maxFieldWidth, 60);
+
     for (const [label, files] of Object.entries(byCategory)) {
       const section = root.createDiv({ cls: 'pm-section' });
 
@@ -139,12 +165,12 @@ export class PaperView extends ItemView {
       // Paper list
       const list = section.createDiv({ cls: 'pm-paper-list' });
       for (const file of files) {
-        this.renderPaperItem(list, file as TFile, label);
+        this.renderPaperItem(list, file as TFile, label, maxFieldWidth);
       }
     }
   }
 
-  private renderPaperItem(list: HTMLElement, file: TFile, category: string): void {
+  private renderPaperItem(list: HTMLElement, file: TFile, category: string, maxFieldWidth: number): void {
     const item = list.createDiv({ cls: 'pm-paper-item' });
 
     // 获取论文的领域信息
@@ -176,10 +202,12 @@ export class PaperView extends ItemView {
     titleContainer.style.minWidth = '0';
     titleContainer.createSpan({ cls: 'pm-paper-title', text: displayName });
 
-    // 领域标签 - 背景色使用卡片背景色
+    // 领域标签 - 背景色使用卡片背景色，宽度统一
     const fieldTag = contentContainer.createSpan({ cls: 'pm-field-tag' });
     fieldTag.textContent = fieldName;
     fieldTag.style.flexShrink = '0';
+    fieldTag.style.minWidth = `${maxFieldWidth}px`;
+    fieldTag.style.textAlign = 'center';
     if (activeField) {
       fieldTag.style.backgroundColor = activeField.backgroundColor;
       fieldTag.style.color = this.getContrastColor(activeField.backgroundColor);
