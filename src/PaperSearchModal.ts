@@ -158,7 +158,7 @@ export class PaperSearchModal extends Modal {
 		if (paper.authors.length > 0) {
 			addRow('作者：', paper.authors.join(', '));
 		}
-		if (paper.affiliations.length > 0) {
+		if (paper.affiliations && paper.affiliations.length > 0) {
 			addRow('作者单位：', paper.affiliations.join('; '));
 		}
 		if (paper.arxivId) addRow('arXiv ID：', paper.arxivId);

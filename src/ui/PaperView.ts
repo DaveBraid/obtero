@@ -154,20 +154,9 @@ export class PaperView extends ItemView {
     const defaultField = this.plugin.settings.fields.find(f => f.name === this.plugin.settings.defaultField);
     const activeField = fieldStyle || defaultField;
 
-    // 检测当前是否为深色模式
-    const isDarkMode = document.body.hasClass('theme-dark');
-
-    // 设置底色（基于领域 - 使用论文管理界面专用样式，根据主题选择）
+    // 设置边框色（使用卡片的背景色）
     if (activeField) {
-      const bgColor = isDarkMode
-        ? (activeField.pmBackgroundColorDark || activeField.pmBackgroundColor || activeField.backgroundColor)
-        : (activeField.pmBackgroundColor || activeField.backgroundColor);
-      const borderColor = isDarkMode
-        ? (activeField.pmBorderColorDark || activeField.pmBorderColor || activeField.borderColor)
-        : (activeField.pmBorderColor || activeField.borderColor);
-
-      item.style.backgroundColor = bgColor;
-      item.style.borderLeft = `3px solid ${borderColor}`;
+      item.style.borderLeft = `3px solid ${activeField.backgroundColor}`;
     }
 
     // Display title (remove prefix like "【粗读】-")
@@ -187,13 +176,13 @@ export class PaperView extends ItemView {
     titleContainer.style.minWidth = '0';
     titleContainer.createSpan({ cls: 'pm-paper-title', text: displayName });
 
-    // 领域标签
+    // 领域标签 - 背景色使用卡片背景色
     const fieldTag = contentContainer.createSpan({ cls: 'pm-field-tag' });
     fieldTag.textContent = fieldName;
     fieldTag.style.flexShrink = '0';
     if (activeField) {
-      fieldTag.style.backgroundColor = activeField.borderColor;
-      fieldTag.style.color = this.getContrastColor(activeField.borderColor);
+      fieldTag.style.backgroundColor = activeField.backgroundColor;
+      fieldTag.style.color = this.getContrastColor(activeField.backgroundColor);
     }
 
     // Click to open

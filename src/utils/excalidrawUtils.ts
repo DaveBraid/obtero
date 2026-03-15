@@ -211,7 +211,7 @@ async function insertPaperViaEA(
   const metaLines: string[] = [];
   const journalDate = [paper.journal, paper.date].filter(Boolean).join(' · ');
   if (journalDate) metaLines.push(truncate(journalDate, 50));
-  if (paper.institutions.length > 0) {
+  if (paper.institutions && paper.institutions.length > 0) {
     metaLines.push(truncate(paper.institutions.slice(0, 2).join('; '), 60));
   } else if (paper.authors.length > 0) {
     metaLines.push(truncate(paper.authors.slice(0, 3).join(', '), 60));
@@ -383,7 +383,7 @@ async function insertPaperViaFile(
   const metaLines: string[] = [];
   const journalDate = [paper.journal, paper.date].filter(Boolean).join(' · ');
   if (journalDate) metaLines.push(truncate(journalDate, 50));
-  if (paper.institutions.length > 0) {
+  if (paper.institutions && paper.institutions.length > 0) {
     metaLines.push(truncate(paper.institutions.slice(0, 2).join('; '), 60));
   } else if (paper.authors.length > 0) {
     metaLines.push(truncate(paper.authors.slice(0, 3).join(', '), 60));

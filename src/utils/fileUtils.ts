@@ -122,12 +122,12 @@ export async function createPaperFile(
 function buildPaperContent(paper: PaperInfo, translatedAbstract: string = ''): string {
   const lines: string[] = ['---'];
   lines.push(`title: "${escapeYaml(paper.title)}"`);
-  lines.push(`journal: "${escapeYaml(paper.journal)}"`);
-  lines.push(`date: "${paper.date}"`);
+  lines.push(`journal: "${escapeYaml(paper.journal || '')}"`);
+  lines.push(`date: "${paper.date || ''}"`);
   lines.push(
     `authors: [${paper.authors.map(a => `"${escapeYaml(a)}"`).join(', ')}]`
   );
-  if (paper.institutions.length > 0) {
+  if (paper.institutions && paper.institutions.length > 0) {
     lines.push(
       `institutions: [${paper.institutions
         .map(i => `"${escapeYaml(i)}"`)
@@ -139,10 +139,10 @@ function buildPaperContent(paper: PaperInfo, translatedAbstract: string = ''): s
   if (paper.doi) lines.push(`doi: "${paper.doi}"`);
   lines.push('---', '');
   lines.push(`# ${paper.title}`, '');
-  lines.push(`**期刊/会议**：${paper.journal}  `);
-  lines.push(`**发表时间**：${paper.date}  `);
+  lines.push(`**期刊/会议**：${paper.journal || ''}  `);
+  lines.push(`**发表时间**：${paper.date || ''}  `);
   lines.push(`**作者**：${paper.authors.join('; ')}  `);
-  if (paper.institutions.length > 0) {
+  if (paper.institutions && paper.institutions.length > 0) {
     lines.push(`**作者单位**：${paper.institutions.join('; ')}  `);
   }
   if (paper.field) {

@@ -54,6 +54,9 @@ export async function searchArxiv(query: string): Promise<PaperInfo[]> {
 			arxivId,
 			url: idUrl,
 			source: 'arxiv' as const,
+			journal: venue,
+			date: published.split('T')[0] ?? year,
+			institutions: affiliations,
 		};
 	});
 }
@@ -99,6 +102,9 @@ export async function searchSemanticScholar(query: string): Promise<PaperInfo[]>
 			arxivId: paper.externalIds?.ArXiv,
 			url: `https://www.semanticscholar.org/paper/${paper.paperId}`,
 			source: 'semantic_scholar' as const,
+			journal: paper.venue ?? '',
+			date: paper.publicationDate ?? String(paper.year ?? ''),
+			institutions: [],
 		}));
 	} catch {
 		return [];

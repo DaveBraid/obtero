@@ -317,10 +317,10 @@ export class AddPaperModal extends Modal {
     };
 
     addField('标题', p.title);
-    addField('期刊/会议', p.journal);
-    addField('发表时间', p.date);
+    addField('期刊/会议', p.journal || '');
+    addField('发表时间', p.date || '');
     addField('作者', p.authors.join('; '));
-    if (p.institutions.length > 0) {
+    if (p.institutions && p.institutions.length > 0) {
       addField('作者单位', p.institutions.join('; '));
     }
     if (p.arxivId) addField('arXiv ID', p.arxivId);

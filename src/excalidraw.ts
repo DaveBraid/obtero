@@ -65,7 +65,7 @@ export function createPaperCardElements(
 			: '未知作者';
 
 	const affiliationLine =
-		paper.affiliations.length > 0
+		paper.affiliations && paper.affiliations.length > 0
 			? `🏛 ${paper.affiliations.slice(0, 2).join('; ')}${paper.affiliations.length > 2 ? ' …' : ''}`
 			: null;
 
@@ -75,7 +75,7 @@ export function createPaperCardElements(
 		``,
 		`👤 ${authorsText}`,
 		...(affiliationLine ? [affiliationLine] : []),
-		`📅 ${paper.publishDate || paper.year}`,
+		`📅 ${paper.publishDate || paper.year || ''}`,
 		`📰 ${paper.venue || 'arXiv Preprint'}`,
 		...(paper.arxivId ? [`🔗 arXiv:${paper.arxivId}`] : []),
 		...(paper.doi ? [`🔗 DOI:${paper.doi}`] : []),
