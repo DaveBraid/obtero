@@ -235,6 +235,7 @@ export class PaperView extends ItemView {
       institutions: Array.isArray(fm?.institutions) ? fm.institutions : [],
       arxivId: fm?.arxivId,
       doi: fm?.doi,
+      field: fm?.field,  // 从 frontmatter 读取领域
     };
 
     try {

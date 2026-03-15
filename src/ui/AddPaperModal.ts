@@ -18,7 +18,13 @@ export class AddPaperModal extends Modal {
     super(app);
     this.plugin = plugin;
     this.category = '待阅读';
-    this.field = plugin.settings.defaultField;
+    // 验证 defaultField 是否在 fields 列表中存在，不存在则使用第一个字段
+    const validFields = plugin.settings.fields.map(f => f.name);
+    if (validFields.includes(plugin.settings.defaultField)) {
+      this.field = plugin.settings.defaultField;
+    } else {
+      this.field = validFields[0] || '';
+    }
     this.onComplete = onComplete;
   }
 
@@ -269,6 +275,7 @@ export class AddPaperModal extends Modal {
     if (!this.selected) return;
 
     this.selected.field = this.field;
+    console.log(`[MyPaper] doAdd: 设置 paper.field="${this.field}"`);
 
     try {
       const file = await createPaperFile(

@@ -4,6 +4,89 @@ import { MyPluginSettings } from '../settings';
 import { PaperInfo } from '../types';
 import { ensureExcalidrawFile } from './fileUtils';
 
+// Excalidraw Automate API 类型定义
+interface ExcalidrawAutomateAPI {
+  // 元素创建
+  addRect: (topX: number, topY: number, width: number, height: number, id?: string) => string;
+  addText: (topX: number, topY: number, text: string, id?: string) => string;
+  
+  // 元素获取
+  getElement: (id: string) => MutableExcalidrawElement;
+  getElements: () => MutableExcalidrawElement[];
+  getViewElements: () => { id: string; type: string; groupIds: string[]; link?: string; isDeleted?: boolean }[];
+  
+  // 分组
+  addToGroup: (objectIds: string[]) => string;
+  
+  // 样式设置方法
+  setFillStyle: (val: number) => 'hachure' | 'cross-hatch' | 'solid';
+  setStrokeStyle: (val: number) => 'solid' | 'dashed' | 'dotted';
+  setStrokeSharpness: (val: number) => 'round' | 'sharp';
+  setFontFamily: (val: number) => string;
+  
+  // style对象
+  style: {
+    strokeColor: string;
+    backgroundColor: string;
+    angle: number;
+    fillStyle: 'hachure' | 'cross-hatch' | 'solid';
+    strokeWidth: number;
+    strokeStyle: 'solid' | 'dashed' | 'dotted';
+    roughness: number;
+    opacity: number;
+    strokeSharpness?: 'round' | 'sharp';
+    roundness: null | { type: number; value?: number };
+    fontFamily: number;
+    fontSize: number;
+    textAlign: 'left' | 'right' | 'center';
+    verticalAlign: 'top' | 'bottom' | 'middle';
+  };
+  
+  // 其他
+  clear: () => void;
+  addElementsToView: (repositionToCursor?: boolean, save?: boolean, newElementsOnTop?: boolean) => Promise<boolean>;
+}
+
+// 可变的元素类型
+interface MutableExcalidrawElement {
+  id: string;
+  type: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  angle: number;
+  strokeColor: string;
+  backgroundColor: string;
+  fillStyle: string;
+  strokeWidth: number;
+  strokeStyle: string;
+  roughness: number;
+  opacity: number;
+  groupIds: string[];
+  roundness: { type: number } | null;
+  isDeleted: boolean;
+  boundElements: { id: string; type: string }[] | null;
+  link: string | null;
+  locked: boolean;
+  containerId?: string | null;
+  text?: string;
+  fontSize?: number;
+  fontFamily?: number;
+  textAlign?: string;
+  verticalAlign?: string;
+  baseline?: number;
+}
+
+declare global {
+  interface Window {
+    ExcalidrawAutomate?: {
+      plugin: unknown;
+      getAPI: (view?: unknown) => ExcalidrawAutomateAPI;
+    };
+  }
+}
+
 interface ExcalidrawElement {
   id: string;
   type: string;
@@ -41,7 +124,183 @@ export async function insertPaperToExcalidraw(
   paper: PaperInfo,
   file: TFile
 ): Promise<void> {
+  console.log(`[MyPaper] insertPaperToExcalidraw called, paper.field="${paper.field}"`);
   const excalidrawFile = await ensureExcalidrawFile(app, settings);
+  
+  // 尝试使用 Excalidraw Automate API（如果 Excalidraw 插件可用且视图已打开）
+  const ea = getExcalidrawAutomateAPI(app, excalidrawFile);
+  if (ea) {
+    await insertPaperViaEA(ea, settings, paper, file);
+    return;
+  }
+  
+  // 如果 Excalidraw Automate 不可用，使用文件直接修改方式
+  await insertPaperViaFile(app, settings, paper, file, excalidrawFile);
+}
+
+/**
+ * 获取 Excalidraw Automate API
+ */
+function getExcalidrawAutomateAPI(
+  app: App,
+  excalidrawFile: TFile
+): ExcalidrawAutomateAPI | null {
+  if (!window.ExcalidrawAutomate?.getAPI) {
+    return null;
+  }
+  
+  // 检查 Excalidraw 视图是否已打开
+  const leaves = app.workspace.getLeavesOfType('excalidraw');
+  for (const leaf of leaves) {
+    const view = leaf.view;
+    if (view && (view as { file?: TFile }).file?.path === excalidrawFile.path) {
+      const ea = window.ExcalidrawAutomate.getAPI(view);
+      ea.clear();
+      return ea;
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * 通过 Excalidraw Automate API 添加元素
+ */
+async function insertPaperViaEA(
+  ea: ExcalidrawAutomateAPI,
+  settings: MyPluginSettings,
+  paper: PaperInfo,
+  file: TFile
+): Promise<void> {
+  // Count existing cards - 使用 getViewElements 获取视图中的现有元素
+  const viewElements = ea.getViewElements();
+  const cardCount = viewElements.filter(
+    e => !e.isDeleted && e.type === 'rectangle' && e.link && e.link.startsWith('[[')
+  ).length;
+
+  // 获取领域样式 - 优先使用 paper.field，其次 defaultField（需验证有效性），最后回退到第一个字段
+  let fieldName = paper.field;
+  if (!fieldName || !settings.fields.some(f => f.name === fieldName)) {
+    fieldName = settings.defaultField;
+    if (!settings.fields.some(f => f.name === fieldName)) {
+      fieldName = settings.fields[0]?.name;
+    }
+  }
+  const fieldStyle = settings.fields.find(f => f.name === fieldName);
+
+  if (!fieldStyle) {
+    throw new Error('未找到领域样式配置');
+  }
+  console.log(`[MyPaper] 创建卡片使用领域: ${fieldName}, 背景色: ${fieldStyle.backgroundColor}`);
+
+  // Card dimensions
+  const cardW = fieldStyle.cardWidth || 280;
+  const cardH = fieldStyle.cardHeight || 180;
+  const padding = 12;
+
+  const cols = 3;
+  const col = cardCount % cols;
+  const row = Math.floor(cardCount / cols);
+
+  const cardSpacingX = cardW + 30;
+  const cardSpacingY = cardH + 30;
+  const x = col * cardSpacingX + 20;
+  const y = row * cardSpacingY + 20;
+
+  // 构建元文本
+  const metaLines: string[] = [];
+  const journalDate = [paper.journal, paper.date].filter(Boolean).join(' · ');
+  if (journalDate) metaLines.push(truncate(journalDate, 50));
+  if (paper.institutions.length > 0) {
+    metaLines.push(truncate(paper.institutions.slice(0, 2).join('; '), 60));
+  } else if (paper.authors.length > 0) {
+    metaLines.push(truncate(paper.authors.slice(0, 3).join(', '), 60));
+  }
+  const metaText = metaLines.join('\n');
+
+  // 映射纹理类型
+  const patternMap: Record<string, 'hachure' | 'cross-hatch' | 'solid'> = {
+    'solid': 'solid',
+    'dots': 'hachure',
+    'grid': 'hachure',
+    'lines': 'cross-hatch',
+    'cross-hatch': 'cross-hatch',
+  };
+  const fillStyle = patternMap[fieldStyle.backgroundPattern || 'solid'] || 'solid';
+
+  // 设置矩形样式
+  ea.style.strokeColor = fieldStyle.borderColor;
+  ea.style.backgroundColor = fieldStyle.backgroundColor;
+  ea.style.fillStyle = fillStyle;
+  ea.style.strokeWidth = 2;
+  ea.style.strokeStyle = 'solid';
+  ea.style.roughness = fieldStyle.roughness;
+  ea.style.opacity = fieldStyle.opacity;
+  if (fieldStyle.roundness > 0) {
+    ea.style.roundness = { type: fieldStyle.roundness };
+  } else {
+    ea.style.roundness = null;
+  }
+
+  // 创建矩形
+  const rectId = ea.addRect(x, y, cardW, cardH);
+  
+  // 修改矩形的link属性
+  const rect = ea.getElement(rectId);
+  rect.link = `[[${file.basename}]]`;
+  rect.boundElements = [];
+
+  // 设置文本样式
+  ea.style.strokeColor = fieldStyle.textColor;
+  ea.style.backgroundColor = 'transparent';
+  ea.style.fillStyle = 'solid';
+  ea.style.strokeWidth = 1;
+  ea.style.strokeStyle = 'solid';
+  ea.style.roughness = 0;
+  ea.style.opacity = 100;
+  ea.style.fontSize = fieldStyle.titleFontSize || 14;
+  ea.style.fontFamily = fieldStyle.titleFontFamily || 1;
+  ea.style.textAlign = 'center';
+  ea.style.verticalAlign = 'top';
+
+  // 创建标题文本
+  const titleId = ea.addText(x + padding, y + padding, truncate(paper.title, 80));
+  const titleEl = ea.getElement(titleId);
+  titleEl.width = cardW - padding * 2;
+  titleEl.height = cardH / 2 - padding;
+  titleEl.containerId = rectId;
+  rect.boundElements.push({ id: titleId, type: 'text' });
+
+  // 设置元信息文本样式
+  ea.style.fontSize = fieldStyle.metaFontSize || 11;
+  ea.style.fontFamily = fieldStyle.metaFontFamily || 1;
+  ea.style.textAlign = 'left';
+
+  // 创建元信息文本
+  const metaId = ea.addText(x + padding, y + cardH / 2 + padding / 2, metaText);
+  const metaEl = ea.getElement(metaId);
+  metaEl.width = cardW - padding * 2;
+  metaEl.height = cardH / 2 - padding * 2;
+  metaEl.containerId = rectId;
+  rect.boundElements.push({ id: metaId, type: 'text' });
+
+  // 添加到组（每个卡片单独一组）
+  ea.addToGroup([rectId, titleId, metaId]);
+
+  // 提交到视图
+  await ea.addElementsToView(false, true, false);
+}
+
+/**
+ * 通过直接修改文件添加元素（当 Excalidraw 视图未打开时使用）
+ */
+async function insertPaperViaFile(
+  app: App,
+  settings: MyPluginSettings,
+  paper: PaperInfo,
+  file: TFile,
+  excalidrawFile: TFile
+): Promise<void> {
   const raw = await app.vault.read(excalidrawFile);
 
   let data: { elements: ExcalidrawElement[]; [key: string]: unknown };
@@ -75,23 +334,33 @@ export async function insertPaperToExcalidraw(
 
   if (!Array.isArray(data.elements)) data.elements = [];
 
-  // Count existing cards
-  const existingGroups = new Set(
-    data.elements
-      .filter(e => !e.isDeleted && e.groupIds.length > 0)
-      .flatMap(e => e.groupIds)
-  );
-  const cardCount = existingGroups.size;
+  // 插件创建的卡片组ID前缀
+  const CARD_GROUP_PREFIX = 'pm_card_';
 
-  // 获取领域样式
-  const fieldName = paper.field || settings.defaultField;
-  const fieldStyle = settings.fields.find(f => f.name === fieldName) || settings.fields[0];
+  // Count existing cards - 通过带link的rectangle来计数
+  const paperRectangles = data.elements.filter(
+    e => !e.isDeleted && 
+         e.type === 'rectangle' && 
+         e.link && 
+         e.link.startsWith('[[')
+  );
+  const cardCount = paperRectangles.length;
+
+  // 获取领域样式 - 优先使用 paper.field，其次 defaultField（需验证有效性），最后回退到第一个字段
+  let fieldName = paper.field;
+  if (!fieldName || !settings.fields.some(f => f.name === fieldName)) {
+    fieldName = settings.defaultField;
+    if (!settings.fields.some(f => f.name === fieldName)) {
+      fieldName = settings.fields[0]?.name;
+    }
+  }
+  const fieldStyle = settings.fields.find(f => f.name === fieldName);
 
   if (!fieldStyle) {
     throw new Error('未找到领域样式配置');
   }
 
-  // Card dimensions - 使用领域配置的尺寸
+  // Card dimensions
   const cardW = fieldStyle.cardWidth || 280;
   const cardH = fieldStyle.cardHeight || 180;
   const padding = 12;
@@ -105,7 +374,7 @@ export async function insertPaperToExcalidraw(
   const x = col * cardSpacingX + 20;
   const y = row * cardSpacingY + 20;
 
-  const groupId = genId();
+  const groupId = CARD_GROUP_PREFIX + genId();
   const cardId = genId();
   const titleTextId = genId();
   const metaTextId = genId();
@@ -121,13 +390,12 @@ export async function insertPaperToExcalidraw(
   }
   const metaText = metaLines.join('\n');
 
-  // 映射纹理类型到 Excalidraw 的 fillStyle
-  // Excalidraw 支持的 fillStyle: solid, hachure, cross-hatch
+  // 映射纹理类型
   const patternMap: Record<string, string> = {
     'solid': 'solid',
-    'dots': 'hachure',      // 点阵映射为 hachure
-    'grid': 'hachure',      // 网格映射为 hachure
-    'lines': 'cross-hatch', // 线条映射为 cross-hatch
+    'dots': 'hachure',
+    'grid': 'hachure',
+    'lines': 'cross-hatch',
     'cross-hatch': 'cross-hatch',
   };
   const fillStyle = patternMap[fieldStyle.backgroundPattern || 'solid'] || 'solid';
@@ -160,7 +428,7 @@ export async function insertPaperToExcalidraw(
     seed: Math.floor(Math.random() * 10000),
   });
 
-  // 标题文本（上方）- 使用字段设置的字体
+  // 标题文本
   data.elements.push({
     id: titleTextId,
     type: 'text',
@@ -191,7 +459,7 @@ export async function insertPaperToExcalidraw(
     locked: false,
   });
 
-  // 元信息文本（下方）- 使用字段设置的字体
+  // 元信息文本
   data.elements.push({
     id: metaTextId,
     type: 'text',
