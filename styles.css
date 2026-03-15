@@ -74,7 +74,7 @@
   cursor: pointer;
   border-bottom: 1px solid var(--background-modifier-border);
   gap: var(--pm-spacing-sm);
-  transition: background-color 0.15s ease;
+  transition: all 0.15s ease;
 }
 
 .pm-paper-item:last-child {
@@ -82,7 +82,12 @@
 }
 
 .pm-paper-item:hover {
-  filter: brightness(0.95);
+  background: var(--background-modifier-hover);
+}
+
+.pm-paper-item:active {
+  background: var(--background-modifier-active-hover);
+  transform: scale(0.995);
 }
 
 .pm-paper-content {

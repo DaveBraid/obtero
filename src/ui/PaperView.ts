@@ -76,8 +76,8 @@ export class PaperView extends ItemView {
     style.id = 'pm-progress-styles';
     style.textContent = `
       @keyframes pm-shimmer {
-        0% { transform: translateX(-100%); }
-        100% { transform: translateX(100%); }
+        0% { transform: translateX(-50%); }
+        100% { transform: translateX(50%); }
       }
     `;
     document.head.appendChild(style);
@@ -595,15 +595,16 @@ export class PaperView extends ItemView {
     progressFill.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
     progressFill.style.position = 'relative';
 
-    // 添加光泽效果（苹果风格）
-    const shimmer = progressFill.createDiv();
+    // 添加光泽效果（苹果风格）- shimmer 覆盖整个进度条
+    const shimmer = progressBar.createDiv();
     shimmer.style.position = 'absolute';
     shimmer.style.top = '0';
     shimmer.style.left = '0';
-    shimmer.style.right = '0';
-    shimmer.style.bottom = '0';
-    shimmer.style.background = 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent)';
-    shimmer.style.animation = 'pm-shimmer 2s infinite';
+    shimmer.style.width = '100%';
+    shimmer.style.height = '100%';
+    shimmer.style.background = 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%)';
+    shimmer.style.animation = 'pm-shimmer 8s infinite';
+    shimmer.style.pointerEvents = 'none';
   }
 
   private formatTimeAgo(timestamp: number): string {
