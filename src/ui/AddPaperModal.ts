@@ -50,6 +50,10 @@ export class AddPaperModal extends Modal {
 
   onOpen(): void {
     this.showSearchPage();
+    // 添加键盘快捷键支持
+    this.scope.register([], 'Escape', () => {
+      this.close();
+    });
   }
 
   // ── 搜索页面 ───────────────────────────────────────────────────────────
@@ -175,16 +179,6 @@ export class AddPaperModal extends Modal {
       });
 
     new Setting(manualContainer)
-      .setName('作者单位')
-      .setDesc('多个单位用分号分隔（可选）')
-      .addText(text => {
-        text.setPlaceholder('单位1; 单位2');
-        text.inputEl.addEventListener('change', (e) => {
-          this.manualInput.institutions = (e.target as HTMLInputElement).value.trim();
-        });
-      });
-
-    new Setting(manualContainer)
       .setName('arXiv ID')
       .setDesc('可选，如：2403.12345')
       .addText(text => {
@@ -194,9 +188,31 @@ export class AddPaperModal extends Modal {
         });
       });
 
-    new Setting(manualContainer)
+    // ── 更多信息（折叠）────────────────────────────────────────────
+    const moreInfo = manualContainer.createEl('details');
+    const moreSummary = moreInfo.createEl('summary', { text: '更多信息（可选）' });
+    moreSummary.style.cursor = 'pointer';
+    moreSummary.style.fontSize = '13px';
+    moreSummary.style.color = 'var(--text-muted)';
+    moreSummary.style.padding = '8px 0';
+    moreSummary.style.marginTop = '8px';
+
+    const moreContent = moreInfo.createDiv();
+    moreContent.style.marginTop = '8px';
+
+    new Setting(moreContent)
+      .setName('作者单位')
+      .setDesc('多个单位用分号分隔')
+      .addText(text => {
+        text.setPlaceholder('单位1; 单位2');
+        text.inputEl.addEventListener('change', (e) => {
+          this.manualInput.institutions = (e.target as HTMLInputElement).value.trim();
+        });
+      });
+
+    new Setting(moreContent)
       .setName('DOI')
-      .setDesc('可选，如：10.1234/example.12345')
+      .setDesc('如：10.1234/example.12345')
       .addText(text => {
         text.setPlaceholder('输入 DOI...');
         text.inputEl.addEventListener('change', (e) => {
@@ -204,9 +220,8 @@ export class AddPaperModal extends Modal {
         });
       });
 
-    new Setting(manualContainer)
+    new Setting(moreContent)
       .setName('摘要')
-      .setDesc('可选')
       .addTextArea(text => {
         text.setPlaceholder('输入论文摘要...');
         text.inputEl.rows = 4;
@@ -244,13 +259,29 @@ export class AddPaperModal extends Modal {
     });
   }
 
+  private isSearching = false;
+
   private async doSearch(query: string, container: HTMLElement): Promise<void> {
+    if (this.isSearching) return;
     if (!query.trim()) {
       new Notice('请输入搜索关键词');
       return;
     }
+
+    this.isSearching = true;
     container.empty();
-    container.createEl('p', { text: '搜索中...' });
+
+    // 显示 loading 状态
+    const loadingEl = container.createDiv({ cls: 'pm-search-loading' });
+    loadingEl.style.textAlign = 'center';
+    loadingEl.style.padding = '24px';
+    loadingEl.style.color = 'var(--text-muted)';
+
+    const spinner = loadingEl.createSpan({ cls: 'pm-spinner' });
+    spinner.innerHTML = '🔍';
+    spinner.style.fontSize = '24px';
+    spinner.style.animation = 'pulse 1s infinite';
+    loadingEl.createSpan({ text: ' 搜索中...' });
 
     try {
       const [arxiv, ieee] = await Promise.all([
@@ -263,9 +294,13 @@ export class AddPaperModal extends Modal {
       this.renderResults(container);
     } catch (e) {
       container.empty();
-      container.createEl('p', {
-        text: `搜索失败：${(e as Error).message}`,
-      });
+      const errorEl = container.createDiv();
+      errorEl.style.color = 'var(--text-error)';
+      errorEl.style.textAlign = 'center';
+      errorEl.style.padding = '16px';
+      errorEl.textContent = `搜索失败：${(e as Error).message}`;
+    } finally {
+      this.isSearching = false;
     }
   }
 

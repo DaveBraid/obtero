@@ -494,26 +494,24 @@ export class PaperSettingTab extends PluginSettingTab {
     fontPreview.style.background = field.backgroundColor;
     this.updateFontPreview(fontPreview, field);
 
-    // 样式控制
+    // 样式控制 - 精简版（只保留核心设置）
     const controls = containerEl.createDiv({ cls: 'pm-field-controls' });
-    controls.style.display = 'grid';
-    controls.style.gridTemplateColumns = 'repeat(3, 1fr)';
-    controls.style.gap = '12px';
-    controls.style.marginTop = '12px';
+    controls.style.marginTop = '16px';
 
-    // ═══════════════════════════════════════════════════════════════
-    // 一、卡片外观
-    // ═══════════════════════════════════════════════════════════════
-    this.addProminentSubHeader(controls, '卡片外观');
+    // ── 核心设置（常用）────────────────────────────────────────────
+    const coreSettings = controls.createDiv();
+    coreSettings.style.display = 'grid';
+    coreSettings.style.gridTemplateColumns = 'repeat(3, 1fr)';
+    coreSettings.style.gap = '8px';
 
     // 背景色
-    new Setting(controls)
+    new Setting(coreSettings)
       .setName('背景色')
       .addColorPicker(colorPicker => {
         colorPicker
           .setValue(field.backgroundColor)
           .onChange(async value => {
-            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index].backgroundColor = value;
+            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index]!.backgroundColor = value;
             await this.plugin.saveSettings();
             this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
             this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
@@ -522,13 +520,13 @@ export class PaperSettingTab extends PluginSettingTab {
       });
 
     // 边框色
-    new Setting(controls)
+    new Setting(coreSettings)
       .setName('边框色')
       .addColorPicker(colorPicker => {
         colorPicker
           .setValue(field.borderColor)
           .onChange(async value => {
-            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index].borderColor = value;
+            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index]!.borderColor = value;
             await this.plugin.saveSettings();
             this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
             this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
@@ -536,8 +534,8 @@ export class PaperSettingTab extends PluginSettingTab {
       });
 
     // 纹理类型
-    new Setting(controls)
-      .setName('纹理类型')
+    new Setting(coreSettings)
+      .setName('纹理')
       .addDropdown(dropdown => {
         dropdown.addOption('solid', '纯色');
         dropdown.addOption('dots', '点阵');
@@ -546,15 +544,61 @@ export class PaperSettingTab extends PluginSettingTab {
         dropdown
           .setValue(field.backgroundPattern || 'solid')
           .onChange(async value => {
-            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index].backgroundPattern = value as any;
+            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index]!.backgroundPattern = value as any;
             await this.plugin.saveSettings();
             this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
             this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
           });
       });
 
+    // 标题颜色
+    new Setting(coreSettings)
+      .setName('标题颜色')
+      .addColorPicker(colorPicker => {
+        colorPicker
+          .setValue(field.titleTextColor || field.textColor)
+          .onChange(async value => {
+            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index]!.titleTextColor = value;
+            await this.plugin.saveSettings();
+            this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
+            this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
+          });
+      });
+
+    // 正文颜色
+    new Setting(coreSettings)
+      .setName('正文颜色')
+      .addColorPicker(colorPicker => {
+        colorPicker
+          .setValue(field.metaTextColor || field.textColor)
+          .onChange(async value => {
+            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index]!.metaTextColor = value;
+            await this.plugin.saveSettings();
+            this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
+            this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
+          });
+      });
+
+    // ── 高级设置（折叠）────────────────────────────────────────────
+    const advancedToggle = controls.createDiv();
+    advancedToggle.style.marginTop = '12px';
+
+    const advancedHeader = advancedToggle.createEl('details', { cls: 'pm-advanced-toggle' });
+    const summary = advancedHeader.createEl('summary', { text: '高级设置' });
+    summary.style.cursor = 'pointer';
+    summary.style.fontSize = '13px';
+    summary.style.color = 'var(--text-muted)';
+    summary.style.padding = '8px 0';
+    summary.style.borderTop = '1px solid var(--background-modifier-border)';
+
+    const advancedContent = advancedHeader.createDiv();
+    advancedContent.style.marginTop = '12px';
+    advancedContent.style.display = 'grid';
+    advancedContent.style.gridTemplateColumns = 'repeat(3, 1fr)';
+    advancedContent.style.gap = '8px';
+
     // 圆角
-    new Setting(controls)
+    new Setting(advancedContent)
       .setName('圆角')
       .addSlider(slider => {
         slider
@@ -562,7 +606,7 @@ export class PaperSettingTab extends PluginSettingTab {
           .setValue(field.roundness)
           .setDynamicTooltip()
           .onChange(async value => {
-            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index].roundness = value;
+            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index]!.roundness = value;
             await this.plugin.saveSettings();
             this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
             this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
@@ -570,7 +614,7 @@ export class PaperSettingTab extends PluginSettingTab {
       });
 
     // 粗糙度
-    new Setting(controls)
+    new Setting(advancedContent)
       .setName('粗糙度')
       .addSlider(slider => {
         slider
@@ -578,7 +622,7 @@ export class PaperSettingTab extends PluginSettingTab {
           .setValue(field.roughness)
           .setDynamicTooltip()
           .onChange(async value => {
-            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index].roughness = value;
+            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index]!.roughness = value;
             await this.plugin.saveSettings();
             this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
             this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
@@ -586,7 +630,7 @@ export class PaperSettingTab extends PluginSettingTab {
       });
 
     // 透明度
-    new Setting(controls)
+    new Setting(advancedContent)
       .setName('透明度')
       .addSlider(slider => {
         slider
@@ -594,20 +638,15 @@ export class PaperSettingTab extends PluginSettingTab {
           .setValue(field.opacity)
           .setDynamicTooltip()
           .onChange(async value => {
-            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index].opacity = value;
+            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index]!.opacity = value;
             await this.plugin.saveSettings();
             this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
             this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
           });
       });
 
-    // ═══════════════════════════════════════════════════════════════
-    // 二、字体样式
-    // ═══════════════════════════════════════════════════════════════
-    this.addProminentSubHeader(controls, '字体样式');
-
     // 标题字体
-    new Setting(controls)
+    new Setting(advancedContent)
       .setName('标题字体')
       .addDropdown(dropdown => {
         const fontOptions = [
@@ -619,7 +658,7 @@ export class PaperSettingTab extends PluginSettingTab {
         fontOptions.forEach(opt => dropdown.addOption(opt.value.toString(), opt.label));
         dropdown.setValue(field.titleFontFamily.toString())
           .onChange(async value => {
-            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index].titleFontFamily = parseInt(value);
+            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index]!.titleFontFamily = parseInt(value);
             await this.plugin.saveSettings();
             this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
             this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
@@ -627,26 +666,12 @@ export class PaperSettingTab extends PluginSettingTab {
       });
 
     // 标题大小
-    new Setting(controls)
+    new Setting(advancedContent)
       .setName('标题大小')
       .addSlider(slider => {
         slider.setLimits(8, 24, 1).setValue(field.titleFontSize).setDynamicTooltip()
           .onChange(async value => {
-            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index].titleFontSize = value;
-            await this.plugin.saveSettings();
-            this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
-            this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
-          });
-      });
-
-    // 标题颜色
-    new Setting(controls)
-      .setName('标题颜色')
-      .addColorPicker(colorPicker => {
-        colorPicker
-          .setValue(field.titleTextColor || field.textColor)
-          .onChange(async value => {
-            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index].titleTextColor = value;
+            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index]!.titleFontSize = value;
             await this.plugin.saveSettings();
             this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
             this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
@@ -654,7 +679,7 @@ export class PaperSettingTab extends PluginSettingTab {
       });
 
     // 正文字体
-    new Setting(controls)
+    new Setting(advancedContent)
       .setName('正文字体')
       .addDropdown(dropdown => {
         const fontOptions = [
@@ -666,7 +691,7 @@ export class PaperSettingTab extends PluginSettingTab {
         fontOptions.forEach(opt => dropdown.addOption(opt.value.toString(), opt.label));
         dropdown.setValue(field.metaFontFamily.toString())
           .onChange(async value => {
-            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index].metaFontFamily = parseInt(value);
+            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index]!.metaFontFamily = parseInt(value);
             await this.plugin.saveSettings();
             this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
             this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
@@ -674,44 +699,25 @@ export class PaperSettingTab extends PluginSettingTab {
       });
 
     // 正文大小
-    new Setting(controls)
+    new Setting(advancedContent)
       .setName('正文大小')
       .addSlider(slider => {
         slider.setLimits(8, 20, 1).setValue(field.metaFontSize).setDynamicTooltip()
           .onChange(async value => {
-            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index].metaFontSize = value;
+            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index]!.metaFontSize = value;
             await this.plugin.saveSettings();
             this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
             this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
           });
       });
-
-    // 正文颜色
-    new Setting(controls)
-      .setName('正文颜色')
-      .addColorPicker(colorPicker => {
-        colorPicker
-          .setValue(field.metaTextColor || field.textColor)
-          .onChange(async value => {
-            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index].metaTextColor = value;
-            await this.plugin.saveSettings();
-            this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
-            this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
-          });
-      });
-
-    // ═══════════════════════════════════════════════════════════════
-    // 三、卡片尺寸
-    // ═══════════════════════════════════════════════════════════════
-    this.addProminentSubHeader(controls, '卡片尺寸');
 
     // 卡片宽度
-    new Setting(controls)
+    new Setting(advancedContent)
       .setName('卡片宽度')
       .addSlider(slider => {
         slider.setLimits(150, 800, 10).setValue(field.cardWidth || 280).setDynamicTooltip()
           .onChange(async value => {
-            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index].cardWidth = value;
+            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index]!.cardWidth = value;
             await this.plugin.saveSettings();
             this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
             this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
@@ -719,12 +725,12 @@ export class PaperSettingTab extends PluginSettingTab {
       });
 
     // 卡片高度
-    new Setting(controls)
+    new Setting(advancedContent)
       .setName('卡片高度')
       .addSlider(slider => {
         slider.setLimits(100, 600, 10).setValue(field.cardHeight || 180).setDynamicTooltip()
           .onChange(async value => {
-            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index].cardHeight = value;
+            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index]!.cardHeight = value;
             await this.plugin.saveSettings();
             this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
             this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
@@ -732,17 +738,42 @@ export class PaperSettingTab extends PluginSettingTab {
       });
 
     // 标题对齐
-    new Setting(controls)
+    new Setting(advancedContent)
       .setName('标题对齐')
       .addDropdown(dropdown => {
         dropdown.addOption('left', '居左');
         dropdown.addOption('center', '居中');
         dropdown.setValue(field.titleAlignment || 'left')
           .onChange(async value => {
-            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index].titleAlignment = value as 'left' | 'center';
+            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index]!.titleAlignment = value as 'left' | 'center';
             await this.plugin.saveSettings();
             this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
             this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
+          });
+      });
+
+    // ── 恢复默认按钮 ───────────────────────────────────────────────
+    const resetContainer = controls.createDiv();
+    resetContainer.style.marginTop = '12px';
+    resetContainer.style.paddingTop = '12px';
+    resetContainer.style.borderTop = '1px solid var(--background-modifier-border)';
+
+    new Setting(resetContainer)
+      .setName('重置样式')
+      .setDesc('恢复此领域为默认样式')
+      .addButton(btn => {
+        btn
+          .setButtonText('恢复默认')
+          .setWarning()
+          .onClick(async () => {
+            // 找到默认领域中同名的设置
+            const defaultField = DEFAULT_FIELDS.find(f => f.name === field.name);
+            if (defaultField && this.plugin.settings.fields[index]) {
+              Object.assign(this.plugin.settings.fields[index]!, defaultField);
+              await this.plugin.saveSettings();
+              this.display(); // 刷新页面
+              new Notice('已恢复默认样式');
+            }
           });
       });
 
