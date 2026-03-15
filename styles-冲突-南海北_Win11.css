@@ -1,0 +1,260 @@
+/*
+
+This CSS file will be included with your plugin, and
+available in the app when your plugin is enabled.
+
+If your plugin does not need CSS, delete this file.
+
+*/
+
+/* ── Excalidraw 视图内浮动工具栏 ───────────────────────────── */
+.paper-plugin-toolbar {
+	position: absolute;
+	top: 12px;
+	right: 14px;
+	z-index: 200;
+	display: flex;
+	gap: 8px;
+	pointer-events: auto;
+}
+
+.paper-plugin-action-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 6px 14px;
+	border-radius: 6px;
+	font-size: 13px;
+	font-weight: 500;
+	cursor: pointer;
+	border: 1px solid var(--interactive-accent);
+	background: var(--background-primary);
+	color: var(--text-normal);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+	transition: background 0.15s, box-shadow 0.15s;
+}
+
+.paper-plugin-action-btn:hover {
+	background: var(--background-secondary);
+	box-shadow: 0 3px 12px rgba(0, 0, 0, 0.22);
+}
+
+.paper-plugin-action-btn.mod-cta {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border-color: transparent;
+}
+
+.paper-plugin-action-btn.mod-cta:hover {
+	background: var(--interactive-accent-hover);
+}
+
+/* ── 论文搜索弹窗 ────────────────────────────────────────── */
+.paper-search-modal .modal-content {
+	min-width: 620px;
+	max-width: 780px;
+	padding: 24px;
+}
+
+.paper-search-modal h2 {
+	margin: 0 0 16px;
+	font-size: 18px;
+}
+
+/* 搜索输入行 */
+.paper-search-row {
+	display: flex;
+	gap: 8px;
+	margin-bottom: 10px;
+}
+
+.paper-search-input {
+	flex: 1;
+	padding: 6px 10px;
+	border-radius: 5px;
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-size: 14px;
+}
+
+.paper-search-input:focus {
+	outline: none;
+	border-color: var(--interactive-accent);
+}
+
+.paper-search-btn {
+	white-space: nowrap;
+}
+
+.paper-search-hint {
+	font-size: 12px;
+	color: var(--text-muted);
+	margin: 0 0 10px;
+}
+
+.paper-error {
+	color: var(--text-error);
+}
+
+/* 搜索结果列表 */
+.paper-results-container {
+	max-height: 340px;
+	overflow-y: auto;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+}
+
+.paper-result-item {
+	padding: 10px 14px;
+	cursor: pointer;
+	border-bottom: 1px solid var(--background-modifier-border);
+	transition: background 0.12s;
+}
+
+.paper-result-item:last-child {
+	border-bottom: none;
+}
+
+.paper-result-item:hover {
+	background: var(--background-secondary);
+}
+
+.paper-result-title {
+	font-size: 13.5px;
+	font-weight: 500;
+	color: var(--text-normal);
+	line-height: 1.4;
+	margin-bottom: 3px;
+}
+
+.paper-result-meta {
+	font-size: 11.5px;
+	color: var(--text-muted);
+}
+
+/* ── 论文详情页 ─────────────────────────────────────────── */
+.paper-detail-header {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 14px;
+}
+
+.paper-detail-header h2 {
+	margin: 0;
+	font-size: 18px;
+}
+
+.paper-back-btn {
+	padding: 4px 10px;
+	border-radius: 5px;
+	font-size: 13px;
+	cursor: pointer;
+	white-space: nowrap;
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	color: var(--text-normal);
+}
+
+.paper-back-btn:hover {
+	background: var(--background-modifier-hover);
+}
+
+.paper-detail-info {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	padding: 12px 14px;
+	margin-bottom: 16px;
+	max-height: 240px;
+	overflow-y: auto;
+}
+
+.paper-detail-row {
+	display: flex;
+	gap: 8px;
+	margin-bottom: 6px;
+	font-size: 13px;
+	line-height: 1.5;
+}
+
+.paper-detail-label {
+	font-weight: 600;
+	color: var(--text-muted);
+	white-space: nowrap;
+	min-width: 90px;
+}
+
+.paper-detail-value {
+	color: var(--text-normal);
+	flex: 1;
+	word-break: break-word;
+}
+
+.paper-abstract {
+	color: var(--text-muted);
+	font-style: italic;
+}
+
+/* ── 类别选择 ────────────────────────────────────────────── */
+.paper-category-section {
+	margin-bottom: 18px;
+}
+
+.paper-category-title {
+	font-size: 13px;
+	font-weight: 600;
+	margin-bottom: 8px;
+	color: var(--text-normal);
+}
+
+.paper-category-row {
+	display: flex;
+	gap: 10px;
+}
+
+.paper-category-btn {
+	padding: 6px 18px;
+	border-radius: 20px;
+	font-size: 13px;
+	cursor: pointer;
+	border: 2px solid var(--cat-border, var(--background-modifier-border));
+	background: var(--background-primary);
+	color: var(--text-normal);
+	transition: background 0.15s, color 0.15s;
+}
+
+.paper-category-btn:hover {
+	background: var(--cat-bg, var(--background-secondary));
+}
+
+.paper-category-btn.is-active {
+	background: var(--cat-bg, var(--background-secondary));
+	font-weight: 600;
+	color: var(--text-normal);
+}
+
+/* ── 底部操作按钮行 ─────────────────────────────────────── */
+.paper-action-row {
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
+}
+
+.paper-cancel-btn {
+	padding: 6px 16px;
+	border-radius: 5px;
+	font-size: 13px;
+	cursor: pointer;
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	color: var(--text-normal);
+}
+
+.paper-cancel-btn:hover {
+	background: var(--background-modifier-hover);
+}
+
+.paper-add-btn {
+	padding: 6px 18px;
+}

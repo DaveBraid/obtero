@@ -36,6 +36,12 @@ export const DEFAULT_FIELDS: FieldStyle[] = [
     titleAlignment: 'left',
     titleTextColor: undefined,
     metaTextColor: undefined,
+    // 论文管理界面样式 - 浅色模式
+    pmBackgroundColor: 'rgba(100, 181, 246, 0.25)',
+    pmBorderColor: '#42a5f5',
+    // 论文管理界面样式 - 深色模式
+    pmBackgroundColorDark: 'rgba(66, 165, 245, 0.35)',
+    pmBorderColorDark: '#2196f3',
   },
   {
     name: '机器学习',
@@ -56,6 +62,12 @@ export const DEFAULT_FIELDS: FieldStyle[] = [
     titleAlignment: 'left',
     titleTextColor: undefined,
     metaTextColor: undefined,
+    // 论文管理界面样式 - 浅色模式
+    pmBackgroundColor: 'rgba(186, 104, 200, 0.25)',
+    pmBorderColor: '#ab47bc',
+    // 论文管理界面样式 - 深色模式
+    pmBackgroundColorDark: 'rgba(171, 71, 188, 0.35)',
+    pmBorderColorDark: '#9c27b0',
   },
   {
     name: '自然语言处理',
@@ -76,6 +88,12 @@ export const DEFAULT_FIELDS: FieldStyle[] = [
     titleAlignment: 'left',
     titleTextColor: undefined,
     metaTextColor: undefined,
+    // 论文管理界面样式 - 浅色模式
+    pmBackgroundColor: 'rgba(129, 199, 132, 0.25)',
+    pmBorderColor: '#66bb6a',
+    // 论文管理界面样式 - 深色模式
+    pmBackgroundColorDark: 'rgba(102, 187, 106, 0.35)',
+    pmBorderColorDark: '#4caf50',
   },
   {
     name: '其他',
@@ -96,6 +114,12 @@ export const DEFAULT_FIELDS: FieldStyle[] = [
     titleAlignment: 'left',
     titleTextColor: undefined,
     metaTextColor: undefined,
+    // 论文管理界面样式 - 浅色模式
+    pmBackgroundColor: 'rgba(255, 183, 77, 0.25)',
+    pmBorderColor: '#ffa726',
+    // 论文管理界面样式 - 深色模式
+    pmBackgroundColorDark: 'rgba(255, 167, 38, 0.35)',
+    pmBorderColorDark: '#ff9800',
   },
 ];
 
@@ -667,8 +691,67 @@ export class PaperSettingTab extends PluginSettingTab {
             this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
             this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
           });
-          
+
       });
+
+          // 论文管理界面样式设置
+    this.addProminentSubHeader(controls, '论文管理界面样式（浅色模式）');
+
+    // 论文管理界面背景色
+    new Setting(controls)
+      .setName('列表背景色（浅色）')
+      .setDesc('论文列表中的背景色（浅色模式）')
+      .addColorPicker(colorPicker => {
+        colorPicker
+          .setValue(field.pmBackgroundColor || 'rgba(150, 150, 150, 0.2)')
+          .onChange(async value => {
+            this.plugin.settings.fields[index].pmBackgroundColor = value;
+            await this.plugin.saveSettings();
+          });
+      });
+
+    // 论文管理界面边框色
+    new Setting(controls)
+      .setName('列表边框色（浅色）')
+      .setDesc('论文列表中的边框色（浅色模式）')
+      .addColorPicker(colorPicker => {
+        colorPicker
+          .setValue(field.pmBorderColor || field.borderColor)
+          .onChange(async value => {
+            this.plugin.settings.fields[index].pmBorderColor = value;
+            await this.plugin.saveSettings();
+          });
+      });
+
+    // 深色模式样式
+    this.addProminentSubHeader(controls, '论文管理界面样式（深色模式）');
+
+    // 论文管理界面背景色（深色）
+    new Setting(controls)
+      .setName('列表背景色（深色）')
+      .setDesc('论文列表中的背景色（深色模式）')
+      .addColorPicker(colorPicker => {
+        colorPicker
+          .setValue(field.pmBackgroundColorDark || 'rgba(100, 100, 100, 0.4)')
+          .onChange(async value => {
+            this.plugin.settings.fields[index].pmBackgroundColorDark = value;
+            await this.plugin.saveSettings();
+          });
+      });
+
+    // 论文管理界面边框色（深色）
+    new Setting(controls)
+      .setName('列表边框色（深色）')
+      .setDesc('论文列表中的边框色（深色模式）')
+      .addColorPicker(colorPicker => {
+        colorPicker
+          .setValue(field.pmBorderColorDark || field.pmBorderColor || field.borderColor)
+          .onChange(async value => {
+            this.plugin.settings.fields[index].pmBorderColorDark = value;
+            await this.plugin.saveSettings();
+          });
+      });
+
           // 字体设置
     this.addProminentSubHeader(controls, '字体');
 

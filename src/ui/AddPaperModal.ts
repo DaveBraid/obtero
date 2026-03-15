@@ -13,6 +13,26 @@ export class AddPaperModal extends Modal {
   private category: string;
   private field: string;
   private onComplete?: () => void;
+  // 手动输入表单数据
+  private manualInput: {
+    title: string;
+    authors: string;
+    journal: string;
+    date: string;
+    institutions: string;
+    arxivId: string;
+    doi: string;
+    abstract: string;
+  } = {
+    title: '',
+    authors: '',
+    journal: '',
+    date: '',
+    institutions: '',
+    arxivId: '',
+    doi: '',
+    abstract: '',
+  };
 
   constructor(app: App, plugin: MyPlugin, onComplete?: () => void) {
     super(app);
@@ -39,10 +59,58 @@ export class AddPaperModal extends Modal {
     contentEl.empty();
     contentEl.createEl('h2', { text: '添加论文' });
 
-    let query = '';
-    const resultsContainer = contentEl.createDiv();
+    // 添加搜索/手动输入切换按钮
+    const modeContainer = contentEl.createDiv({ cls: 'pm-mode-switcher' });
+    modeContainer.style.display = 'flex';
+    modeContainer.style.justifyContent = 'center';
+    modeContainer.style.gap = '8px';
+    modeContainer.style.marginBottom = '16px';
 
-    new Setting(contentEl)
+    const searchBtn = modeContainer.createEl('button', {
+      text: '🔍 搜索',
+      cls: 'pm-mode-btn pm-mode-btn-active'
+    });
+    const manualBtn = modeContainer.createEl('button', {
+      text: '✏️ 手动输入',
+      cls: 'pm-mode-btn'
+    });
+
+    // 设置样式
+    const style = document.createElement('style');
+    style.textContent = `
+      .pm-mode-switcher {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+      .pm-mode-btn {
+        padding: 8px 16px;
+        border: 1px solid var(--background-modifier-border);
+        border-radius: 6px;
+        background: var(--background-secondary);
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.2s ease;
+      }
+      .pm-mode-btn:hover {
+        background: var(--background-modifier-hover);
+      }
+      .pm-mode-btn-active {
+        background: var(--interactive-accent);
+        color: var(--text-on-accent);
+        border-color: var(--interactive-accent);
+      }
+    `;
+    contentEl.appendChild(style);
+
+    // 搜索模式内容容器
+    const searchContainer = contentEl.createDiv({ cls: 'pm-search-mode' });
+
+    let query = '';
+    const resultsContainer = searchContainer.createDiv();
+
+    new Setting(searchContainer)
       .setName('搜索关键词')
       .setDesc('输入论文标题或关键词，支持 arXiv 和 IEEE')
       .addText(text => {
@@ -60,7 +128,120 @@ export class AddPaperModal extends Modal {
           .onClick(async () => await this.doSearch(query, resultsContainer))
       );
 
-    contentEl.appendChild(resultsContainer);
+    searchContainer.appendChild(resultsContainer);
+
+    // 手动输入模式内容容器（初始隐藏）
+    const manualContainer = contentEl.createDiv({ cls: 'pm-manual-mode' });
+    manualContainer.style.display = 'none';
+
+    new Setting(manualContainer)
+      .setName('论文标题')
+      .setDesc('必填')
+      .addText(text => {
+        text.setPlaceholder('输入论文标题...');
+        text.inputEl.addEventListener('change', (e) => {
+          this.manualInput.title = (e.target as HTMLInputElement).value.trim();
+        });
+      });
+
+    new Setting(manualContainer)
+      .setName('作者')
+      .setDesc('多个作者用分号分隔，如：张三; 李四; 王五')
+      .addText(text => {
+        text.setPlaceholder('作者1; 作者2; 作者3');
+        text.inputEl.addEventListener('change', (e) => {
+          this.manualInput.authors = (e.target as HTMLInputElement).value.trim();
+        });
+      });
+
+    new Setting(manualContainer)
+      .setName('期刊/会议')
+      .setDesc('如：Nature, CVPR 2024')
+      .addText(text => {
+        text.setPlaceholder('输入期刊或会议名称...');
+        text.inputEl.addEventListener('change', (e) => {
+          this.manualInput.journal = (e.target as HTMLInputElement).value.trim();
+        });
+      });
+
+    new Setting(manualContainer)
+      .setName('发表时间')
+      .setDesc('如：2024-03-15 或 March 2024')
+      .addText(text => {
+        text.setPlaceholder('输入发表时间...');
+        text.inputEl.addEventListener('change', (e) => {
+          this.manualInput.date = (e.target as HTMLInputElement).value.trim();
+        });
+      });
+
+    new Setting(manualContainer)
+      .setName('作者单位')
+      .setDesc('多个单位用分号分隔（可选）')
+      .addText(text => {
+        text.setPlaceholder('单位1; 单位2');
+        text.inputEl.addEventListener('change', (e) => {
+          this.manualInput.institutions = (e.target as HTMLInputElement).value.trim();
+        });
+      });
+
+    new Setting(manualContainer)
+      .setName('arXiv ID')
+      .setDesc('可选，如：2403.12345')
+      .addText(text => {
+        text.setPlaceholder('输入 arXiv ID...');
+        text.inputEl.addEventListener('change', (e) => {
+          this.manualInput.arxivId = (e.target as HTMLInputElement).value.trim();
+        });
+      });
+
+    new Setting(manualContainer)
+      .setName('DOI')
+      .setDesc('可选，如：10.1234/example.12345')
+      .addText(text => {
+        text.setPlaceholder('输入 DOI...');
+        text.inputEl.addEventListener('change', (e) => {
+          this.manualInput.doi = (e.target as HTMLInputElement).value.trim();
+        });
+      });
+
+    new Setting(manualContainer)
+      .setName('摘要')
+      .setDesc('可选')
+      .addTextArea(text => {
+        text.setPlaceholder('输入论文摘要...');
+        text.inputEl.rows = 4;
+        text.inputEl.addEventListener('change', (e) => {
+          this.manualInput.abstract = (e.target as HTMLInputElement).value.trim();
+        });
+      });
+
+    // 确认按钮容器
+    const manualButtonContainer = manualContainer.createDiv({ cls: 'modal-button-container' });
+    manualButtonContainer.style.display = 'flex';
+    manualButtonContainer.style.justifyContent = 'flex-end';
+    manualButtonContainer.style.gap = '10px';
+    manualButtonContainer.style.marginTop = '20px';
+
+    const confirmBtn = manualButtonContainer.createEl('button', {
+      text: '下一步：选择类别',
+      cls: 'mod-cta'
+    });
+    confirmBtn.addEventListener('click', () => this.showManualInputDetailPage());
+
+    // 切换按钮事件
+    searchBtn.addEventListener('click', () => {
+      searchBtn.classList.add('pm-mode-btn-active');
+      manualBtn.classList.remove('pm-mode-btn-active');
+      searchContainer.style.display = 'block';
+      manualContainer.style.display = 'none';
+    });
+
+    manualBtn.addEventListener('click', () => {
+      manualBtn.classList.add('pm-mode-btn-active');
+      searchBtn.classList.remove('pm-mode-btn-active');
+      manualContainer.style.display = 'block';
+      searchContainer.style.display = 'none';
+    });
   }
 
   private async doSearch(query: string, container: HTMLElement): Promise<void> {
@@ -300,6 +481,32 @@ export class AddPaperModal extends Modal {
     } catch (e) {
       new Notice('添加论文失败：' + (e as Error).message);
     }
+  }
+
+  // ── 手动输入详情页面 ───────────────────────────────────────────────────────
+
+  private showManualInputDetailPage(): void {
+    // 验证必填字段
+    if (!this.manualInput.title) {
+      new Notice('请输入论文标题');
+      return;
+    }
+
+    // 从手动输入创建 PaperInfo
+    this.selected = {
+      title: this.manualInput.title,
+      authors: this.manualInput.authors ? this.manualInput.authors.split(/[;；]/).map(a => a.trim()).filter(a => a) : [],
+      journal: this.manualInput.journal,
+      date: this.manualInput.date,
+      institutions: this.manualInput.institutions ? this.manualInput.institutions.split(/[;；]/).map(i => i.trim()).filter(i => i) : [],
+      arxivId: this.manualInput.arxivId || undefined,
+      doi: this.manualInput.doi || undefined,
+      abstract: this.manualInput.abstract || undefined,
+      source: undefined, // 手动添加没有特定来源
+    };
+
+    // 显示详情页面
+    this.showDetailPage();
   }
 
   onClose(): void {
