@@ -544,30 +544,6 @@ export class PaperSettingTab extends PluginSettingTab {
           });
       });
 
-// @ts-ignore
-    // 纹理色
-// @ts-ignore
-    new Setting(controls)
-// @ts-ignore
-// @ts-ignore
-// @ts-ignore
-      .setName('纹理色')
-// @ts-ignore
-      .addColorPicker(colorPicker => {
-// @ts-ignore
-        colorPicker
-// @ts-ignore
-          .setValue(field.patternColor || '#cccccc')
-          .onChange(async value => {
-// @ts-ignore
-            this.plugin.settings.fields[index].patternColor = value;
-            await this.plugin.saveSettings();
-// @ts-ignore
-            this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
-            this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
-          });
-      });
-
     // 纹理类型
     new Setting(controls)
 // @ts-ignore

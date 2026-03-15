@@ -389,7 +389,7 @@ export class PaperView extends ItemView {
         fieldStats.push({
           name: field.name,
           count: count,
-          color: field.borderColor
+          color: field.backgroundColor
         });
         totalPapers += count;
       }
