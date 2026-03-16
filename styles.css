@@ -535,3 +535,157 @@ details summary:hover {
     width: 100%;
   }
 }
+
+/* ── Field Papers Modal ─────────────────────────────────────────────────── */
+.pm-field-papers-container {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.pm-field-papers-header {
+  padding: 16px 20px;
+  border-radius: 8px 8px 0 0;
+  margin: -16px -16px 16px -16px;
+}
+
+.pm-field-papers-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pm-field-papers-title-row h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.pm-field-papers-count {
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+.pm-field-papers-aliases {
+  margin-top: 10px;
+  font-size: 13px;
+  opacity: 0.85;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.pm-alias-tag {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.pm-alias-count {
+  opacity: 0.7;
+  font-size: 11px;
+}
+
+.pm-field-papers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pm-field-paper-item {
+  padding: 12px 14px;
+  background: var(--background-primary);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background var(--pm-transition-fast), transform var(--pm-transition-fast);
+  border-left: 3px solid var(--background-modifier-border);
+}
+
+.pm-field-paper-item:hover {
+  background: var(--background-secondary);
+  transform: translateX(2px);
+}
+
+.pm-field-paper-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pm-field-paper-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pm-field-paper-title {
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--text-normal);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pm-subfield-tag {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
+.pm-field-paper-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 简洁标题样式 */
+.pm-field-papers-header-simple {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.pm-field-papers-header-simple h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.pm-field-papers-aliases {
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: var(--text-muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.pm-aliases-label {
+  color: var(--text-muted);
+}
+
+.pm-alias-tag {
+  background: var(--background-modifier-border);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--text-normal);
+}
+
+.pm-alias-count {
+  color: var(--text-faint);
+  font-size: 11px;
+}

@@ -44,6 +44,122 @@ class DeleteConfirmModal extends Modal {
   }
 }
 
+// 领域论文列表 Modal
+class FieldPapersModal extends Modal {
+  private fieldName: string;
+  private papers: TFile[];
+  private plugin: MyPlugin;
+
+  constructor(app: App, plugin: MyPlugin, fieldName: string, papers: TFile[]) {
+    super(app);
+    this.plugin = plugin;
+    this.fieldName = fieldName;
+    this.papers = papers;
+  }
+
+  onOpen() {
+    const { contentEl } = this;
+    const fieldStyle = this.plugin.settings.fields.find(f => f.name === this.fieldName);
+    
+    // 主容器
+    const container = contentEl.createDiv({ cls: 'pm-field-papers-container' });
+    
+    // 简洁标题
+    const header = container.createDiv({ cls: 'pm-field-papers-header-simple' });
+    header.createEl('h2', { text: this.fieldName });
+    header.createSpan({ cls: 'pm-field-papers-count', text: `${this.papers.length} 篇` });
+    
+    // 显示关联子标签
+    if (fieldStyle?.aliases && fieldStyle.aliases.length > 0) {
+      const aliasesRow = container.createDiv({ cls: 'pm-field-papers-aliases' });
+      aliasesRow.createSpan({ text: '子领域：', cls: 'pm-aliases-label' });
+      for (const alias of fieldStyle.aliases) {
+        const aliasTag = aliasesRow.createSpan({ cls: 'pm-alias-tag' });
+        aliasTag.textContent = alias;
+        const aliasCount = this.papers.filter(f => {
+          const fm = this.app.metadataCache.getFileCache(f)?.frontmatter;
+          return (fm?.field || this.plugin.settings.defaultField) === alias;
+        }).length;
+        if (aliasCount > 0) {
+          aliasTag.createSpan({ cls: 'pm-alias-count', text: ` ${aliasCount}` });
+        }
+      }
+    }
+    
+    // 论文列表
+    const list = container.createDiv({ cls: 'pm-field-papers-list' });
+    
+    for (const file of this.papers) {
+      this.renderPaperItem(list, file);
+    }
+  }
+  
+  private renderPaperItem(list: HTMLElement, file: TFile): void {
+    const item = list.createDiv({ cls: 'pm-field-paper-item' });
+    const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
+    
+    // 获取该论文的领域
+    const paperField = fm?.field || this.plugin.settings.defaultField;
+    const fieldStyle = getFieldStyle(this.plugin.settings, paperField);
+    
+    // 左边框颜色
+    if (fieldStyle) {
+      item.style.borderLeft = `3px solid ${fieldStyle.backgroundColor}`;
+    }
+    
+    // 内容容器
+    const content = item.createDiv({ cls: 'pm-field-paper-content' });
+    
+    // 标题行
+    const titleRow = content.createDiv({ cls: 'pm-field-paper-title-row' });
+    const displayName = file.basename.replace(/^【.+?】-/, '');
+    titleRow.createSpan({ cls: 'pm-field-paper-title', text: displayName });
+    
+    // 子领域标签（如果与主领域不同，显示具体子领域）
+    const isAlias = fieldStyle?.name === this.fieldName && paperField !== this.fieldName;
+    if (isAlias || paperField !== this.fieldName) {
+      const subFieldTag = titleRow.createSpan({ cls: 'pm-subfield-tag' });
+      subFieldTag.textContent = paperField;
+      if (fieldStyle) {
+        subFieldTag.style.backgroundColor = fieldStyle.backgroundColor;
+        subFieldTag.style.color = this.getContrastColor(fieldStyle.backgroundColor);
+      }
+    }
+    
+    // 元信息行
+    const metaRow = content.createDiv({ cls: 'pm-field-paper-meta' });
+    const metaParts: string[] = [];
+    if (fm?.date) metaParts.push(fm.date);
+    if (fm?.journal) metaParts.push(fm.journal);
+    if (fm?.authors) {
+      const authors = Array.isArray(fm.authors) ? fm.authors[0] : fm.authors.split(',')[0];
+      metaParts.push(authors);
+    }
+    metaRow.textContent = metaParts.join(' · ');
+    
+    // 点击打开
+    item.addEventListener('click', async () => {
+      const leaf = this.app.workspace.getLeaf(false);
+      await leaf.openFile(file);
+      this.close();
+    });
+  }
+  
+  private getContrastColor(hexColor: string): string {
+    const hex = hexColor.replace('#', '');
+    const r = parseInt(hex.substr(0, 2), 16);
+    const g = parseInt(hex.substr(2, 2), 16);
+    const b = parseInt(hex.substr(4, 2), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness > 128 ? '#000000' : '#ffffff';
+  }
+
+  onClose() {
+    const { contentEl } = this;
+    contentEl.empty();
+  }
+}
+
 export class PaperView extends ItemView {
   plugin: MyPlugin;
 
@@ -403,7 +519,7 @@ export class PaperView extends ItemView {
 
     const section = container.createDiv({ cls: 'pm-dashboard-section' });
 
-    // 统计各领域论文数量
+    // 统计各领域论文数量（支持别名匹配）
     const fieldStats: Array<{ name: string; count: number; color: string }> = [];
     let totalPapers = 0;
 
@@ -413,7 +529,8 @@ export class PaperView extends ItemView {
         for (const file of files) {
           const fm = this.app.metadataCache.getFileCache(file as TFile)?.frontmatter;
           const paperField = fm?.field || this.plugin.settings.defaultField;
-          if (paperField === field.name) {
+          // 检查是否匹配主领域名称或别名
+          if (paperField === field.name || (field.aliases && field.aliases.includes(paperField))) {
             count++;
           }
         }
@@ -505,6 +622,7 @@ export class PaperView extends ItemView {
     for (const field of fieldStats) {
       const percentage = Math.round((field.count / totalPapers) * 100);
       const item = legend.createDiv({ cls: 'pm-legend-item' });
+      item.style.cursor = 'pointer';
 
       // 颜色圆点
       const dotSvg = document.createElementNS(svgNs, 'svg');
@@ -522,6 +640,11 @@ export class PaperView extends ItemView {
       item.appendChild(dotSvg);
       item.createSpan({ cls: 'pm-legend-name', text: field.name });
       item.createSpan({ cls: 'pm-legend-value', text: `${field.count} (${percentage}%)` });
+      
+      // 点击显示该领域论文列表
+      item.addEventListener('click', () => {
+        this.showFieldPapers(field.name);
+      });
     }
   }
 
@@ -666,13 +789,24 @@ export class PaperView extends ItemView {
     desc.style.marginBottom = '16px';
     desc.style.color = 'var(--text-muted)';
 
-    const fieldOptions = this.plugin.settings.fields.map(f => f.name);
+    // 构建领域选项：主领域 + 别名
+    const fieldOptions: { value: string; label: string; isAlias: boolean }[] = [];
+    for (const field of this.plugin.settings.fields) {
+      // 添加主领域
+      fieldOptions.push({ value: field.name, label: field.name, isAlias: false });
+      // 添加别名
+      if (field.aliases) {
+        for (const alias of field.aliases) {
+          fieldOptions.push({ value: alias, label: `${alias} (${field.name})`, isAlias: true });
+        }
+      }
+    }
 
     new Setting(modal.contentEl)
       .setName('研究领域')
       .setDesc('选择该论文所属领域')
       .addDropdown(drop => {
-        fieldOptions.forEach(f => drop.addOption(f, f));
+        fieldOptions.forEach(opt => drop.addOption(opt.value, opt.label));
         drop.setValue(currentField).onChange(v => {
           // 临时存储选择的领域
         });
@@ -723,5 +857,30 @@ export class PaperView extends ItemView {
     });
 
     modal.open();
+  }
+
+  // 显示领域论文列表
+  private showFieldPapers(fieldName: string): void {
+    const byCategory = getPapersByCategory(this.app, this.plugin.settings);
+    const fieldStyle = this.plugin.settings.fields.find(f => f.name === fieldName);
+    
+    // 收集该领域的所有论文（包括别名匹配）
+    const papers: TFile[] = [];
+    for (const [category, files] of Object.entries(byCategory)) {
+      for (const file of files) {
+        const fm = this.app.metadataCache.getFileCache(file as TFile)?.frontmatter;
+        const paperField = fm?.field || this.plugin.settings.defaultField;
+        // 匹配主领域名称或别名
+        if (paperField === fieldName || (fieldStyle?.aliases && fieldStyle.aliases.includes(paperField))) {
+          papers.push(file as TFile);
+        }
+      }
+    }
+    
+    // 按修改时间排序
+    papers.sort((a, b) => b.stat.mtime - a.stat.mtime);
+    
+    // 打开 Modal
+    new FieldPapersModal(this.app, this.plugin, fieldName, papers).open();
   }
 }

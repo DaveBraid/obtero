@@ -159,7 +159,6 @@ export async function insertPaperToExcalidraw(
   paper: PaperInfo,
   file: TFile
 ): Promise<void> {
-  console.log(`[MyPaper] insertPaperToExcalidraw called, paper.field="${paper.field}"`);
   const excalidrawFile = await ensureExcalidrawFile(app, settings);
   
   // 尝试使用 Excalidraw Automate API（如果 Excalidraw 插件可用且视图已打开）
@@ -221,15 +220,6 @@ async function insertPaperViaEA(
   if (!fieldStyle) {
     throw new Error('未找到领域样式配置');
   }
-  console.log(`[MyPaper] 创建卡片使用领域: ${fieldName}, 背景色: ${fieldStyle.backgroundColor}`);
-  console.log(`[MyPaper] Paper数据:`, {
-    title: paper.title,
-    authors: paper.authors,
-    journal: paper.journal,
-    date: paper.date,
-    institutions: paper.institutions,
-    arxivId: paper.arxivId
-  });
 
   // Card dimensions
   const cardW = fieldStyle.cardWidth || 280;
@@ -241,29 +231,24 @@ async function insertPaperViaEA(
   
   // 期刊和日期
   const journalDate = [paper.journal, paper.date].filter(Boolean).join(' · ');
-  console.log(`[MyPaper] insertPaperViaEA - journalDate:`, journalDate);
   if (journalDate) metaLines.push(journalDate);
   
   // 显示所有作者
-  console.log(`[MyPaper] insertPaperViaEA - authors:`, paper.authors);
   if (paper.authors && paper.authors.length > 0) {
     metaLines.push(paper.authors.join(', '));
   }
   
   // 显示机构
-  console.log(`[MyPaper] insertPaperViaEA - institutions:`, paper.institutions);
   if (paper.institutions && paper.institutions.length > 0) {
     metaLines.push(paper.institutions.join('; '));
   }
   
   // arXiv ID
-  console.log(`[MyPaper] insertPaperViaEA - arxivId:`, paper.arxivId);
   if (paper.arxivId) {
     metaLines.push(`arXiv: ${paper.arxivId}`);
   }
   
   const metaText = metaLines.join('\n');
-  console.log(`[MyPaper] insertPaperViaEA - metaText 最终内容 (${metaLines.length} 行):`, metaText);
   
   // 计算自适应卡片高度
   const titleLineCount = Math.ceil(paper.title.length / 35); // 估算标题行数
@@ -343,10 +328,8 @@ async function insertPaperViaEA(
 
   // 创建元信息文本（如果有内容）
   if (metaText) {
-    console.log(`[MyPaper] 创建元信息文本，内容长度: ${metaText.length}`);
     const metaId = ea.addText(x + padding, y + titleHeight + padding * 2, metaText);
     const metaEl = ea.getElement(metaId);
-    console.log(`[MyPaper] 元信息元素获取:`, metaEl ? '成功' : '失败');
     metaEl.width = cardW - padding * 2;
     metaEl.height = metaHeight;
     metaEl.containerId = rectId;
@@ -354,30 +337,20 @@ async function insertPaperViaEA(
 
     // 添加到组（每个卡片单独一组）
     ea.addToGroup([rectId, titleId, metaId]);
-    console.log(`[MyPaper] 元信息已添加到组`);
   } else {
     // 只有标题，不创建元信息文本
-    console.log(`[MyPaper] 无元信息内容，跳过创建`);
     ea.addToGroup([rectId, titleId]);
   }
 
   // 提交到视图
-  const result = await ea.addElementsToView(true, true, false);
-  console.log(`[MyPaper] addElementsToView 结果: ${result}`);
+  await ea.addElementsToView(true, true, false);
   
-  // 立即触发视图更新
+  // 触发视图更新
   if (view) {
     const excalidrawView = view as any;
-    // 方案1：直接调用 updateScene
     if (excalidrawView.excalidrawAPI?.updateScene) {
-      console.log(`[MyPaper] 立即调用 excalidrawAPI.updateScene`);
       const elements = excalidrawView.excalidrawAPI.getSceneElements();
       excalidrawView.excalidrawAPI.updateScene({ elements: [...elements] });
-    }
-    
-    // 方案2：触发重绘
-    if (excalidrawView.excalidrawAPI?.refresh) {
-      excalidrawView.excalidrawAPI.refresh();
     }
   }
 }
@@ -473,7 +446,6 @@ async function insertPaperViaFile(
     metaLines.push(`arXiv: ${paper.arxivId}`);
   }
   const metaText = metaLines.join('\n');
-  console.log(`[MyPaper] insertPaperViaFile 元文本内容 (${metaLines.length} 行):`, metaText);
   
   // 计算自适应卡片高度
   const titleLineCount = Math.ceil(paper.title.length / 35); // 估算标题行数
