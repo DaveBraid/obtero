@@ -163,9 +163,9 @@ export async function insertPaperToExcalidraw(
   const excalidrawFile = await ensureExcalidrawFile(app, settings);
   
   // 尝试使用 Excalidraw Automate API（如果 Excalidraw 插件可用且视图已打开）
-  const ea = getExcalidrawAutomateAPI(app, excalidrawFile);
+  const { ea, view } = getExcalidrawAutomateAPI(app, excalidrawFile);
   if (ea) {
-    await insertPaperViaEA(ea, settings, paper, file);
+    await insertPaperViaEA(ea, settings, paper, file, view);
     return;
   }
   
@@ -174,14 +174,14 @@ export async function insertPaperToExcalidraw(
 }
 
 /**
- * 获取 Excalidraw Automate API
+ * 获取 Excalidraw Automate API 和视图对象
  */
 function getExcalidrawAutomateAPI(
   app: App,
   excalidrawFile: TFile
-): ExcalidrawAutomateAPI | null {
+): { ea: ExcalidrawAutomateAPI | null; view: unknown } {
   if (!window.ExcalidrawAutomate?.getAPI) {
-    return null;
+    return { ea: null, view: null };
   }
   
   // 检查 Excalidraw 视图是否已打开
@@ -191,11 +191,11 @@ function getExcalidrawAutomateAPI(
     if (view && (view as { file?: TFile }).file?.path === excalidrawFile.path) {
       const ea = window.ExcalidrawAutomate.getAPI(view);
       ea.clear();
-      return ea;
+      return { ea, view };
     }
   }
   
-  return null;
+  return { ea: null, view: null };
 }
 
 /**
@@ -205,7 +205,8 @@ async function insertPaperViaEA(
   ea: ExcalidrawAutomateAPI,
   settings: MyPluginSettings,
   paper: PaperInfo,
-  file: TFile
+  file: TFile,
+  view: unknown
 ): Promise<void> {
   // Count existing cards - 使用 getViewElements 获取视图中的现有元素
   const viewElements = ea.getViewElements();
@@ -342,8 +343,10 @@ async function insertPaperViaEA(
 
   // 创建元信息文本（如果有内容）
   if (metaText) {
+    console.log(`[MyPaper] 创建元信息文本，内容长度: ${metaText.length}`);
     const metaId = ea.addText(x + padding, y + titleHeight + padding * 2, metaText);
     const metaEl = ea.getElement(metaId);
+    console.log(`[MyPaper] 元信息元素获取:`, metaEl ? '成功' : '失败');
     metaEl.width = cardW - padding * 2;
     metaEl.height = metaHeight;
     metaEl.containerId = rectId;
@@ -351,13 +354,32 @@ async function insertPaperViaEA(
 
     // 添加到组（每个卡片单独一组）
     ea.addToGroup([rectId, titleId, metaId]);
+    console.log(`[MyPaper] 元信息已添加到组`);
   } else {
     // 只有标题，不创建元信息文本
+    console.log(`[MyPaper] 无元信息内容，跳过创建`);
     ea.addToGroup([rectId, titleId]);
   }
 
   // 提交到视图
-  await ea.addElementsToView(false, true, false);
+  const result = await ea.addElementsToView(true, true, false);
+  console.log(`[MyPaper] addElementsToView 结果: ${result}`);
+  
+  // 立即触发视图更新
+  if (view) {
+    const excalidrawView = view as any;
+    // 方案1：直接调用 updateScene
+    if (excalidrawView.excalidrawAPI?.updateScene) {
+      console.log(`[MyPaper] 立即调用 excalidrawAPI.updateScene`);
+      const elements = excalidrawView.excalidrawAPI.getSceneElements();
+      excalidrawView.excalidrawAPI.updateScene({ elements: [...elements] });
+    }
+    
+    // 方案2：触发重绘
+    if (excalidrawView.excalidrawAPI?.refresh) {
+      excalidrawView.excalidrawAPI.refresh();
+    }
+  }
 }
 
 /**
