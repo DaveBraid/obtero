@@ -1,8 +1,43 @@
 import { App, TFile } from 'obsidian';
 import * as LZString from 'lz-string';
 import { MyPluginSettings } from '../settings';
-import { PaperInfo } from '../types';
+import { PaperInfo, FieldStyle } from '../types';
 import { ensureExcalidrawFile } from './fileUtils';
+
+// 根据领域名称（含关联领域）查找样式
+export function getFieldStyle(settings: MyPluginSettings, fieldName: string | undefined): FieldStyle | undefined {
+  // 如果没有指定领域名称，返回 undefined
+  if (!fieldName) return undefined;
+  
+  // 首先尝试精确匹配主领域名称
+  let style = settings.fields.find(f => f.name === fieldName);
+  if (style) return style;
+  
+  // 然后尝试匹配关联领域
+  for (const field of settings.fields) {
+    if (field.aliases && field.aliases.includes(fieldName)) {
+      return field;
+    }
+  }
+  
+  return undefined;
+}
+
+// 获取有效的领域名称（用于回退逻辑）
+export function getEffectiveFieldName(settings: MyPluginSettings, paperField?: string): string {
+  // 优先使用 paper.field
+  if (paperField && getFieldStyle(settings, paperField)) {
+    return paperField;
+  }
+  
+  // 其次尝试 defaultField
+  if (settings.defaultField && getFieldStyle(settings, settings.defaultField)) {
+    return settings.defaultField;
+  }
+  
+  // 最后回退到第一个字段
+  return settings.fields[0]?.name || '';
+}
 
 // Excalidraw Automate API 类型定义
 interface ExcalidrawAutomateAPI {
@@ -178,15 +213,9 @@ async function insertPaperViaEA(
     e => !e.isDeleted && e.type === 'rectangle' && e.link && e.link.startsWith('[[')
   ).length;
 
-  // 获取领域样式 - 优先使用 paper.field，其次 defaultField（需验证有效性），最后回退到第一个字段
-  let fieldName = paper.field;
-  if (!fieldName || !settings.fields.some(f => f.name === fieldName)) {
-    fieldName = settings.defaultField;
-    if (!settings.fields.some(f => f.name === fieldName)) {
-      fieldName = settings.fields[0]?.name;
-    }
-  }
-  const fieldStyle = settings.fields.find(f => f.name === fieldName);
+  // 获取领域样式 - 使用辅助函数（支持关联领域）
+  const fieldName = getEffectiveFieldName(settings, paper.field);
+  const fieldStyle = getFieldStyle(settings, fieldName);
 
   if (!fieldStyle) {
     throw new Error('未找到领域样式配置');
@@ -346,15 +375,9 @@ async function insertPaperViaFile(
   );
   const cardCount = paperRectangles.length;
 
-  // 获取领域样式 - 优先使用 paper.field，其次 defaultField（需验证有效性），最后回退到第一个字段
-  let fieldName = paper.field;
-  if (!fieldName || !settings.fields.some(f => f.name === fieldName)) {
-    fieldName = settings.defaultField;
-    if (!settings.fields.some(f => f.name === fieldName)) {
-      fieldName = settings.fields[0]?.name;
-    }
-  }
-  const fieldStyle = settings.fields.find(f => f.name === fieldName);
+  // 获取领域样式 - 使用辅助函数（支持关联领域）
+  const fieldName = getEffectiveFieldName(settings, paper.field);
+  const fieldStyle = getFieldStyle(settings, fieldName);
 
   if (!fieldStyle) {
     throw new Error('未找到领域样式配置');

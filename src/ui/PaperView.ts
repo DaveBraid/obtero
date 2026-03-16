@@ -2,6 +2,7 @@ import { App, ItemView, Menu, Modal, Notice, Setting, TFile, WorkspaceLeaf } fro
 import MyPlugin from '../main';
 import { getPapersByCategory, movePaper, resolveExcalidrawPath } from '../utils/fileUtils';
 import { insertPaperToExcalidraw } from '../utils/excalidrawUtils';
+import { getFieldStyle } from '../utils/excalidrawUtils';
 import { PaperInfo } from '../types';
 import { AddPaperModal } from './AddPaperModal';
 import { SetupModal } from './SetupModal';
@@ -176,8 +177,9 @@ export class PaperView extends ItemView {
     // 获取论文的领域信息
     const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
     const fieldName = fm?.field || this.plugin.settings.defaultField;
-    const fieldStyle = this.plugin.settings.fields.find(f => f.name === fieldName);
-    const defaultField = this.plugin.settings.fields.find(f => f.name === this.plugin.settings.defaultField);
+    // 使用辅助函数查找领域样式（支持关联领域）
+    const fieldStyle = getFieldStyle(this.plugin.settings, fieldName);
+    const defaultField = getFieldStyle(this.plugin.settings, this.plugin.settings.defaultField);
     const activeField = fieldStyle || defaultField;
 
     // 设置边框色（使用卡片的背景色）

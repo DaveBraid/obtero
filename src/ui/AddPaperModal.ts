@@ -373,13 +373,23 @@ export class AddPaperModal extends Modal {
         });
       });
 
-    // 研究领域
-    const fieldOptions = this.plugin.settings.fields.map(f => f.name);
+    // 研究领域（包含主领域和关联领域）
+    const fieldOptions: { value: string; label: string }[] = [];
+    this.plugin.settings.fields.forEach(f => {
+      // 添加主领域
+      fieldOptions.push({ value: f.name, label: f.name });
+      // 添加关联领域（显示为 "别名 (主领域)"）
+      if (f.aliases) {
+        f.aliases.forEach(alias => {
+          fieldOptions.push({ value: alias, label: `${alias} (${f.name})` });
+        });
+      }
+    });
     new Setting(contentEl)
       .setName('研究领域')
       .setDesc('选择该论文所属领域（决定 Excalidraw 卡片样式）')
       .addDropdown(drop => {
-        fieldOptions.forEach(f => drop.addOption(f, f));
+        fieldOptions.forEach(opt => drop.addOption(opt.value, opt.label));
         drop.setValue(this.field).onChange(v => {
           this.field = v;
         });
@@ -442,13 +452,21 @@ export class AddPaperModal extends Modal {
       const input = modal.contentEl.querySelector('input') as HTMLInputElement;
       const newFieldName = input.value.trim() || '新领域';
 
-      if (this.plugin.settings.fields.some(f => f.name === newFieldName)) {
+      // 检查领域名称是否已存在（包括别名）
+      const allNames: string[] = [];
+      this.plugin.settings.fields.forEach(f => {
+        allNames.push(f.name);
+        if (f.aliases) allNames.push(...f.aliases);
+      });
+      
+      if (allNames.includes(newFieldName)) {
         new Notice('领域名称已存在，请使用其他名称');
         return;
       }
 
       const newField = {
         name: newFieldName,
+        aliases: [] as string[],
         backgroundColor: '#ffffff',
         backgroundPattern: 'solid' as const,
         patternColor: '#cccccc',

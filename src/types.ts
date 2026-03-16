@@ -20,6 +20,7 @@ export interface PaperInfo {
 // 领域卡片样式
 export interface FieldStyle {
   name: string;              // 领域名称
+  aliases?: string[];        // 关联领域名称（共享相同样式）
   backgroundColor: string;   // 背景颜色
   backgroundPattern?: 'solid' | 'dots' | 'grid' | 'lines' | 'cross-hatch'; // 填充纹理
   patternColor?: string;     // 纹理颜色

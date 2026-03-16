@@ -1,4 +1,4 @@
-import { App, Notice, PluginSettingTab, Setting } from 'obsidian';
+import { App, Modal, Notice, PluginSettingTab, Setting } from 'obsidian';
 import MyPlugin from './main';
 import { FieldStyle } from './types';
 
@@ -382,45 +382,40 @@ export class PaperSettingTab extends PluginSettingTab {
     addBtn.style.marginLeft = 'auto'; // 推到右边
 
     addBtn.addEventListener('click', () => {
-      const newField: FieldStyle = {
-        name: '新领域',
-        backgroundColor: '#ffffff',
-        backgroundPattern: 'solid',
-        patternColor: '#cccccc',
-        textColor: '#000000',
-        borderColor: '#000000',
-        roughness: 0,
-        opacity: 100,
-        roundness: 2,
-        titleFontSize: 14,
-        titleFontFamily: 4,
-        metaFontSize: 11,
-        metaFontFamily: 4,
-        cardWidth: 280,
-        cardHeight: 180,
-        titleAlignment: 'left',
-        titleTextColor: undefined,
-        metaTextColor: undefined,
-      };
-      this.plugin.settings.fields.push(newField);
-      this.plugin.saveSettings();
-      // 切换到新添加的领域
-      this.activeFieldIndex = this.plugin.settings.fields.length - 1;
-      this.display(); // 刷新设置页面
+      // 显示添加新领域的模态框
+      new AddFieldModal(
+        this.app,
+        this.plugin.settings.fields,
+        (newField: FieldStyle) => {
+          this.plugin.settings.fields.push(newField);
+          this.plugin.saveSettings();
+          // 切换到新添加的领域
+          this.activeFieldIndex = this.plugin.settings.fields.length - 1;
+          this.display(); // 刷新设置页面
+        }
+      ).open();
     });
 
     // 为每个领域创建内容
     this.plugin.settings.fields.forEach((field, index) => {
       const fieldItem = fieldItems[index]!;
 
-      // 领域名称和删除按钮
+      // 领域名称区域（包含名称输入和关联领域管理）
       const header = fieldItem.createDiv({ cls: 'pm-field-header' });
       header.style.display = 'flex';
+      header.style.flexWrap = 'wrap';
       header.style.justifyContent = 'space-between';
       header.style.alignItems = 'center';
+      header.style.gap = '12px';
       header.style.marginBottom = '12px';
 
-      const nameInput = header.createEl('input', {
+      // 左侧：名称输入
+      const nameContainer = header.createDiv();
+      nameContainer.style.display = 'flex';
+      nameContainer.style.alignItems = 'center';
+      nameContainer.style.gap = '8px';
+
+      const nameInput = nameContainer.createEl('input', {
         type: 'text',
         value: field.name,
       });
@@ -429,10 +424,8 @@ export class PaperSettingTab extends PluginSettingTab {
       nameInput.style.border = 'none';
       nameInput.style.background = 'transparent';
       nameInput.style.color = 'var(--text-normal)';
-      nameInput.style.width = '300px';
+      nameInput.style.width = '200px';
       nameInput.addEventListener('change', async () => {
-// @ts-ignore
-// @ts-ignore
         if (this.plugin.settings.fields[index]!) this.plugin.settings.fields[index].name = nameInput.value;
         await this.plugin.saveSettings();
         // 刷新标签按钮文字
@@ -443,7 +436,23 @@ export class PaperSettingTab extends PluginSettingTab {
         }
       });
 
-      const deleteBtn = header.createEl('button', {
+      // 右侧按钮组
+      const btnGroup = header.createDiv();
+      btnGroup.style.display = 'flex';
+      btnGroup.style.gap = '8px';
+
+      // 添加关联领域按钮
+      const addAliasBtn = btnGroup.createEl('button', {
+        text: '+ 关联',
+      });
+      addAliasBtn.style.padding = '4px 12px';
+      addAliasBtn.style.fontSize = '12px';
+      addAliasBtn.style.cursor = 'pointer';
+      addAliasBtn.addEventListener('click', () => {
+        this.showAddAliasModal(field, index, fieldItem);
+      });
+
+      const deleteBtn = btnGroup.createEl('button', {
         text: '删除',
         cls: 'mod-warning',
       });
@@ -462,9 +471,97 @@ export class PaperSettingTab extends PluginSettingTab {
         this.display();
       });
 
+      // 关联领域显示区域
+      if (field.aliases && field.aliases.length > 0) {
+        const aliasesContainer = fieldItem.createDiv({ cls: 'pm-aliases-container' });
+        aliasesContainer.style.marginBottom = '12px';
+        aliasesContainer.style.display = 'flex';
+        aliasesContainer.style.flexWrap = 'wrap';
+        aliasesContainer.style.gap = '6px';
+        aliasesContainer.style.alignItems = 'center';
+
+        const aliasesLabel = aliasesContainer.createEl('span', { text: '关联领域:' });
+        aliasesLabel.style.fontSize = '12px';
+        aliasesLabel.style.color = 'var(--text-muted)';
+        aliasesLabel.style.marginRight = '4px';
+
+        field.aliases.forEach((alias, aliasIndex) => {
+          const aliasTag = aliasesContainer.createDiv({ cls: 'pm-alias-tag' });
+          aliasTag.style.display = 'inline-flex';
+          aliasTag.style.alignItems = 'center';
+          aliasTag.style.gap = '4px';
+          aliasTag.style.padding = '2px 8px';
+          aliasTag.style.background = 'var(--interactive-accent)';
+          aliasTag.style.color = 'var(--text-on-accent)';
+          aliasTag.style.borderRadius = '4px';
+          aliasTag.style.fontSize = '12px';
+
+          aliasTag.createEl('span', { text: alias });
+
+          const removeBtn = aliasTag.createEl('span', { text: '×' });
+          removeBtn.style.cursor = 'pointer';
+          removeBtn.style.marginLeft = '4px';
+          removeBtn.style.fontWeight = 'bold';
+          removeBtn.addEventListener('click', async () => {
+            if (this.plugin.settings.fields[index]?.aliases) {
+              this.plugin.settings.fields[index].aliases!.splice(aliasIndex, 1);
+              await this.plugin.saveSettings();
+              this.display();
+            }
+          });
+        });
+      }
+
       // 样式设置
       this.addFieldStyleSetting(fieldItem!, field, index);
     });
+  }
+
+  // 显示添加关联领域的弹窗
+  showAddAliasModal(field: FieldStyle, fieldIndex: number, containerEl: HTMLElement): void {
+    const modal = new AliasInputModal(
+      this.app,
+      '添加关联领域',
+      '输入要与 "' + field.name + '" 共享样式的新领域名称',
+      (aliasName: string) => {
+        if (!aliasName || aliasName.trim() === '') {
+          new Notice('领域名称不能为空');
+          return;
+        }
+        // 检查是否已存在
+        const allNames = this.getAllFieldNames();
+        if (allNames.includes(aliasName.trim())) {
+          new Notice('该领域名称已存在');
+          return;
+        }
+        // 添加关联领域
+        const targetField = this.plugin.settings.fields[fieldIndex];
+        if (!targetField) {
+          new Notice('找不到目标领域');
+          return;
+        }
+        if (!targetField.aliases) {
+          targetField.aliases = [];
+        }
+        targetField.aliases.push(aliasName.trim());
+        this.plugin.saveSettings();
+        this.display();
+        new Notice('已添加关联领域: ' + aliasName);
+      }
+    );
+    modal.open();
+  }
+
+  // 获取所有领域名称（包括关联领域）
+  getAllFieldNames(): string[] {
+    const names: string[] = [];
+    this.plugin.settings.fields.forEach(field => {
+      names.push(field.name);
+      if (field.aliases) {
+        names.push(...field.aliases);
+      }
+    });
+    return names;
   }
 
 
@@ -895,5 +992,205 @@ export class PaperSettingTab extends PluginSettingTab {
     header.style.display = 'block';
     header.style.width = '100%';
     header.style.gridColumn = '1 / -1';
+  }
+}
+
+// 关联领域输入弹窗
+class AliasInputModal extends Modal {
+  private title: string;
+  private description: string;
+  private onSubmit: (value: string) => void;
+  private inputValue: string = '';
+
+  constructor(app: App, title: string, description: string, onSubmit: (value: string) => void) {
+    super(app);
+    this.title = title;
+    this.description = description;
+    this.onSubmit = onSubmit;
+  }
+
+  onOpen(): void {
+    const { contentEl } = this;
+    contentEl.createEl('h2', { text: this.title });
+
+    new Setting(contentEl)
+      .setName('关联领域名称')
+      .setDesc(this.description)
+      .addText(text => {
+        text.setPlaceholder('输入领域名称');
+        text.inputEl.style.width = '200px';
+        text.onChange(v => {
+          this.inputValue = v.trim();
+        });
+        setTimeout(() => text.inputEl.focus(), 100);
+        text.inputEl.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            this.submit();
+          }
+        });
+      });
+
+    new Setting(contentEl)
+      .addButton(btn => {
+        btn.setButtonText('取消');
+        btn.onClick(() => this.close());
+      })
+      .addButton(btn => {
+        btn.setButtonText('添加');
+        btn.setCta();
+        btn.onClick(() => this.submit());
+      });
+  }
+
+  private submit(): void {
+    this.onSubmit(this.inputValue);
+    this.close();
+  }
+
+  onClose(): void {
+    const { contentEl } = this;
+    contentEl.empty();
+  }
+}
+
+// 添加新领域模态框（支持复制已有样式）
+class AddFieldModal extends Modal {
+  private fields: FieldStyle[];
+  private onSubmit: (field: FieldStyle) => void;
+  private newFieldName: string = '';
+  private copyFromIndex: number = -1; // -1 表示不复制（使用默认样式）
+
+  constructor(app: App, fields: FieldStyle[], onSubmit: (field: FieldStyle) => void) {
+    super(app);
+    this.fields = fields;
+    this.onSubmit = onSubmit;
+  }
+
+  onOpen(): void {
+    const { contentEl } = this;
+    contentEl.createEl('h2', { text: '添加新领域' });
+
+    // 领域名称
+    new Setting(contentEl)
+      .setName('名称')
+      .setDesc('输入新领域的名称')
+      .addText(text => {
+        text.setPlaceholder('例如：深度学习');
+        text.inputEl.style.width = '200px';
+        text.onChange(v => {
+          this.newFieldName = v.trim();
+        });
+        setTimeout(() => text.inputEl.focus(), 100);
+      });
+
+    // 样式来源下拉
+    new Setting(contentEl)
+      .setName('样式来源')
+      .setDesc('选择默认样式或复制已有领域')
+      .addDropdown(dropdown => {
+        dropdown.addOption('-1', '默认样式');
+        this.fields.forEach((field, index) => {
+          dropdown.addOption(index.toString(), `复制: ${field.name}`);
+        });
+        dropdown.onChange(v => {
+          this.copyFromIndex = parseInt(v);
+        });
+      });
+
+    // 按钮
+    new Setting(contentEl)
+      .addButton(btn => {
+        btn.setButtonText('取消');
+        btn.onClick(() => this.close());
+      })
+      .addButton(btn => {
+        btn.setButtonText('创建');
+        btn.setCta();
+        btn.onClick(() => this.createField());
+      });
+
+    // 回车键支持
+    const input = contentEl.querySelector('input[type="text"]') as HTMLInputElement;
+    input?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        this.createField();
+      }
+    });
+  }
+
+  private createField(): void {
+    const fieldName = this.newFieldName || '新领域';
+
+    // 检查名称是否已存在
+    const allNames: string[] = [];
+    this.fields.forEach(f => {
+      allNames.push(f.name);
+      if (f.aliases) allNames.push(...f.aliases);
+    });
+
+    if (allNames.includes(fieldName)) {
+      new Notice('领域名称已存在，请使用其他名称');
+      return;
+    }
+
+    let newField: FieldStyle;
+
+    if (this.copyFromIndex >= 0 && this.fields[this.copyFromIndex]) {
+      // 复制已有领域样式
+      const sourceField = this.fields[this.copyFromIndex]!;
+      newField = {
+        name: fieldName,
+        aliases: [], // 不复制关联领域
+        backgroundColor: sourceField.backgroundColor,
+        backgroundPattern: sourceField.backgroundPattern,
+        patternColor: sourceField.patternColor,
+        textColor: sourceField.textColor,
+        titleTextColor: sourceField.titleTextColor,
+        metaTextColor: sourceField.metaTextColor,
+        borderColor: sourceField.borderColor,
+        roughness: sourceField.roughness,
+        opacity: sourceField.opacity,
+        roundness: sourceField.roundness,
+        titleFontSize: sourceField.titleFontSize,
+        titleFontFamily: sourceField.titleFontFamily,
+        metaFontSize: sourceField.metaFontSize,
+        metaFontFamily: sourceField.metaFontFamily,
+        cardWidth: sourceField.cardWidth,
+        cardHeight: sourceField.cardHeight,
+        titleAlignment: sourceField.titleAlignment,
+      };
+      new Notice(`已复制「${sourceField.name}」的样式创建新领域`);
+    } else {
+      // 使用默认样式
+      newField = {
+        name: fieldName,
+        aliases: [],
+        backgroundColor: '#ffffff',
+        backgroundPattern: 'solid',
+        patternColor: '#cccccc',
+        textColor: '#000000',
+        borderColor: '#000000',
+        roughness: 0,
+        opacity: 100,
+        roundness: 2,
+        titleFontSize: 14,
+        titleFontFamily: 4,
+        metaFontSize: 11,
+        metaFontFamily: 4,
+        cardWidth: 280,
+        cardHeight: 180,
+        titleAlignment: 'left',
+        titleTextColor: undefined,
+        metaTextColor: undefined,
+      };
+    }
+
+    this.onSubmit(newField);
+    this.close();
+  }
+
+  onClose(): void {
+    const { contentEl } = this;
+    contentEl.empty();
   }
 }
