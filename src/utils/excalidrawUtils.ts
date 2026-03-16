@@ -221,31 +221,65 @@ async function insertPaperViaEA(
     throw new Error('未找到领域样式配置');
   }
   console.log(`[MyPaper] 创建卡片使用领域: ${fieldName}, 背景色: ${fieldStyle.backgroundColor}`);
+  console.log(`[MyPaper] Paper数据:`, {
+    title: paper.title,
+    authors: paper.authors,
+    journal: paper.journal,
+    date: paper.date,
+    institutions: paper.institutions,
+    arxivId: paper.arxivId
+  });
 
   // Card dimensions
   const cardW = fieldStyle.cardWidth || 280;
   const cardH = fieldStyle.cardHeight || 180;
   const padding = 12;
 
+  // 构建元文本（完整显示所有信息）
+  const metaLines: string[] = [];
+  
+  // 期刊和日期
+  const journalDate = [paper.journal, paper.date].filter(Boolean).join(' · ');
+  console.log(`[MyPaper] insertPaperViaEA - journalDate:`, journalDate);
+  if (journalDate) metaLines.push(journalDate);
+  
+  // 显示所有作者
+  console.log(`[MyPaper] insertPaperViaEA - authors:`, paper.authors);
+  if (paper.authors && paper.authors.length > 0) {
+    metaLines.push(paper.authors.join(', '));
+  }
+  
+  // 显示机构
+  console.log(`[MyPaper] insertPaperViaEA - institutions:`, paper.institutions);
+  if (paper.institutions && paper.institutions.length > 0) {
+    metaLines.push(paper.institutions.join('; '));
+  }
+  
+  // arXiv ID
+  console.log(`[MyPaper] insertPaperViaEA - arxivId:`, paper.arxivId);
+  if (paper.arxivId) {
+    metaLines.push(`arXiv: ${paper.arxivId}`);
+  }
+  
+  const metaText = metaLines.join('\n');
+  console.log(`[MyPaper] insertPaperViaEA - metaText 最终内容 (${metaLines.length} 行):`, metaText);
+  
+  // 计算自适应卡片高度
+  const titleLineCount = Math.ceil(paper.title.length / 35); // 估算标题行数
+  const metaLineCount = metaLines.length;
+  const baseHeight = 80; // 基础高度
+  const titleHeight = Math.max(36, titleLineCount * 20); // 标题区域高度
+  const metaHeight = Math.max(50, metaLineCount * 18); // 元信息区域高度
+  const adaptiveCardH = Math.max(cardH, baseHeight + titleHeight + metaHeight);
+
   const cols = 3;
   const col = cardCount % cols;
   const row = Math.floor(cardCount / cols);
 
   const cardSpacingX = cardW + 30;
-  const cardSpacingY = cardH + 30;
+  const cardSpacingY = adaptiveCardH + 30;
   const x = col * cardSpacingX + 20;
   const y = row * cardSpacingY + 20;
-
-  // 构建元文本
-  const metaLines: string[] = [];
-  const journalDate = [paper.journal, paper.date].filter(Boolean).join(' · ');
-  if (journalDate) metaLines.push(truncate(journalDate, 50));
-  if (paper.institutions && paper.institutions.length > 0) {
-    metaLines.push(truncate(paper.institutions.slice(0, 2).join('; '), 60));
-  } else if (paper.authors.length > 0) {
-    metaLines.push(truncate(paper.authors.slice(0, 3).join(', '), 60));
-  }
-  const metaText = metaLines.join('\n');
 
   // 映射纹理类型
   const patternMap: Record<string, 'hachure' | 'cross-hatch' | 'solid'> = {
@@ -271,16 +305,16 @@ async function insertPaperViaEA(
     ea.style.roundness = null;
   }
 
-  // 创建矩形
-  const rectId = ea.addRect(x, y, cardW, cardH);
+  // 创建矩形（使用自适应高度）
+  const rectId = ea.addRect(x, y, cardW, adaptiveCardH);
   
   // 修改矩形的link属性
   const rect = ea.getElement(rectId);
   rect.link = `[[${file.basename}]]`;
   rect.boundElements = [];
 
-  // 设置文本样式
-  ea.style.strokeColor = fieldStyle.textColor;
+  // 设置标题文本样式（使用专门的标题颜色）
+  ea.style.strokeColor = fieldStyle.titleTextColor || fieldStyle.textColor;
   ea.style.backgroundColor = 'transparent';
   ea.style.fillStyle = 'solid';
   ea.style.strokeWidth = 1;
@@ -292,29 +326,35 @@ async function insertPaperViaEA(
   ea.style.textAlign = 'center';
   ea.style.verticalAlign = 'top';
 
-  // 创建标题文本
-  const titleId = ea.addText(x + padding, y + padding, truncate(paper.title, 80));
+  // 创建标题文本（完整显示）
+  const titleId = ea.addText(x + padding, y + padding, paper.title);
   const titleEl = ea.getElement(titleId);
   titleEl.width = cardW - padding * 2;
-  titleEl.height = cardH / 2 - padding;
+  titleEl.height = titleHeight;
   titleEl.containerId = rectId;
   rect.boundElements.push({ id: titleId, type: 'text' });
 
-  // 设置元信息文本样式
+  // 设置元信息文本样式（使用专门的元信息颜色）
+  ea.style.strokeColor = fieldStyle.metaTextColor || fieldStyle.textColor;
   ea.style.fontSize = fieldStyle.metaFontSize || 11;
   ea.style.fontFamily = fieldStyle.metaFontFamily || 1;
   ea.style.textAlign = 'left';
 
-  // 创建元信息文本
-  const metaId = ea.addText(x + padding, y + cardH / 2 + padding / 2, metaText);
-  const metaEl = ea.getElement(metaId);
-  metaEl.width = cardW - padding * 2;
-  metaEl.height = cardH / 2 - padding * 2;
-  metaEl.containerId = rectId;
-  rect.boundElements.push({ id: metaId, type: 'text' });
+  // 创建元信息文本（如果有内容）
+  if (metaText) {
+    const metaId = ea.addText(x + padding, y + titleHeight + padding * 2, metaText);
+    const metaEl = ea.getElement(metaId);
+    metaEl.width = cardW - padding * 2;
+    metaEl.height = metaHeight;
+    metaEl.containerId = rectId;
+    rect.boundElements.push({ id: metaId, type: 'text' });
 
-  // 添加到组（每个卡片单独一组）
-  ea.addToGroup([rectId, titleId, metaId]);
+    // 添加到组（每个卡片单独一组）
+    ea.addToGroup([rectId, titleId, metaId]);
+  } else {
+    // 只有标题，不创建元信息文本
+    ea.addToGroup([rectId, titleId]);
+  }
 
   // 提交到视图
   await ea.addElementsToView(false, true, false);
@@ -393,7 +433,35 @@ async function insertPaperViaFile(
   const row = Math.floor(cardCount / cols);
 
   const cardSpacingX = cardW + 30;
-  const cardSpacingY = cardH + 30;
+
+  // 构建元文本（完整显示所有信息）
+  const metaLines: string[] = [];
+  const journalDate = [paper.journal, paper.date].filter(Boolean).join(' · ');
+  if (journalDate) metaLines.push(journalDate);
+  // 显示所有作者
+  if (paper.authors && paper.authors.length > 0) {
+    metaLines.push(paper.authors.join(', '));
+  }
+  // 显示所有机构
+  if (paper.institutions && paper.institutions.length > 0) {
+    metaLines.push(paper.institutions.join('; '));
+  }
+  // arXiv ID
+  if (paper.arxivId) {
+    metaLines.push(`arXiv: ${paper.arxivId}`);
+  }
+  const metaText = metaLines.join('\n');
+  console.log(`[MyPaper] insertPaperViaFile 元文本内容 (${metaLines.length} 行):`, metaText);
+  
+  // 计算自适应卡片高度
+  const titleLineCount = Math.ceil(paper.title.length / 35); // 估算标题行数
+  const metaLineCount = metaLines.length;
+  const baseHeight = 80; // 基础高度
+  const titleHeight = Math.max(36, titleLineCount * 20); // 标题区域高度
+  const metaHeight = Math.max(50, metaLineCount * 18); // 元信息区域高度
+  const adaptiveCardH = Math.max(cardH, baseHeight + titleHeight + metaHeight);
+
+  const cardSpacingY = adaptiveCardH + 30;
   const x = col * cardSpacingX + 20;
   const y = row * cardSpacingY + 20;
 
@@ -401,17 +469,6 @@ async function insertPaperViaFile(
   const cardId = genId();
   const titleTextId = genId();
   const metaTextId = genId();
-
-  // 构建元文本
-  const metaLines: string[] = [];
-  const journalDate = [paper.journal, paper.date].filter(Boolean).join(' · ');
-  if (journalDate) metaLines.push(truncate(journalDate, 50));
-  if (paper.institutions && paper.institutions.length > 0) {
-    metaLines.push(truncate(paper.institutions.slice(0, 2).join('; '), 60));
-  } else if (paper.authors.length > 0) {
-    metaLines.push(truncate(paper.authors.slice(0, 3).join(', '), 60));
-  }
-  const metaText = metaLines.join('\n');
 
   // 映射纹理类型
   const patternMap: Record<string, string> = {
@@ -423,14 +480,14 @@ async function insertPaperViaFile(
   };
   const fillStyle = patternMap[fieldStyle.backgroundPattern || 'solid'] || 'solid';
 
-  // 单个卡片矩形
+  // 单个卡片矩形（使用自适应高度，先只绑定标题）
   data.elements.push({
     id: cardId,
     type: 'rectangle',
     x,
     y,
     width: cardW,
-    height: cardH,
+    height: adaptiveCardH,
     angle: 0,
     strokeColor: fieldStyle.borderColor,
     backgroundColor: fieldStyle.backgroundColor,
@@ -443,24 +500,23 @@ async function insertPaperViaFile(
     roundness: fieldStyle.roundness > 0 ? { type: fieldStyle.roundness } : null,
     isDeleted: false,
     boundElements: [
-      { id: titleTextId, type: 'text' },
-      { id: metaTextId, type: 'text' }
+      { id: titleTextId, type: 'text' }
     ],
     link: `[[${file.basename}]]`,
     locked: false,
     seed: Math.floor(Math.random() * 10000),
   });
 
-  // 标题文本
+  // 标题文本（完整显示，使用专门的标题颜色）
   data.elements.push({
     id: titleTextId,
     type: 'text',
     x: x + padding,
     y: y + padding,
     width: cardW - padding * 2,
-    height: cardH / 2 - padding,
+    height: titleHeight,
     angle: 0,
-    strokeColor: fieldStyle.textColor,
+    strokeColor: fieldStyle.titleTextColor || fieldStyle.textColor,
     backgroundColor: 'transparent',
     fillStyle: 'solid',
     strokeWidth: 1,
@@ -472,7 +528,7 @@ async function insertPaperViaFile(
     isDeleted: false,
     boundElements: null,
     containerId: cardId,
-    text: truncate(paper.title, 80),
+    text: paper.title,
     fontSize: fieldStyle.titleFontSize || 14,
     fontFamily: fieldStyle.titleFontFamily || 1,
     textAlign: 'center',
@@ -482,36 +538,53 @@ async function insertPaperViaFile(
     locked: false,
   });
 
-  // 元信息文本
-  data.elements.push({
-    id: metaTextId,
-    type: 'text',
-    x: x + padding,
-    y: y + cardH / 2 + padding / 2,
-    width: cardW - padding * 2,
-    height: cardH / 2 - padding * 2,
-    angle: 0,
-    strokeColor: fieldStyle.textColor,
-    backgroundColor: 'transparent',
-    fillStyle: 'solid',
-    strokeWidth: 1,
-    strokeStyle: 'solid',
-    roughness: 0,
-    opacity: 100,
-    groupIds: [groupId],
-    roundness: null,
-    isDeleted: false,
-    boundElements: null,
-    containerId: cardId,
-    text: metaText,
-    fontSize: fieldStyle.metaFontSize || 11,
-    fontFamily: fieldStyle.metaFontFamily || 1,
-    textAlign: 'left',
-    verticalAlign: 'top',
-    baseline: 13,
-    link: null,
-    locked: false,
-  });
+  // 元信息文本（如果有内容，使用专门的元信息颜色）
+  if (metaText) {
+    data.elements.push({
+      id: metaTextId,
+      type: 'text',
+      x: x + padding,
+      y: y + titleHeight + padding * 2,
+      width: cardW - padding * 2,
+      height: metaHeight,
+      angle: 0,
+      strokeColor: fieldStyle.metaTextColor || fieldStyle.textColor,
+      backgroundColor: 'transparent',
+      fillStyle: 'solid',
+      strokeWidth: 1,
+      strokeStyle: 'solid',
+      roughness: 0,
+      opacity: 100,
+      groupIds: [groupId],
+      roundness: null,
+      isDeleted: false,
+      boundElements: null,
+      containerId: cardId,
+      text: metaText,
+      fontSize: fieldStyle.metaFontSize || 11,
+      fontFamily: fieldStyle.metaFontFamily || 1,
+      textAlign: 'left',
+      verticalAlign: 'top',
+      baseline: 13,
+      link: null,
+      locked: false,
+    });
+    
+    // 更新矩形的 boundElements
+    const cardEl = data.elements.find(e => e.id === cardId);
+    if (cardEl) {
+      cardEl.boundElements = [
+        { id: titleTextId, type: 'text' },
+        { id: metaTextId, type: 'text' }
+      ];
+    }
+  } else {
+    // 只有标题，更新矩形的 boundElements
+    const cardEl = data.elements.find(e => e.id === cardId);
+    if (cardEl) {
+      cardEl.boundElements = [{ id: titleTextId, type: 'text' }];
+    }
+  }
 
   // 写回文件
   const newJson = JSON.stringify(data);
@@ -540,8 +613,4 @@ function genId(): string {
     { length: 20 },
     () => chars[Math.floor(Math.random() * chars.length)]
   ).join('');
-}
-
-function truncate(s: string, max: number): string {
-  return s.length > max ? s.slice(0, max - 1) + '…' : s;
 }

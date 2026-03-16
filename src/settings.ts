@@ -9,6 +9,7 @@ export interface MyPluginSettings {
   labels: string[];
   ieeeApiKey: string;
   excalidrawFilePath: string;
+  addCardToExcalidraw: boolean; // 添加论文时是否在 Excalidraw 中添加卡片
   fields: FieldStyle[]; // 领域样式列表
   defaultField: string; // 默认领域
   translateAbstract?: boolean;  // 是否翻译摘要
@@ -106,6 +107,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
   labels: ['粗读', '精读'],
   ieeeApiKey: '',
   excalidrawFilePath: '',
+  addCardToExcalidraw: true, // 默认启用
   fields: DEFAULT_FIELDS,
   defaultField: '其他',
   translateAbstract: false,
@@ -195,6 +197,18 @@ export class PaperSettingTab extends PluginSettingTab {
           .setValue(this.plugin.settings.excalidrawFilePath)
           .onChange(async value => {
             this.plugin.settings.excalidrawFilePath = value.trim();
+            await this.plugin.saveSettings();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName('添加论文时创建卡片')
+      .setDesc('添加论文时自动在 Excalidraw 中创建卡片')
+      .addToggle(toggle =>
+        toggle
+          .setValue(this.plugin.settings.addCardToExcalidraw)
+          .onChange(async value => {
+            this.plugin.settings.addCardToExcalidraw = value;
             await this.plugin.saveSettings();
           })
       );

@@ -1,6 +1,6 @@
 import { App, Modal, Notice, Setting } from 'obsidian';
 import MyPlugin from '../main';
-import { PaperInfo } from '../types';
+import { PaperInfo, FieldStyle } from '../types';
 import { searchArxiv } from '../api/arxivSearch';
 import { searchIEEE } from '../api/ieeeSearch';
 import { createPaperFile } from '../utils/fileUtils';
@@ -424,81 +424,118 @@ export class AddPaperModal extends Modal {
 
   private showNewFieldModal(): void {
     const modal = new Modal(this.app);
-    modal.contentEl.createEl('h2', { text: '创建新领域' });
+    modal.contentEl.createEl('h2', { text: '添加新领域' });
+
+    let newFieldName = '';
+    let copyFromIndex = -1; // -1 表示使用默认样式
 
     new Setting(modal.contentEl)
-      .setName('领域名称')
-      .setDesc('输入新研究领域的名称')
+      .setName('名称')
+      .setDesc('输入新领域的名称')
       .addText(text => {
         text.setPlaceholder('例如：深度学习');
-        text.inputEl.focus();
+        text.inputEl.style.width = '200px';
+        text.onChange(v => {
+          newFieldName = v.trim();
+        });
+        setTimeout(() => text.inputEl.focus(), 100);
       });
 
-    const buttonContainer = modal.contentEl.createDiv({ cls: 'modal-button-container' });
-    buttonContainer.style.display = 'flex';
-    buttonContainer.style.justifyContent = 'flex-end';
-    buttonContainer.style.gap = '10px';
-    buttonContainer.style.marginTop = '20px';
-
-    const cancelBtn = buttonContainer.createEl('button', { text: '取消' });
-    cancelBtn.addEventListener('click', () => modal.close());
-
-    const confirmBtn = buttonContainer.createEl('button', {
-      text: '创建',
-      cls: 'mod-cta'
-    });
-
-    confirmBtn.addEventListener('click', () => {
-      const input = modal.contentEl.querySelector('input') as HTMLInputElement;
-      const newFieldName = input.value.trim() || '新领域';
-
-      // 检查领域名称是否已存在（包括别名）
-      const allNames: string[] = [];
-      this.plugin.settings.fields.forEach(f => {
-        allNames.push(f.name);
-        if (f.aliases) allNames.push(...f.aliases);
+    new Setting(modal.contentEl)
+      .setName('样式来源')
+      .setDesc('选择默认样式或复制已有领域')
+      .addDropdown(dropdown => {
+        dropdown.addOption('-1', '默认样式');
+        this.plugin.settings.fields.forEach((field, index) => {
+          dropdown.addOption(index.toString(), `复制: ${field.name}`);
+        });
+        dropdown.onChange(v => {
+          copyFromIndex = parseInt(v);
+        });
       });
-      
-      if (allNames.includes(newFieldName)) {
-        new Notice('领域名称已存在，请使用其他名称');
-        return;
-      }
 
-      const newField = {
-        name: newFieldName,
-        aliases: [] as string[],
-        backgroundColor: '#ffffff',
-        backgroundPattern: 'solid' as const,
-        patternColor: '#cccccc',
-        textColor: '#000000',
-        borderColor: '#000000',
-        roughness: 0,
-        opacity: 100,
-        roundness: 2,
-        titleFontSize: 14,
-        titleFontFamily: 1,
-        metaFontSize: 11,
-        metaFontFamily: 1,
-        cardWidth: 280,
-        cardHeight: 180,
-        titleAlignment: 'left' as 'left' | 'center',
-      };
+    new Setting(modal.contentEl)
+      .addButton(btn => {
+        btn.setButtonText('取消');
+        btn.onClick(() => modal.close());
+      })
+      .addButton(btn => {
+        btn.setButtonText('创建');
+        btn.setCta();
+        btn.onClick(() => {
+          const fieldName = newFieldName || '新领域';
 
-      this.plugin.settings.fields.push(newField);
-      this.plugin.saveSettings();
-      this.field = newFieldName;
-      this.showDetailPage();
-      new Notice(`已创建新领域「${newFieldName}」`);
-      modal.close();
-    });
+          // 检查名称是否已存在（包括别名）
+          const allNames: string[] = [];
+          this.plugin.settings.fields.forEach(f => {
+            allNames.push(f.name);
+            if (f.aliases) allNames.push(...f.aliases);
+          });
 
-    // 回车键支持
-    const input = modal.contentEl.querySelector('input') as HTMLInputElement;
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        confirmBtn.click();
-      }
-    });
+          if (allNames.includes(fieldName)) {
+            new Notice('领域名称已存在，请使用其他名称');
+            return;
+          }
+
+          let newField: FieldStyle;
+
+          if (copyFromIndex >= 0 && this.plugin.settings.fields[copyFromIndex]) {
+            // 复制已有领域样式
+            const sourceField = this.plugin.settings.fields[copyFromIndex]!;
+            newField = {
+              name: fieldName,
+              aliases: [],
+              backgroundColor: sourceField.backgroundColor,
+              backgroundPattern: sourceField.backgroundPattern,
+              patternColor: sourceField.patternColor,
+              textColor: sourceField.textColor,
+              titleTextColor: sourceField.titleTextColor,
+              metaTextColor: sourceField.metaTextColor,
+              borderColor: sourceField.borderColor,
+              roughness: sourceField.roughness,
+              opacity: sourceField.opacity,
+              roundness: sourceField.roundness,
+              titleFontSize: sourceField.titleFontSize,
+              titleFontFamily: sourceField.titleFontFamily,
+              metaFontSize: sourceField.metaFontSize,
+              metaFontFamily: sourceField.metaFontFamily,
+              cardWidth: sourceField.cardWidth,
+              cardHeight: sourceField.cardHeight,
+              titleAlignment: sourceField.titleAlignment,
+            };
+            new Notice(`已复制「${sourceField.name}」的样式创建新领域`);
+          } else {
+            // 使用默认样式
+            newField = {
+              name: fieldName,
+              aliases: [],
+              backgroundColor: '#ffffff',
+              backgroundPattern: 'solid',
+              patternColor: '#cccccc',
+              textColor: '#000000',
+              borderColor: '#000000',
+              roughness: 0,
+              opacity: 100,
+              roundness: 2,
+              titleFontSize: 14,
+              titleFontFamily: 1,
+              metaFontSize: 11,
+              metaFontFamily: 1,
+              cardWidth: 280,
+              cardHeight: 180,
+              titleAlignment: 'left',
+              titleTextColor: undefined,
+              metaTextColor: undefined,
+            };
+          }
+
+          this.plugin.settings.fields.push(newField);
+          this.plugin.saveSettings();
+          this.field = fieldName;
+          this.showDetailPage();
+          modal.close();
+        });
+      });
 
     modal.open();
   }
@@ -522,12 +559,15 @@ export class AddPaperModal extends Modal {
         new Notice('创建论文文件失败');
         return;
       }
-      await insertPaperToExcalidraw(
-        this.app,
-        this.plugin.settings,
-        this.selected,
-        file
-      );
+      // 只有设置启用时才添加卡片
+      if (this.plugin.settings.addCardToExcalidraw) {
+        await insertPaperToExcalidraw(
+          this.app,
+          this.plugin.settings,
+          this.selected,
+          file
+        );
+      }
       new Notice(`已将「${this.selected.title}」添加到「${this.category}」`);
       this.close();
       this.onComplete?.();

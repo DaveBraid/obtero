@@ -322,12 +322,15 @@ export class PaperView extends ItemView {
     };
 
     try {
-      await insertPaperToExcalidraw(
-        this.app,
-        this.plugin.settings,
-        paperInfo,
-        file
-      );
+      // 只有设置启用时才添加卡片
+      if (this.plugin.settings.addCardToExcalidraw) {
+        await insertPaperToExcalidraw(
+          this.app,
+          this.plugin.settings,
+          paperInfo,
+          file
+        );
+      }
       new Notice(`已添加到 Excalidraw`);
 
       // Open Excalidraw file (reuse existing tab if possible)
