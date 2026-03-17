@@ -156,7 +156,7 @@ function buildPaperContent(paper: PaperInfo, translatedAbstract: string = ''): s
       const parts = arxivId.split('/');
       arxivId = parts[parts.length - 1] || arxivId;
     }
-    lines.push(`**arXiv**：[arXiv](https://arxiv.org/abs/${arxivId}), [AlphaXiv](https://alphaxiv.org/abs/${arxivId}), [HTML](https://arxiv.org/html/${arxivId})  `);
+    lines.push(`**arXiv**：[arXiv](https://arxiv.org/abs/${arxivId}), [PDF](https://arxiv.org/pdf/${arxivId}), [AlphaXiv](https://alphaxiv.org/abs/${arxivId}), [HTML](https://arxiv.org/html/${arxivId})  `);
   }
 
   if (paper.abstract) {
