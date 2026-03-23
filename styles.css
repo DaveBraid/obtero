@@ -689,3 +689,93 @@ details summary:hover {
   color: var(--text-faint);
   font-size: 11px;
 }
+
+/* ── 英灵殿 ───────────────────────────────────────────────────────────── */
+.valhalla-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: var(--pm-radius-md);
+  padding: var(--pm-spacing-lg);
+  cursor: pointer;
+  transition: all var(--pm-transition-normal);
+  box-shadow: var(--pm-shadow-md);
+  text-align: center;
+  color: white;
+}
+
+.valhalla-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--pm-shadow-lg);
+}
+
+.valhalla-icon {
+  font-size: 48px;
+  display: block;
+  margin-bottom: var(--pm-spacing-sm);
+}
+
+.valhalla-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--pm-spacing-xs);
+  margin-bottom: var(--pm-spacing-sm);
+}
+
+.valhalla-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: white;
+}
+
+.valhalla-count {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.valhalla-desc {
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+/* 英灵殿列表 */
+.pm-valhalla-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pm-spacing-md);
+}
+
+.pm-valhalla-item {
+  background: var(--background-secondary);
+  border-radius: var(--pm-radius-sm);
+  padding: var(--pm-spacing-md);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--pm-spacing-md);
+}
+
+.pm-valhalla-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.pm-valhalla-remove-btn {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--pm-transition-fast);
+  flex-shrink: 0;
+}
+
+.pm-valhalla-remove-btn:hover {
+  background: var(--interactive-accent-hover);
+  transform: scale(1.1);
+}
