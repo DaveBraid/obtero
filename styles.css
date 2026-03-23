@@ -1232,3 +1232,40 @@ details summary:hover {
   border-color: var(--interactive-accent);
   font-weight: 600;
 }
+
+/* 优化删除按钮位置 */
+.pm-idea-delete-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #e03131;
+  color: white;
+  border: none;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+
+.pm-idea-item:hover .pm-idea-delete-btn {
+  opacity: 1;
+}
+
+.pm-idea-delete-btn:hover {
+  transform: scale(1.15);
+  background: #c92a2a;
+}
+
+/* 确保灵感项有合适的高度 */
+.pm-idea-item {
+  min-height: 60px;
+  padding: 8px;
+}
