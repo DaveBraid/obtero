@@ -62,4 +62,47 @@ export default class PaperPlugin extends Plugin {
   async saveSettings(): Promise<void> {
     await this.saveData(this.settings);
   }
+
+  private createIdeaId(): string {
+    return `idea-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+  }
+
+  async addIdea(title: string, content: string, options?: { field?: string; color?: string; isCustomTag?: boolean }): Promise<void> {
+    const normalizedTitle = title.trim();
+    const normalizedContent = content.trim();
+    if (!normalizedTitle || !normalizedContent) return;
+
+    this.settings.ideas = this.settings.ideas || [];
+    this.settings.ideas.unshift({
+      id: this.createIdeaId(),
+      title: normalizedTitle,
+      content: normalizedContent,
+      createdAt: new Date().toISOString(),
+      field: options?.field,
+      color: options?.color,
+      isCustomTag: options?.isCustomTag,
+    });
+    await this.saveSettings();
+  }
+
+  async removeIdea(ideaId: string): Promise<void> {
+    this.settings.ideas = (this.settings.ideas || []).filter(idea => idea.id !== ideaId);
+    await this.saveSettings();
+  }
+
+  async moveIdeaToValhalla(ideaId: string): Promise<void> {
+    const idea = (this.settings.ideas || []).find(i => i.id === ideaId);
+    if (idea) {
+      idea.inValhalla = true;
+      await this.saveSettings();
+    }
+  }
+
+  async removeIdeaFromValhalla(ideaId: string): Promise<void> {
+    const idea = (this.settings.ideas || []).find(i => i.id === ideaId);
+    if (idea) {
+      idea.inValhalla = false;
+      await this.saveSettings();
+    }
+  }
 }

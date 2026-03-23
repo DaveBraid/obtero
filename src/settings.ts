@@ -1,6 +1,6 @@
 import { App, Modal, Notice, PluginSettingTab, Setting } from 'obsidian';
 import MyPlugin from './main';
-import { FieldStyle } from './types';
+import { FieldStyle, IdeaItem } from './types';
 
 export interface MyPluginSettings {
   workspaceFolder: string;
@@ -15,6 +15,7 @@ export interface MyPluginSettings {
   translateAbstract?: boolean;  // 是否翻译摘要
   siliconflowApiKey?: string;   // 硅基流动API密钥
   translationModel?: string;    // 翻译模型名称
+  ideas?: IdeaItem[];
 }
 
 export const DEFAULT_FIELDS: FieldStyle[] = [
@@ -113,6 +114,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
   translateAbstract: false,
   siliconflowApiKey: '',
   translationModel: 'Qwen/Qwen2.5-7B-Instruct',
+  ideas: [],
 };
 
 export class PaperSettingTab extends PluginSettingTab {
