@@ -122,26 +122,11 @@
   white-space: nowrap;
 }
 
-.pm-item-menu-btn {
-  flex-shrink: 0;
-  padding: 4px 8px;
-  border-radius: var(--pm-radius-sm);
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--text-faint);
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.15s;
-}
 
 .pm-paper-item:hover .pm-item-menu-btn {
   opacity: 1;
 }
 
-.pm-item-menu-btn:hover {
-  background: var(--background-modifier-hover);
-  color: var(--text-normal);
-}
 
 /* ── Empty State ────────────────────────────────────────────────────────── */
 .pm-empty {
@@ -896,12 +881,6 @@ details summary:hover {
   margin-bottom: 16px;
 }
 
-.pm-calendar-header h4 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-normal);
-}
 
 .pm-calendar-yearmonth {
   display: flex;
@@ -1195,32 +1174,47 @@ details summary:hover {
   background-color: var(--background-modifier-hover);
 }
 
-.pm-item-menu-btn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 24px;
-  height: 24px;
-  border-radius: 4px;
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  font-size: 16px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  line-height: 1;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
 
 .pm-idea-item:hover .pm-item-menu-btn {
   opacity: 1;
 }
 
-.pm-item-menu-btn:hover {
+
+/* 可点击的年月显示 */
+.pm-calendar-yearmonth-clickable {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.pm-calendar-yearmonth-clickable:hover {
   background: var(--background-modifier-hover);
+}
+
+/* 灵感操作模态框 */
+.pm-idea-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 16px;
+  background: var(--background-secondary);
+  border-radius: 8px;
+}
+
+.pm-idea-info h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
   color: var(--text-normal);
+}
+
+.pm-idea-modal-body {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.6;
 }

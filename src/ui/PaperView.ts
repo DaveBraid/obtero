@@ -1091,7 +1091,6 @@ export class PaperView extends ItemView {
     const item = list.createDiv({ cls: 'pm-idea-item' });
 
     const content = item.createDiv({ cls: 'pm-idea-content' });
-    content.style.position = 'relative';
 
     // 标题行 - 标题和标签在同一行
     const titleRow = content.createDiv({ cls: 'pm-idea-title-row' });
@@ -1121,66 +1120,9 @@ export class PaperView extends ItemView {
     const date = new Date(idea.createdAt);
     content.createSpan({ cls: 'pm-idea-time', text: this.formatIdeaTime(date) });
 
-    // 删除按钮（右上角）
-    const deleteBtn = content.createEl('button', {
-      cls: 'pm-idea-delete-btn',
-      text: '−'
-    });
-    deleteBtn.title = '删除灵感';
-    deleteBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.showIdeaDeleteConfirmModal(idea, parentModal);
-    });
-
-    // 滑动条（绝对定位覆盖整个内容区域）
-    const swipeArea = content.createDiv({ cls: 'pm-swipe-area' });
-    const track = swipeArea.createDiv({ cls: 'pm-swipe-track' });
-    track.style.width = '150px';
-    const thumb = track.createDiv({ cls: 'pm-swipe-thumb' });
-    thumb.textContent = '→';
-
-    let isDragging = false;
-    let startX = 0;
-    let currentX = 0;
-    const maxSwipe = 110;
-    const threshold = 100;
-
-    thumb.addEventListener('mousedown', (e) => {
-      isDragging = true;
-      startX = e.clientX;
-      thumb.style.transition = 'none';
-      e.preventDefault();
-    });
-
-    document.addEventListener('mousemove', (e) => {
-      if (!isDragging) return;
-      currentX = e.clientX - startX;
-      if (currentX < 0) currentX = 0;
-      if (currentX > maxSwipe) currentX = maxSwipe;
-      thumb.style.transform = `translateX(${currentX}px)`;
-
-      const progress = currentX / threshold;
-      if (progress > 0.5) {
-        thumb.style.backgroundColor = '#2f9e44';
-      }
-    });
-
-    document.addEventListener('mouseup', async () => {
-      if (!isDragging) return;
-      isDragging = false;
-      thumb.style.transition = 'transform 0.3s ease, background-color 0.3s ease';
-
-      if (currentX >= threshold) {
-        thumb.style.backgroundColor = '#2f9e44';
-        await this.plugin.moveIdeaToValhalla(idea.id);
-        new Notice('已添加到英灵殿');
-        parentModal.close();
-        this.showIdeasLibraryModal();
-      } else {
-        thumb.style.transform = 'translateX(0)';
-        thumb.style.backgroundColor = '';
-      }
-      currentX = 0;
+    // Click to show action modal
+    item.addEventListener('click', () => {
+      this.showIdeaActionModal(idea, parentModal);
     });
   }
 
@@ -1215,29 +1157,68 @@ export class PaperView extends ItemView {
 
     modal.open();
   }
-  private showIdeaContextMenu(e: MouseEvent, idea: IdeaItem, parentModal: Modal): void {
-    e.stopPropagation();
-    const menu = new Menu();
+  private showIdeaActionModal(idea: IdeaItem, parentModal: Modal): void {
+    const modal = new Modal(this.app);
+    const { contentEl } = modal;
 
-    menu.addItem(mi =>
-      mi.setTitle('✨ 完成并归入英灵殿').onClick(async () => {
-        await this.plugin.moveIdeaToValhalla(idea.id);
-        new Notice('已添加到英灵殿');
-        parentModal.close();
-        this.showIdeasLibraryModal();
-        this.render();
-      })
-    );
+    contentEl.createEl('h2', { text: '灵感操作' });
 
-    menu.addSeparator();
+    const info = contentEl.createDiv({ cls: 'pm-idea-info' });
 
-    menu.addItem(mi =>
-      mi.setTitle('🗑️ 删除').onClick(() => {
-        this.showIdeaDeleteConfirmModal(idea, parentModal);
-      })
-    );
+    if (idea.field) {
+      const fieldStyle = this.plugin.settings.fields.find(f =>
+        f.name === idea.field || (f.aliases && f.aliases.includes(idea.field!))
+      );
+      if (fieldStyle) {
+        const tag = info.createSpan({ cls: 'pm-idea-tag' });
+        tag.textContent = idea.field;
+        tag.style.backgroundColor = fieldStyle.backgroundColor;
+        tag.style.color = this.getContrastColor(fieldStyle.backgroundColor);
+      }
+    } else if (idea.isCustomTag && idea.color) {
+      const tag = info.createSpan({ cls: 'pm-idea-tag' });
+      tag.textContent = '自定义';
+      tag.style.backgroundColor = idea.color;
+      tag.style.color = this.getContrastColor(idea.color);
+    }
 
-    menu.showAtMouseEvent(e);
+    const titleEl = info.createEl('h3', { text: idea.title });
+    const bodyEl = info.createDiv({ cls: 'pm-idea-modal-body', text: idea.content });
+    const date = new Date(idea.createdAt);
+    info.createSpan({ cls: 'pm-idea-time', text: this.formatIdeaTime(date) });
+
+    const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
+    buttonContainer.style.display = 'flex';
+    buttonContainer.style.justifyContent = 'flex-end';
+    buttonContainer.style.gap = '10px';
+    buttonContainer.style.marginTop = '20px';
+
+    const cancelBtn = buttonContainer.createEl('button', { text: '取消' });
+    cancelBtn.addEventListener('click', () => modal.close());
+
+    const completeBtn = buttonContainer.createEl('button', {
+      text: '✨ 完成并归入英灵殿',
+      cls: 'mod-cta'
+    });
+    completeBtn.addEventListener('click', async () => {
+      await this.plugin.moveIdeaToValhalla(idea.id);
+      new Notice('已添加到英灵殿');
+      modal.close();
+      parentModal.close();
+      this.showIdeasLibraryModal();
+      this.render();
+    });
+
+    const deleteBtn = buttonContainer.createEl('button', {
+      text: '删除',
+      cls: ''
+    });
+    deleteBtn.addEventListener('click', () => {
+      modal.close();
+      this.showIdeaDeleteConfirmModal(idea, parentModal);
+    });
+
+    modal.open();
   }
 
 
@@ -1265,23 +1246,18 @@ export class PaperView extends ItemView {
     const section = container.createDiv({ cls: 'pm-dashboard-section' });
 
     const header = section.createDiv({ cls: 'pm-calendar-header' });
-    header.createEl('h4', { text: '灵感日历' });
 
-    const yearMonthDisplay = header.createDiv({ cls: 'pm-calendar-yearmonth' });
     const currentDate = new Date();
-    const currentYear = currentDate.getFullYear();
-    const currentMonth = currentDate.getMonth() + 1;
+    let currentYear = currentDate.getFullYear();
+    let currentMonth = currentDate.getMonth() + 1;
 
+    // 年月显示 - 可点击
+    const yearMonthDisplay = header.createDiv({ cls: 'pm-calendar-yearmonth-clickable' });
     yearMonthDisplay.createSpan({
       cls: 'pm-calendar-current',
       text: `${currentYear}年${currentMonth}月`
     });
-
-    const selectBtn = header.createEl('button', {
-      cls: 'pm-calendar-select-btn',
-      text: '📅 选择月份'
-    });
-    selectBtn.addEventListener('click', () => this.showMonthPickerModal());
+    yearMonthDisplay.addEventListener('click', () => this.showMonthPickerModal());
 
     const calendarGrid = section.createDiv({ cls: 'pm-calendar-grid' });
 
@@ -1326,8 +1302,6 @@ export class PaperView extends ItemView {
     const modal = new Modal(this.app);
     const { contentEl } = modal;
 
-    contentEl.createEl('h2', { text: '选择月份' });
-
     const container = contentEl.createDiv({ cls: 'pm-month-picker-container' });
 
     const currentYear = new Date().getFullYear();
@@ -1363,7 +1337,6 @@ export class PaperView extends ItemView {
 
     // 月份选择器（1-12月网格）
     const monthSection = container.createDiv({ cls: 'pm-month-picker-section' });
-    monthSection.createEl('h3', { text: '月份' });
     const monthGrid = monthSection.createDiv({ cls: 'pm-month-grid' });
 
     const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
