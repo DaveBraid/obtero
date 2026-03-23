@@ -779,3 +779,167 @@ details summary:hover {
   background: var(--interactive-accent-hover);
   transform: scale(1.1);
 }
+
+/* ── 灵感管理样式 ───────────────────────────────────────────────────────── */
+.pm-action-button-idea {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.pm-action-button-idea:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.pm-action-button-ideas {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-normal);
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.pm-action-button-ideas:hover {
+  background: var(--background-modifier-hover);
+  border-color: var(--interactive-accent);
+}
+
+/* 灵感列表 */
+.pm-ideas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.pm-idea-item {
+  background: var(--background-secondary);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  transition: box-shadow 0.2s ease;
+}
+
+.pm-idea-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.pm-idea-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.pm-idea-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  align-self: flex-start;
+}
+
+.pm-idea-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pm-idea-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.pm-idea-body {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.pm-idea-time {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.pm-idea-delete-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #e03131;
+  color: white;
+  border: none;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pm-idea-item:hover .pm-idea-delete-btn {
+  opacity: 1;
+}
+
+.pm-idea-delete-btn:hover {
+  transform: scale(1.1);
+  background: #c92a2a;
+}
+
+/* 滑动解锁区域 */
+.pm-swipe-area {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.pm-swipe-track {
+  height: 32px;
+  background: var(--background-modifier-border);
+  border-radius: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.pm-swipe-thumb {
+  width: 32px;
+  height: 32px;
+  background: var(--interactive-accent);
+  border-radius: 50%;
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 16px;
+  cursor: grab;
+  transition: transform 0.3s ease, background-color 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.pm-swipe-thumb:active {
+  cursor: grabbing;
+}

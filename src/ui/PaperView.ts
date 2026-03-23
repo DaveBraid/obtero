@@ -488,6 +488,9 @@ export class PaperView extends ItemView {
     // 阅读进度
     this.renderReadingProgress(container);
 
+    // 灵感管理
+    this.renderIdeaActions(container);
+
     // 英灵殿
     this.renderValhalla(container);
     // 最近论文
@@ -923,5 +926,310 @@ export class PaperView extends ItemView {
       }
     }
     modal.open();
+  }
+
+  private renderIdeaActions(container: HTMLElement): void {
+    const section = container.createDiv({ cls: 'pm-dashboard-section' });
+    const buttonRow = section.createDiv({ cls: 'pm-action-buttons-row' });
+
+    const addIdeaBtn = buttonRow.createEl('button', {
+      cls: 'mod-cta pm-action-button-idea',
+      text: '💡 记录灵感'
+    });
+    addIdeaBtn.addEventListener('click', () => this.showAddIdeaModal());
+
+    const ideasLibraryBtn = buttonRow.createEl('button', {
+      cls: 'pm-action-button-ideas',
+      text: '📚 灵感库'
+    });
+    ideasLibraryBtn.addEventListener('click', () => this.showIdeasLibraryModal());
+  }
+
+  private showAddIdeaModal(): void {
+    const modal = new Modal(this.app);
+    modal.contentEl.createEl('h2', { text: '记录灵感' });
+
+    let title = '';
+    let content = '';
+    let tagType: 'field' | 'custom' | '' = '';
+    let selectedField = '';
+    let customColor = '#e03131';
+
+    new Setting(modal.contentEl)
+      .setName('标题')
+      .setDesc('简短描述你的灵感')
+      .addText(text => {
+        text.setPlaceholder('输入灵感标题...');
+        text.inputEl.addEventListener('change', (e) => {
+          title = (e.target as HTMLInputElement).value.trim();
+        });
+        setTimeout(() => text.inputEl.focus(), 100);
+      });
+
+    new Setting(modal.contentEl)
+      .setName('内容')
+      .setDesc('详细记录你的想法')
+      .addTextArea(text => {
+        text.setPlaceholder('输入灵感内容...');
+        text.inputEl.rows = 4;
+        text.inputEl.addEventListener('change', (e) => {
+          content = (e.target as HTMLInputElement).value.trim();
+        });
+      });
+
+    const tagTypeSetting = new Setting(modal.contentEl)
+      .setName('标签类型')
+      .setDesc('选择标签类型或无标签')
+      .addDropdown(drop => {
+        drop.addOption('', '无标签');
+        drop.addOption('field', '关联论文领域');
+        drop.addOption('custom', '自定义标签');
+        drop.onChange(v => {
+          tagType = v as 'field' | 'custom' | '';
+          selectedField = '';
+          this.updateIdeaTagVisibility(modal.contentEl, tagType);
+        });
+      });
+
+    const fieldSetting = new Setting(modal.contentEl);
+    fieldSetting.settingEl.classList.add('pm-idea-field-setting');
+    fieldSetting.settingEl.style.display = 'none';
+    fieldSetting.setName('研究领域').setDesc('选择关联的论文领域');
+    fieldSetting.addDropdown(drop => {
+      drop.addOption('', '请选择领域');
+      this.plugin.settings.fields.forEach(f => {
+        drop.addOption(f.name, f.name);
+        if (f.aliases) {
+          f.aliases.forEach(alias => {
+            drop.addOption(alias, `${alias} (${f.name})`);
+          });
+        }
+      });
+      drop.onChange(v => {
+        selectedField = v;
+      });
+    });
+
+    const colorSetting = new Setting(modal.contentEl);
+    colorSetting.settingEl.classList.add('pm-idea-color-setting');
+    colorSetting.settingEl.style.display = 'none';
+    colorSetting.setName('标签颜色').setDesc('选择自定义标签的颜色');
+    colorSetting.addColorPicker(col => {
+      col.onChange(v => {
+        customColor = v;
+      });
+    });
+
+    const buttonContainer = modal.contentEl.createDiv({ cls: 'modal-button-container' });
+    buttonContainer.style.display = 'flex';
+    buttonContainer.style.justifyContent = 'flex-end';
+    buttonContainer.style.gap = '10px';
+    buttonContainer.style.marginTop = '20px';
+
+    const cancelBtn = buttonContainer.createEl('button', { text: '取消' });
+    cancelBtn.addEventListener('click', () => modal.close());
+
+    const confirmBtn = buttonContainer.createEl('button', {
+      text: '保存',
+      cls: 'mod-cta'
+    });
+    confirmBtn.addEventListener('click', async () => {
+      if (!title || !content) {
+        new Notice('请填写标题和内容');
+        return;
+      }
+
+      await this.plugin.addIdea(title, content, {
+        field: tagType === 'field' ? selectedField : undefined,
+        color: tagType === 'custom' ? customColor : undefined,
+        isCustomTag: tagType === 'custom'
+      });
+
+      new Notice('灵感已保存');
+      modal.close();
+      await this.render();
+    });
+
+    modal.open();
+  }
+
+  private updateIdeaTagVisibility(contentEl: HTMLElement, tagType: string): void {
+    const settings = contentEl.querySelectorAll('.setting-item');
+    settings.forEach((setting) => {
+      const htmlSetting = setting as HTMLElement;
+      if (htmlSetting.classList.contains('pm-idea-field-setting')) {
+        htmlSetting.style.display = tagType === 'field' ? 'flex' : 'none';
+      } else if (htmlSetting.classList.contains('pm-idea-color-setting')) {
+        htmlSetting.style.display = tagType === 'custom' ? 'flex' : 'none';
+      }
+    });
+  }
+
+  private showIdeasLibraryModal(): void {
+    const modal = new Modal(this.app);
+    const { contentEl } = modal;
+
+    contentEl.createEl('h2', { text: '灵感库' });
+
+    const ideas = (this.plugin.settings.ideas || []).filter(idea => !idea.inValhalla);
+
+    if (ideas.length === 0) {
+      contentEl.createDiv({
+        cls: 'pm-empty',
+        text: '暂无灵感，点击"记录灵感"开始收集吧！'
+      });
+    } else {
+      const list = contentEl.createDiv({ cls: 'pm-ideas-list' });
+      for (const idea of ideas) {
+        this.renderIdeaListItem(list, idea, modal);
+      }
+    }
+
+    modal.open();
+  }
+
+  private renderIdeaListItem(list: HTMLElement, idea: IdeaItem, parentModal: Modal): void {
+    const item = list.createDiv({ cls: 'pm-idea-item' });
+
+    const content = item.createDiv({ cls: 'pm-idea-content' });
+
+    if (idea.field) {
+      const fieldStyle = this.plugin.settings.fields.find(f =>
+        f.name === idea.field || (f.aliases && f.aliases.includes(idea.field!))
+      );
+      if (fieldStyle) {
+        const tag = content.createSpan({ cls: 'pm-idea-tag' });
+        tag.textContent = idea.field;
+        tag.style.backgroundColor = fieldStyle.backgroundColor;
+        tag.style.color = this.getContrastColor(fieldStyle.backgroundColor);
+      }
+    } else if (idea.isCustomTag && idea.color) {
+      const tag = content.createSpan({ cls: 'pm-idea-tag' });
+      tag.textContent = '自定义';
+      tag.style.backgroundColor = idea.color;
+      tag.style.color = this.getContrastColor(idea.color);
+    }
+
+    const textContent = content.createDiv({ cls: 'pm-idea-text' });
+    textContent.createEl('div', { cls: 'pm-idea-title', text: idea.title });
+    textContent.createEl('div', { cls: 'pm-idea-body', text: idea.content });
+
+    const date = new Date(idea.createdAt);
+    const timeText = content.createSpan({
+      cls: 'pm-idea-time',
+      text: this.formatIdeaTime(date)
+    });
+
+    const deleteBtn = item.createEl('button', {
+      cls: 'pm-idea-delete-btn',
+      text: '−'
+    });
+    deleteBtn.title = '删除灵感';
+    deleteBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.showIdeaDeleteConfirmModal(idea, parentModal);
+    });
+
+    const swipeArea = item.createDiv({ cls: 'pm-swipe-area' });
+    const track = swipeArea.createDiv({ cls: 'pm-swipe-track' });
+    track.style.width = '150px';
+    const thumb = track.createDiv({ cls: 'pm-swipe-thumb' });
+    thumb.textContent = '→';
+
+    let isDragging = false;
+    let startX = 0;
+    let currentX = 0;
+    const maxSwipe = 110;
+    const threshold = 100;
+
+    thumb.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      startX = e.clientX;
+      thumb.style.transition = 'none';
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      currentX = e.clientX - startX;
+      if (currentX < 0) currentX = 0;
+      if (currentX > maxSwipe) currentX = maxSwipe;
+      thumb.style.transform = `translateX(${currentX}px)`;
+
+      const progress = currentX / threshold;
+      if (progress > 0.5) {
+        thumb.style.backgroundColor = '#2f9e44';
+      }
+    });
+
+    document.addEventListener('mouseup', async () => {
+      if (!isDragging) return;
+      isDragging = false;
+      thumb.style.transition = 'transform 0.3s ease, background-color 0.3s ease';
+
+      if (currentX >= threshold) {
+        thumb.style.backgroundColor = '#2f9e44';
+        await this.plugin.moveIdeaToValhalla(idea.id);
+        new Notice('已添加到英灵殿');
+        parentModal.close();
+        this.showIdeasLibraryModal();
+      } else {
+        thumb.style.transform = 'translateX(0)';
+        thumb.style.backgroundColor = '';
+      }
+      currentX = 0;
+    });
+  }
+
+  private showIdeaDeleteConfirmModal(idea: IdeaItem, parentModal: Modal): void {
+    const modal = new Modal(this.app);
+    modal.contentEl.createEl('h2', { text: '确认删除' });
+    modal.contentEl.createEl('p', {
+      text: `确定要删除灵感「${idea.title}」吗？此操作不可撤销。`
+    });
+
+    const buttonContainer = modal.contentEl.createDiv({ cls: 'modal-button-container' });
+    buttonContainer.style.display = 'flex';
+    buttonContainer.style.justifyContent = 'flex-end';
+    buttonContainer.style.gap = '10px';
+    buttonContainer.style.marginTop = '20px';
+
+    const cancelBtn = buttonContainer.createEl('button', { text: '取消' });
+    cancelBtn.addEventListener('click', () => modal.close());
+
+    const confirmBtn = buttonContainer.createEl('button', {
+      text: '确认删除',
+      cls: 'mod-warning'
+    });
+    confirmBtn.addEventListener('click', async () => {
+      await this.plugin.removeIdea(idea.id);
+      new Notice('已删除灵感');
+      modal.close();
+      parentModal.close();
+      this.showIdeasLibraryModal();
+      await this.render();
+    });
+
+    modal.open();
+  }
+
+  private formatIdeaTime(date: Date): string {
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      if (diffHours === 0) {
+        const diffMinutes = Math.floor(diffMs / (1000 * 60));
+        return diffMinutes <= 1 ? '刚刚' : `${diffMinutes}分钟前`;
+      }
+      return `${diffHours}小时前`;
+    }
+    if (diffDays === 1) return '昨天';
+    if (diffDays < 7) return `${diffDays}天前`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)}周前`;
+    if (diffDays < 365) return `${Math.floor(diffDays / 30)}月前`;
+    return `${Math.floor(diffDays / 365)}年前`;
   }
 }
