@@ -1215,6 +1215,31 @@ export class PaperView extends ItemView {
 
     modal.open();
   }
+  private showIdeaContextMenu(e: MouseEvent, idea: IdeaItem, parentModal: Modal): void {
+    e.stopPropagation();
+    const menu = new Menu();
+
+    menu.addItem(mi =>
+      mi.setTitle('✨ 完成并归入英灵殿').onClick(async () => {
+        await this.plugin.moveIdeaToValhalla(idea.id);
+        new Notice('已添加到英灵殿');
+        parentModal.close();
+        this.showIdeasLibraryModal();
+        this.render();
+      })
+    );
+
+    menu.addSeparator();
+
+    menu.addItem(mi =>
+      mi.setTitle('🗑️ 删除').onClick(() => {
+        this.showIdeaDeleteConfirmModal(idea, parentModal);
+      })
+    );
+
+    menu.showAtMouseEvent(e);
+  }
+
 
   private formatIdeaTime(date: Date): string {
     const now = new Date();
@@ -1305,29 +1330,38 @@ export class PaperView extends ItemView {
 
     const container = contentEl.createDiv({ cls: 'pm-month-picker-container' });
 
-    const yearSection = container.createDiv({ cls: 'pm-month-picker-section' });
-    yearSection.createEl('h3', { text: '年份' });
-    const yearGrid = yearSection.createDiv({ cls: 'pm-month-grid' });
-
     const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth() + 1;
     let selectedYear = currentYear;
-    let selectedMonth = new Date().getMonth() + 1;
+    let selectedMonth = currentMonth;
 
-    for (let y = currentYear - 1; y <= currentYear + 10; y++) {
-      const yearBtn = yearGrid.createDiv({
-        cls: 'pm-month-cell',
-        text: String(y)
-      });
-      if (y === selectedYear) {
-        yearBtn.classList.add('pm-month-cell-selected');
-      }
-      yearBtn.addEventListener('click', () => {
-        yearGrid.querySelectorAll('.pm-month-cell').forEach(b => b.classList.remove('pm-month-cell-selected'));
-        yearBtn.classList.add('pm-month-cell-selected');
-        selectedYear = y;
-      });
-    }
+    // 年份选择器（左右箭头）
+    const yearSection = container.createDiv({ cls: 'pm-year-selector' });
 
+    const leftBtn = yearSection.createEl('button', {
+      cls: 'pm-year-nav-btn',
+      text: '‹'
+    });
+    leftBtn.addEventListener('click', () => {
+      selectedYear--;
+      yearDisplay.textContent = `${selectedYear}年`;
+    });
+
+    const yearDisplay = yearSection.createSpan({
+      cls: 'pm-year-display',
+      text: `${selectedYear}年`
+    });
+
+    const rightBtn = yearSection.createEl('button', {
+      cls: 'pm-year-nav-btn',
+      text: '›'
+    });
+    rightBtn.addEventListener('click', () => {
+      selectedYear++;
+      yearDisplay.textContent = `${selectedYear}年`;
+    });
+
+    // 月份选择器（1-12月网格）
     const monthSection = container.createDiv({ cls: 'pm-month-picker-section' });
     monthSection.createEl('h3', { text: '月份' });
     const monthGrid = monthSection.createDiv({ cls: 'pm-month-grid' });
@@ -1338,7 +1372,7 @@ export class PaperView extends ItemView {
         cls: 'pm-month-cell',
         text: m
       });
-      if (idx + 1 === selectedMonth) {
+      if (idx + 1 === selectedMonth && selectedYear === currentYear) {
         monthBtn.classList.add('pm-month-cell-selected');
       }
       monthBtn.addEventListener('click', () => {
