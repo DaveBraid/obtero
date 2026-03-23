@@ -897,8 +897,6 @@ export class PaperView extends ItemView {
     const header = card.createDiv({ cls: 'valhalla-header' });
     header.createEl('h3', { cls: 'valhalla-title', text: '英灵殿' });
     header.createSpan({ cls: 'valhalla-count', text: `${valhallaCount} 位英灵` });
-    const desc = card.createDiv({ cls: 'valhalla-desc' });
-    desc.textContent = '珍藏永恒的灵感之光';
   }
 
   private showValhallaModal(): void {
@@ -1093,47 +1091,38 @@ export class PaperView extends ItemView {
     const item = list.createDiv({ cls: 'pm-idea-item' });
 
     const content = item.createDiv({ cls: 'pm-idea-content' });
+    content.style.position = 'relative';
 
+    // 标题行 - 标题和标签在同一行
+    const titleRow = content.createDiv({ cls: 'pm-idea-title-row' });
+
+    const titleSpan = titleRow.createSpan({ cls: 'pm-idea-title', text: idea.title });
+
+    // 标签显示在右侧
     if (idea.field) {
       const fieldStyle = this.plugin.settings.fields.find(f =>
         f.name === idea.field || (f.aliases && f.aliases.includes(idea.field!))
       );
       if (fieldStyle) {
-        const tag = content.createSpan({ cls: 'pm-idea-tag' });
+        const tag = titleRow.createSpan({ cls: 'pm-idea-tag' });
         tag.textContent = idea.field;
         tag.style.backgroundColor = fieldStyle.backgroundColor;
         tag.style.color = this.getContrastColor(fieldStyle.backgroundColor);
       }
     } else if (idea.isCustomTag && idea.color) {
-      const tag = content.createSpan({ cls: 'pm-idea-tag' });
+      const tag = titleRow.createSpan({ cls: 'pm-idea-tag' });
       tag.textContent = '自定义';
       tag.style.backgroundColor = idea.color;
       tag.style.color = this.getContrastColor(idea.color);
     }
 
-    const textContent = content.createDiv({ cls: 'pm-idea-text' });
-    textContent.createEl('div', { cls: 'pm-idea-title', text: idea.title });
-    textContent.createEl('div', { cls: 'pm-idea-body', text: idea.content });
-
+    // 内容和时间
+    const bodyText = content.createDiv({ cls: 'pm-idea-body', text: idea.content });
     const date = new Date(idea.createdAt);
-    const timeText = content.createSpan({
-      cls: 'pm-idea-time',
-      text: this.formatIdeaTime(date)
-    });
+    content.createSpan({ cls: 'pm-idea-time', text: this.formatIdeaTime(date) });
 
-    const deleteActionArea = item.createDiv({ cls: 'pm-idea-swipe-area' });
-    deleteActionArea.style.justifyContent = 'flex-start';
-    deleteActionArea.style.opacity = '0';
-    deleteActionArea.style.transition = 'opacity 0.2s';
-
-    item.addEventListener('mouseenter', () => {
-      deleteActionArea.style.opacity = '1';
-    });
-    item.addEventListener('mouseleave', () => {
-      deleteActionArea.style.opacity = '0';
-    });
-
-    const deleteBtn = deleteActionArea.createEl('button', {
+    // 删除按钮（右上角）
+    const deleteBtn = content.createEl('button', {
       cls: 'pm-idea-delete-btn',
       text: '−'
     });
@@ -1143,7 +1132,8 @@ export class PaperView extends ItemView {
       this.showIdeaDeleteConfirmModal(idea, parentModal);
     });
 
-    const swipeArea = item.createDiv({ cls: 'pm-swipe-area' });
+    // 滑动条（绝对定位覆盖整个内容区域）
+    const swipeArea = content.createDiv({ cls: 'pm-swipe-area' });
     const track = swipeArea.createDiv({ cls: 'pm-swipe-track' });
     track.style.width = '150px';
     const thumb = track.createDiv({ cls: 'pm-swipe-thumb' });
@@ -1313,32 +1303,50 @@ export class PaperView extends ItemView {
 
     contentEl.createEl('h2', { text: '选择月份' });
 
-    let selectedYear = new Date().getFullYear();
+    const container = contentEl.createDiv({ cls: 'pm-month-picker-container' });
+
+    const yearSection = container.createDiv({ cls: 'pm-month-picker-section' });
+    yearSection.createEl('h3', { text: '年份' });
+    const yearGrid = yearSection.createDiv({ cls: 'pm-month-grid' });
+
+    const currentYear = new Date().getFullYear();
+    let selectedYear = currentYear;
     let selectedMonth = new Date().getMonth() + 1;
 
-    new Setting(contentEl)
-      .setName('年份')
-      .addDropdown(drop => {
-        for (let y = 2020; y <= 2030; y++) {
-          drop.addOption(String(y), `${y}年`);
-        }
-        drop.setValue(String(selectedYear));
-        drop.onChange(v => {
-          selectedYear = parseInt(v);
-        });
+    for (let y = currentYear - 1; y <= currentYear + 10; y++) {
+      const yearBtn = yearGrid.createDiv({
+        cls: 'pm-month-cell',
+        text: String(y)
       });
+      if (y === selectedYear) {
+        yearBtn.classList.add('pm-month-cell-selected');
+      }
+      yearBtn.addEventListener('click', () => {
+        yearGrid.querySelectorAll('.pm-month-cell').forEach(b => b.classList.remove('pm-month-cell-selected'));
+        yearBtn.classList.add('pm-month-cell-selected');
+        selectedYear = y;
+      });
+    }
 
-    new Setting(contentEl)
-      .setName('月份')
-      .addDropdown(drop => {
-        for (let m = 1; m <= 12; m++) {
-          drop.addOption(String(m), `${m}月`);
-        }
-        drop.setValue(String(selectedMonth));
-        drop.onChange(v => {
-          selectedMonth = parseInt(v);
-        });
+    const monthSection = container.createDiv({ cls: 'pm-month-picker-section' });
+    monthSection.createEl('h3', { text: '月份' });
+    const monthGrid = monthSection.createDiv({ cls: 'pm-month-grid' });
+
+    const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+    months.forEach((m, idx) => {
+      const monthBtn = monthGrid.createDiv({
+        cls: 'pm-month-cell',
+        text: m
       });
+      if (idx + 1 === selectedMonth) {
+        monthBtn.classList.add('pm-month-cell-selected');
+      }
+      monthBtn.addEventListener('click', () => {
+        monthGrid.querySelectorAll('.pm-month-cell').forEach(b => b.classList.remove('pm-month-cell-selected'));
+        monthBtn.classList.add('pm-month-cell-selected');
+        selectedMonth = idx + 1;
+      });
+    });
 
     const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
     buttonContainer.style.display = 'flex';
