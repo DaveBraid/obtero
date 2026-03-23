@@ -71,3 +71,27 @@ export const CATEGORY_ICONS: Record<PaperCategory, string> = {
   'roughly-read': '📖',
   'carefully-read': '✅',
 };
+
+export interface IdeaItem {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: string;
+  field?: string;      // 关联的论文领域标签
+  color?: string;      // 自定义颜色（自定义tag时使用）
+  isCustomTag?: boolean; // 是否为自定义标签
+  inValhalla?: boolean;  // 是否在英灵殿中
+  tags?: string[];       // 额外标签列表
+}
+
+export interface IdeaItem {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: string;
+  field?: string;
+  color?: string;
+  isCustomTag?: boolean;
+  inValhalla?: boolean;
+  tags?: string[];
+}
