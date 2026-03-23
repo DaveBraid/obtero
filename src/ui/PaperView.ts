@@ -493,8 +493,9 @@ export class PaperView extends ItemView {
 
     // 英灵殿
     this.renderValhalla(container);
-    // 最近论文
-    this.renderRecentPapers(container);
+
+    // 日历
+    this.renderCalendar(container);
   }
 
   private renderQuickActions(container: HTMLElement): void {
@@ -1120,7 +1121,19 @@ export class PaperView extends ItemView {
       text: this.formatIdeaTime(date)
     });
 
-    const deleteBtn = item.createEl('button', {
+    const deleteActionArea = item.createDiv({ cls: 'pm-idea-swipe-area' });
+    deleteActionArea.style.justifyContent = 'flex-start';
+    deleteActionArea.style.opacity = '0';
+    deleteActionArea.style.transition = 'opacity 0.2s';
+
+    item.addEventListener('mouseenter', () => {
+      deleteActionArea.style.opacity = '1';
+    });
+    item.addEventListener('mouseleave', () => {
+      deleteActionArea.style.opacity = '0';
+    });
+
+    const deleteBtn = deleteActionArea.createEl('button', {
       cls: 'pm-idea-delete-btn',
       text: '−'
     });
@@ -1231,5 +1244,138 @@ export class PaperView extends ItemView {
     if (diffDays < 30) return `${Math.floor(diffDays / 7)}周前`;
     if (diffDays < 365) return `${Math.floor(diffDays / 30)}月前`;
     return `${Math.floor(diffDays / 365)}年前`;
+  }
+
+  private renderCalendar(container: HTMLElement): void {
+    const section = container.createDiv({ cls: 'pm-dashboard-section' });
+
+    const header = section.createDiv({ cls: 'pm-calendar-header' });
+    header.createEl('h4', { text: '灵感日历' });
+
+    const yearMonthDisplay = header.createDiv({ cls: 'pm-calendar-yearmonth' });
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth() + 1;
+
+    yearMonthDisplay.createSpan({
+      cls: 'pm-calendar-current',
+      text: `${currentYear}年${currentMonth}月`
+    });
+
+    const selectBtn = header.createEl('button', {
+      cls: 'pm-calendar-select-btn',
+      text: '📅 选择月份'
+    });
+    selectBtn.addEventListener('click', () => this.showMonthPickerModal());
+
+    const calendarGrid = section.createDiv({ cls: 'pm-calendar-grid' });
+
+    const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+    for (const day of weekdays) {
+      const dayHeader = calendarGrid.createDiv({ cls: 'pm-calendar-day-header' });
+      dayHeader.textContent = day;
+    }
+
+    const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+    const firstDayOfWeek = new Date(currentYear, currentMonth - 1, 1).getDay();
+
+    for (let i = 0; i < firstDayOfWeek; i++) {
+      calendarGrid.createDiv({ cls: 'pm-calendar-day-empty' });
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dayCell = calendarGrid.createDiv({ cls: 'pm-calendar-day' });
+
+      const dateStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const dayIdeas = (this.plugin.settings.ideas || []).filter(idea => {
+        const ideaDate = new Date(idea.createdAt);
+        const ideaDateStr = `${ideaDate.getFullYear()}-${String(ideaDate.getMonth() + 1).padStart(2, '0')}-${String(ideaDate.getDate()).padStart(2, '0')}`;
+        return ideaDateStr === dateStr;
+      });
+
+      const dayNumber = dayCell.createDiv({ cls: 'pm-calendar-day-number' });
+      dayNumber.textContent = String(day);
+
+      if (dayIdeas.length > 0) {
+        dayCell.classList.add('pm-calendar-day-has-ideas');
+        const dot = dayCell.createDiv({ cls: 'pm-calendar-day-dot' });
+
+        dayCell.addEventListener('click', () => {
+          this.showDayIdeasModal(dateStr, dayIdeas);
+        });
+      }
+    }
+  }
+
+  private showMonthPickerModal(): void {
+    const modal = new Modal(this.app);
+    const { contentEl } = modal;
+
+    contentEl.createEl('h2', { text: '选择月份' });
+
+    let selectedYear = new Date().getFullYear();
+    let selectedMonth = new Date().getMonth() + 1;
+
+    new Setting(contentEl)
+      .setName('年份')
+      .addDropdown(drop => {
+        for (let y = 2020; y <= 2030; y++) {
+          drop.addOption(String(y), `${y}年`);
+        }
+        drop.setValue(String(selectedYear));
+        drop.onChange(v => {
+          selectedYear = parseInt(v);
+        });
+      });
+
+    new Setting(contentEl)
+      .setName('月份')
+      .addDropdown(drop => {
+        for (let m = 1; m <= 12; m++) {
+          drop.addOption(String(m), `${m}月`);
+        }
+        drop.setValue(String(selectedMonth));
+        drop.onChange(v => {
+          selectedMonth = parseInt(v);
+        });
+      });
+
+    const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
+    buttonContainer.style.display = 'flex';
+    buttonContainer.style.justifyContent = 'flex-end';
+    buttonContainer.style.gap = '10px';
+    buttonContainer.style.marginTop = '20px';
+
+    const cancelBtn = buttonContainer.createEl('button', { text: '取消' });
+    cancelBtn.addEventListener('click', () => modal.close());
+
+    const confirmBtn = buttonContainer.createEl('button', {
+      text: '查看',
+      cls: 'mod-cta'
+    });
+    confirmBtn.addEventListener('click', () => {
+      modal.close();
+      this.render();
+    });
+
+    modal.open();
+  }
+
+  private showDayIdeasModal(dateStr: string, ideas: IdeaItem[]): void {
+    const modal = new Modal(this.app);
+    const { contentEl } = modal;
+
+    contentEl.createEl('h2', { text: `${dateStr} 的灵感` });
+
+    if (ideas.length === 0) {
+      contentEl.createDiv({ cls: 'pm-empty', text: '暂无灵感' });
+    } else {
+      const list = contentEl.createDiv({ cls: 'pm-ideas-list' });
+      for (const idea of ideas) {
+        this.renderIdeaListItem(list, idea, modal);
+      }
+    }
+
+    modal.open();
   }
 }
