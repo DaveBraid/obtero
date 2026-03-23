@@ -3,7 +3,7 @@ import MyPlugin from '../main';
 import { getPapersByCategory, movePaper, resolveExcalidrawPath } from '../utils/fileUtils';
 import { insertPaperToExcalidraw } from '../utils/excalidrawUtils';
 import { getFieldStyle } from '../utils/excalidrawUtils';
-import { PaperInfo } from '../types';
+import { PaperInfo, IdeaItem } from '../types';
 import { AddPaperModal } from './AddPaperModal';
 import { SetupModal } from './SetupModal';
 
@@ -488,6 +488,8 @@ export class PaperView extends ItemView {
     // 阅读进度
     this.renderReadingProgress(container);
 
+    // 英灵殿
+    this.renderValhalla(container);
     // 最近论文
     this.renderRecentPapers(container);
   }
@@ -880,7 +882,46 @@ export class PaperView extends ItemView {
     // 按修改时间排序
     papers.sort((a, b) => b.stat.mtime - a.stat.mtime);
     
-    // 打开 Modal
     new FieldPapersModal(this.app, this.plugin, fieldName, papers).open();
+  }
+  private renderValhalla(container: HTMLElement): void {
+    const section = container.createDiv({ cls: 'pm-dashboard-section' });
+    const valhallaCount = (this.plugin.settings.ideas || []).filter(idea => idea.inValhalla).length;
+    const card = section.createDiv({ cls: 'valhalla-card' });
+    card.addEventListener('click', () => this.showValhallaModal());
+    const icon = card.createSpan({ cls: 'valhalla-icon', text: '⚔️' });
+    const header = card.createDiv({ cls: 'valhalla-header' });
+    header.createEl('h3', { cls: 'valhalla-title', text: '英灵殿' });
+    header.createSpan({ cls: 'valhalla-count', text: `${valhallaCount} 位英灵` });
+    const desc = card.createDiv({ cls: 'valhalla-desc' });
+    desc.textContent = '珍藏永恒的灵感之光';
+  }
+
+  private showValhallaModal(): void {
+    const modal = new Modal(this.app);
+    const { contentEl } = modal;
+    contentEl.createEl('h2', { text: '英灵殿' });
+    const valhallaIdeas = (this.plugin.settings.ideas || []).filter(idea => idea.inValhalla);
+    if (valhallaIdeas.length === 0) {
+      contentEl.createDiv({ cls: 'pm-empty', text: '英灵殿空空如也' });
+    } else {
+      const list = contentEl.createDiv({ cls: 'pm-valhalla-list' });
+      for (const idea of valhallaIdeas) {
+        const item = list.createDiv({ cls: 'pm-valhalla-item' });
+        const content = item.createDiv({ cls: 'pm-valhalla-content' });
+        const textContent = content.createDiv({ cls: 'pm-idea-text' });
+        textContent.createEl('div', { cls: 'pm-idea-title', text: idea.title });
+        textContent.createEl('div', { cls: 'pm-idea-body', text: idea.content });
+        const removeBtn = item.createEl('button', { cls: 'pm-valhalla-remove-btn', text: '↩' });
+        removeBtn.addEventListener('click', async () => {
+          await this.plugin.removeIdeaFromValhalla(idea.id);
+          new Notice('已从英灵殿移除');
+          modal.close();
+          this.showValhallaModal();
+          this.render();
+        });
+      }
+    }
+    modal.open();
   }
 }
