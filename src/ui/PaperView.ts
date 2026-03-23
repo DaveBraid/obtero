@@ -1092,28 +1092,28 @@ export class PaperView extends ItemView {
 
     const content = item.createDiv({ cls: 'pm-idea-content' });
 
-    // 标题行 - 标题和标签在同一行
-    const titleRow = content.createDiv({ cls: 'pm-idea-title-row' });
+    // 标签行（可以换行）
+    const tagRow = content.createDiv({ cls: 'pm-idea-tag-row' });
 
-    const titleSpan = titleRow.createSpan({ cls: 'pm-idea-title', text: idea.title });
-
-    // 标签显示在右侧
     if (idea.field) {
       const fieldStyle = this.plugin.settings.fields.find(f =>
         f.name === idea.field || (f.aliases && f.aliases.includes(idea.field!))
       );
       if (fieldStyle) {
-        const tag = titleRow.createSpan({ cls: 'pm-idea-tag' });
+        const tag = tagRow.createSpan({ cls: 'pm-idea-tag' });
         tag.textContent = idea.field;
         tag.style.backgroundColor = fieldStyle.backgroundColor;
         tag.style.color = this.getContrastColor(fieldStyle.backgroundColor);
       }
     } else if (idea.isCustomTag && idea.color) {
-      const tag = titleRow.createSpan({ cls: 'pm-idea-tag' });
+      const tag = tagRow.createSpan({ cls: 'pm-idea-tag' });
       tag.textContent = '自定义';
       tag.style.backgroundColor = idea.color;
       tag.style.color = this.getContrastColor(idea.color);
     }
+
+    // 标题
+    const titleSpan = content.createSpan({ cls: 'pm-idea-title', text: idea.title });
 
     // 内容和时间
     const bodyText = content.createDiv({ cls: 'pm-idea-body', text: idea.content });
@@ -1161,37 +1161,38 @@ export class PaperView extends ItemView {
     const modal = new Modal(this.app);
     const { contentEl } = modal;
 
-    contentEl.createEl('h2', { text: '灵感操作' });
+    const container = contentEl.createDiv({ cls: 'pm-idea-modal-container' });
 
-    const info = contentEl.createDiv({ cls: 'pm-idea-info' });
-
+    // 标签
     if (idea.field) {
       const fieldStyle = this.plugin.settings.fields.find(f =>
         f.name === idea.field || (f.aliases && f.aliases.includes(idea.field!))
       );
       if (fieldStyle) {
-        const tag = info.createSpan({ cls: 'pm-idea-tag' });
+        const tag = container.createSpan({ cls: 'pm-idea-tag-large' });
         tag.textContent = idea.field;
         tag.style.backgroundColor = fieldStyle.backgroundColor;
         tag.style.color = this.getContrastColor(fieldStyle.backgroundColor);
       }
     } else if (idea.isCustomTag && idea.color) {
-      const tag = info.createSpan({ cls: 'pm-idea-tag' });
+      const tag = container.createSpan({ cls: 'pm-idea-tag-large' });
       tag.textContent = '自定义';
       tag.style.backgroundColor = idea.color;
       tag.style.color = this.getContrastColor(idea.color);
     }
 
-    const titleEl = info.createEl('h3', { text: idea.title });
-    const bodyEl = info.createDiv({ cls: 'pm-idea-modal-body', text: idea.content });
-    const date = new Date(idea.createdAt);
-    info.createSpan({ cls: 'pm-idea-time', text: this.formatIdeaTime(date) });
+    // 标题
+    container.createEl('h2', { cls: 'pm-idea-modal-title', text: idea.title });
 
-    const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
-    buttonContainer.style.display = 'flex';
-    buttonContainer.style.justifyContent = 'flex-end';
-    buttonContainer.style.gap = '10px';
-    buttonContainer.style.marginTop = '20px';
+    // 内容
+    container.createEl('p', { cls: 'pm-idea-modal-content', text: idea.content });
+
+    // 时间
+    const date = new Date(idea.createdAt);
+    container.createEl('p', { cls: 'pm-idea-modal-time', text: this.formatIdeaTime(date) });
+
+    // 按钮容器
+    const buttonContainer = contentEl.createDiv({ cls: 'pm-modal-actions' });
 
     const cancelBtn = buttonContainer.createEl('button', { text: '取消' });
     cancelBtn.addEventListener('click', () => modal.close());
@@ -1211,7 +1212,7 @@ export class PaperView extends ItemView {
 
     const deleteBtn = buttonContainer.createEl('button', {
       text: '删除',
-      cls: ''
+      cls: 'pm-mod-destructive'
     });
     deleteBtn.addEventListener('click', () => {
       modal.close();

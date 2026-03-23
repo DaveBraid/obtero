@@ -679,7 +679,7 @@ details summary:hover {
 .valhalla-card {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: var(--pm-radius-md);
-  padding: var(--pm-spacing-lg);
+  padding: 12px;
   cursor: pointer;
   transition: all var(--pm-transition-normal);
   box-shadow: var(--pm-shadow-md);
@@ -693,9 +693,9 @@ details summary:hover {
 }
 
 .valhalla-icon {
-  font-size: 48px;
+  font-size: 32px;
   display: block;
-  margin-bottom: var(--pm-spacing-sm);
+  margin-bottom: 6px;
 }
 
 .valhalla-header {
@@ -703,24 +703,18 @@ details summary:hover {
   flex-direction: column;
   align-items: center;
   gap: var(--pm-spacing-xs);
-  margin-bottom: var(--pm-spacing-sm);
 }
 
 .valhalla-title {
   margin: 0;
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 600;
   color: white;
 }
 
 .valhalla-count {
-  font-size: 14px;
-  opacity: 0.9;
-}
-
-.valhalla-desc {
   font-size: 13px;
-  opacity: 0.8;
+  opacity: 0.9;
 }
 
 /* 英灵殿列表 */
@@ -975,14 +969,6 @@ details summary:hover {
 }
 
 /* 增加灵感列表项高度 */
-.pm-idea-item {
-  min-height: 80px;
-}
-
-/* ── 灵感列表项新布局 ───────────────────────────────────────────────────── */
-.pm-idea-content {
-  display: flex;
-  flex-direction: column;
   gap: 4px;
   position: relative;
   padding: 4px;
@@ -1019,48 +1005,6 @@ details summary:hover {
 
 
 
-/* 英灵殿卡片 - 更紧凑 */
-.valhalla-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: var(--pm-radius-md);
-  padding: 16px;
-  cursor: pointer;
-  transition: all var(--pm-transition-normal);
-  box-shadow: var(--pm-shadow-md);
-  text-align: center;
-  color: white;
-}
-
-.valhalla-icon {
-  font-size: 36px;
-  display: block;
-  margin-bottom: 8px;
-}
-
-.valhalla-header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
-
-.valhalla-title {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: white;
-}
-
-.valhalla-count {
-  font-size: 13px;
-  opacity: 0.9;
-}
-
-/* ── 月份选择器 ───────────────────────────────────────────────────────── */
-.pm-month-picker-container {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
 }
 
 .pm-month-picker-section h3 {
@@ -1169,37 +1113,6 @@ details summary:hover {
   padding: 8px;
   border-radius: 6px;
 }
-
-.pm-idea-item:hover {
-  background-color: var(--background-modifier-hover);
-}
-
-
-.pm-idea-item:hover .pm-item-menu-btn {
-  opacity: 1;
-}
-
-
-/* 可点击的年月显示 */
-.pm-calendar-yearmonth-clickable {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 6px;
-  transition: background-color 0.2s ease;
-}
-
-.pm-calendar-yearmonth-clickable:hover {
-  background: var(--background-modifier-hover);
-}
-
-/* 灵感操作模态框 */
-.pm-idea-info {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
   margin-bottom: 16px;
   padding: 16px;
   background: var(--background-secondary);
@@ -1218,3 +1131,44 @@ details summary:hover {
   color: var(--text-muted);
   line-height: 1.6;
 }
+
+/* ── 灵感列表项 - 更紧凑 ───────────────────────────────────────────────────── */
+.pm-idea-item {
+  min-height: 48px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.pm-idea-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+/* ── 灵感操作模态框 - 更优雅 ──────────────────────────────────────────────── */
+.pm-idea-modal-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0;
+}
+
+.pm-idea-tag-large {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  align-self: flex-start;
+}
+
+.pm-idea-modal-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.pm-idea-modal-content {
