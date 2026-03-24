@@ -373,8 +373,10 @@ export class AddPaperModal extends Modal {
         });
       });
 
-    // 研究领域（包含主领域和关联领域）
-    const fieldOptions: { value: string; label: string }[] = [];
+    // 研究领域（可选，包含主领域和关联领域）
+    const fieldOptions: { value: string; label: string }[] = [
+      { value: '', label: '未选择（可选）' }
+    ];
     this.plugin.settings.fields.forEach(f => {
       // 添加主领域
       fieldOptions.push({ value: f.name, label: f.name });
@@ -387,7 +389,7 @@ export class AddPaperModal extends Modal {
     });
     new Setting(contentEl)
       .setName('研究领域')
-      .setDesc('选择该论文所属领域（决定 Excalidraw 卡片样式）')
+      .setDesc('选择该论文所属领域（可选，决定 Excalidraw 卡片样式）')
       .addDropdown(drop => {
         fieldOptions.forEach(opt => drop.addOption(opt.value, opt.label));
         drop.setValue(this.field).onChange(v => {

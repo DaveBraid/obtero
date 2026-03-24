@@ -959,6 +959,7 @@ export class PaperView extends ItemView {
     let content = '';
     let tagType: 'field' | 'custom' | '' = '';
     let selectedField = '';
+    let customTagName = '';
     let customColor = '#e03131';
 
     new Setting(modal.contentEl)
@@ -1016,6 +1017,17 @@ export class PaperView extends ItemView {
       });
     });
 
+    const customNameSetting = new Setting(modal.contentEl);
+    customNameSetting.settingEl.classList.add('pm-idea-custom-name-setting');
+    customNameSetting.settingEl.style.display = 'none';
+    customNameSetting.setName('标签名称').setDesc('输入自定义标签的名称');
+    customNameSetting.addText(text => {
+      text.setPlaceholder('例如：重要、待研究...');
+      text.inputEl.addEventListener('change', (e) => {
+        customTagName = (e.target as HTMLInputElement).value.trim();
+      });
+    });
+
     const colorSetting = new Setting(modal.contentEl);
     colorSetting.settingEl.classList.add('pm-idea-color-setting');
     colorSetting.settingEl.style.display = 'none';
@@ -1045,8 +1057,14 @@ export class PaperView extends ItemView {
         return;
       }
 
+      // 如果选择自定义标签，验证标签名称
+      if (tagType === 'custom' && !customTagName) {
+        new Notice('请输入自定义标签名称');
+        return;
+      }
+
       await this.plugin.addIdea(title, content, {
-        field: tagType === 'field' ? selectedField : undefined,
+        field: tagType === 'field' ? selectedField : (tagType === 'custom' ? customTagName : undefined),
         color: tagType === 'custom' ? customColor : undefined,
         isCustomTag: tagType === 'custom'
       });
@@ -1065,6 +1083,8 @@ export class PaperView extends ItemView {
       const htmlSetting = setting as HTMLElement;
       if (htmlSetting.classList.contains('pm-idea-field-setting')) {
         htmlSetting.style.display = tagType === 'field' ? 'flex' : 'none';
+      } else if (htmlSetting.classList.contains('pm-idea-custom-name-setting')) {
+        htmlSetting.style.display = tagType === 'custom' ? 'flex' : 'none';
       } else if (htmlSetting.classList.contains('pm-idea-color-setting')) {
         htmlSetting.style.display = tagType === 'custom' ? 'flex' : 'none';
       }
@@ -1140,7 +1160,7 @@ export class PaperView extends ItemView {
       }
     } else if (idea.isCustomTag && idea.color) {
       const tag = tagWrapper.createSpan({ cls: 'pm-idea-tag' });
-      tag.textContent = '自定义';
+      tag.textContent = idea.field || '自定义';
       tag.style.backgroundColor = idea.color;
       tag.style.color = this.getContrastColor(idea.color);
     }
@@ -1248,25 +1268,6 @@ export class PaperView extends ItemView {
     });
     titleInput.style.display = 'none';
 
-    // 领域标签（只在查看模式显示）
-    const tagContainer = titleRow.createDiv({ cls: 'pm-idea-detail-tag-container' });
-    if (idea.field) {
-      const fieldStyle = this.plugin.settings.fields.find(f =>
-        f.name === idea.field || (f.aliases && f.aliases.includes(idea.field!))
-      );
-      if (fieldStyle) {
-        const tag = tagContainer.createSpan({ cls: 'pm-idea-detail-tag' });
-        tag.textContent = idea.field;
-        tag.style.backgroundColor = fieldStyle.backgroundColor;
-        tag.style.color = this.getContrastColor(fieldStyle.backgroundColor);
-      }
-    } else if (idea.isCustomTag && idea.color) {
-      const tag = tagContainer.createSpan({ cls: 'pm-idea-detail-tag' });
-      tag.textContent = '自定义';
-      tag.style.backgroundColor = idea.color;
-      tag.style.color = this.getContrastColor(idea.color);
-    }
-
     // 时间信息
     const date = new Date(idea.createdAt);
     const timeEl = header.createEl('div', {
@@ -1306,8 +1307,6 @@ export class PaperView extends ItemView {
       // 切换到编辑模式
       titleDisplay.style.display = 'none';
       titleInput.style.display = 'block';
-      titleInput.focus();
-      tagContainer.style.display = 'none';
       contentDisplay.style.display = 'none';
       contentInput.style.display = 'block';
       // 切换按钮
@@ -1327,12 +1326,6 @@ export class PaperView extends ItemView {
       this.showIdeasLibraryModal();
       this.render();
     });
-
-    const cancelViewBtn = viewModeButtons.createEl('button', {
-      text: '取消',
-      cls: 'pm-modal-btn pm-modal-btn-secondary'
-    });
-    cancelViewBtn.addEventListener('click', () => modal.close());
 
     const deleteViewBtn = viewModeButtons.createEl('button', {
       text: '删除',
@@ -1387,7 +1380,6 @@ export class PaperView extends ItemView {
       isEditMode = false;
       titleDisplay.style.display = 'block';
       titleInput.style.display = 'none';
-      tagContainer.style.display = 'flex';
       contentDisplay.style.display = 'block';
       contentInput.style.display = 'none';
       // 切换按钮
@@ -1447,39 +1439,28 @@ export class PaperView extends ItemView {
 
     const currentTotal = monthIdeas.length;
     const maxCount = Math.max(5, currentTotal);
+    const ratio = Math.min(currentTotal / maxCount, 1);
 
     const legend = headerMain.createDiv({ cls: 'pm-calendar-legend-inline' });
     legend.createSpan({ cls: 'pm-legend-label', text: `${currentTotal}` });
 
+    // 渐变进度条（类似阅读进度）
     const legendBar = legend.createDiv({ cls: 'pm-calendar-legend-gradient' });
+    const progressFill = legendBar.createDiv({ cls: 'pm-calendar-legend-segment' });
 
-    // 创建渐变段
-    const segmentCount = 20;
-    for (let i = 0; i < segmentCount; i++) {
-      const segment = legendBar.createDiv({ cls: 'pm-calendar-legend-segment' });
+    // 设置进度条的宽度（根据当前总数在最大值中的比例）
+    progressFill.style.width = `${ratio * 100}%`;
 
-      // 计算该段在整体中的位置（0到maxCount之间）
-      const position = (i / (segmentCount - 1)) * maxCount;
-      const ratio = position / maxCount;
+    // 颜色渐变：浅蓝 → 浅红（根据当前比例动态计算）
+    const lightBlue = { r: 135, g: 206, b: 250 };
+    const lightRed = { r: 255, g: 182, b: 193 };
+    const r = Math.round(lightBlue.r + (lightRed.r - lightBlue.r) * ratio);
+    const g = Math.round(lightBlue.g + (lightRed.g - lightBlue.g) * ratio);
+    const b = Math.round(lightBlue.b + (lightRed.b - lightBlue.b) * ratio);
+    progressFill.style.background = `linear-gradient(90deg, rgb(135, 206, 250) 0%, rgb(${r}, ${g}, ${b}) 100%)`;
+    progressFill.style.transition = 'width 0.3s ease';
 
-      // 颜色渐变：浅蓝 → 浅红
-      const lightBlue = { r: 135, g: 206, b: 250 };
-      const lightRed = { r: 255, g: 182, b: 193 };
-
-      const r = Math.round(lightBlue.r + (lightRed.r - lightBlue.r) * ratio);
-      const g = Math.round(lightBlue.g + (lightRed.g - lightBlue.g) * ratio);
-      const b = Math.round(lightBlue.b + (lightRed.b - lightBlue.b) * ratio);
-
-      segment.style.cssText = `background: rgb(${r}, ${g}, ${b});`;
-
-      // 标记当前总数的位置
-      if (currentTotal > 0 && Math.abs(i / (segmentCount - 1) - (currentTotal / maxCount)) < 0.03) {
-        segment.classList.add('pm-legend-current-position');
-        const indicator = segment.createDiv({ cls: 'pm-legend-indicator' });
-      }
-    }
-
-    legend.createSpan({ cls: 'pm-calendar-legend-label', text: `${maxCount}+` });
+    legend.createSpan({ cls: 'pm-legend-label', text: `${maxCount}+` });
 
     const calendarGrid = section.createDiv({ cls: 'pm-calendar-grid' });
 

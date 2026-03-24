@@ -1,9 +1,0 @@
-{
-	"id": "obsidian-mypaper-plugin",
-	"name": "My Paper Plugin",
-	"version": "1.0.0",
-	"minAppVersion": "0.15.0",
-	"description": "在 Excalidraw 画布上可视化管理论文，支持搜索 arXiv / Semantic Scholar 并生成论文卡片。",
-	"author": "obsidian-mypaper-plugin",
-	"isDesktopOnly": true
-}
