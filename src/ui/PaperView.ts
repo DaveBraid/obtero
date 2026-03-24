@@ -556,7 +556,7 @@ export class PaperView extends ItemView {
     // 添加论文按钮
     const addBtn = buttonRow.createEl('button', {
       cls: 'mod-cta pm-action-button-primary',
-      text: '➕ 添加论文'
+      text: '➕ Add Paper'
     });
     addBtn.addEventListener('click', () =>
       new AddPaperModal(this.app, this.plugin, () => this.render()).open()
@@ -565,7 +565,7 @@ export class PaperView extends ItemView {
     // 刷新按钮
     const refreshBtn = buttonRow.createEl('button', {
       cls: 'pm-action-button-secondary',
-      text: '🔄 刷新'
+      text: '🔄 Update'
     });
     refreshBtn.addEventListener('click', () => this.render());
   }
@@ -985,7 +985,7 @@ export class PaperView extends ItemView {
 
     const addIdeaBtn = buttonRow.createEl('button', {
       cls: 'mod-cta pm-action-button-idea',
-      text: '💡 记录'
+      text: '💡 Record'
     });
     addIdeaBtn.addEventListener('click', () => this.showAddIdeaModal());
 
