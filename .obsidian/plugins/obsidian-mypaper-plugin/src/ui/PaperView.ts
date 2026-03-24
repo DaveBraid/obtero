@@ -515,7 +515,7 @@ export class PaperView extends ItemView {
     // 刷新按钮
     const refreshBtn = buttonRow.createEl('button', {
       cls: 'pm-action-button-secondary',
-      text: '刷新'
+      text: '🔄 刷新'
     });
     refreshBtn.addEventListener('click', () => this.render());
   }

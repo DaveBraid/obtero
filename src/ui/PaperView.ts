@@ -985,13 +985,13 @@ export class PaperView extends ItemView {
 
     const addIdeaBtn = buttonRow.createEl('button', {
       cls: 'mod-cta pm-action-button-idea',
-      text: '💡 记录灵感'
+      text: '💡 记录'
     });
     addIdeaBtn.addEventListener('click', () => this.showAddIdeaModal());
 
     const ideasLibraryBtn = buttonRow.createEl('button', {
       cls: 'pm-action-button-ideas',
-      text: '📚 灵感库'
+      text: '📚 IDEAs'
     });
     ideasLibraryBtn.addEventListener('click', () => this.showIdeasLibraryModal());
   }

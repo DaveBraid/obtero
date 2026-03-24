@@ -1342,7 +1342,7 @@ details summary:hover {
   background-color: var(--background-modifier-hover);
 }
 
-.pm-item-menu-btn {
+.pm-idea-item .pm-item-menu-btn {
   position: absolute;
   top: 8px;
   right: 8px;
@@ -1367,7 +1367,7 @@ details summary:hover {
   opacity: 1;
 }
 
-.pm-item-menu-btn:hover {
+.pm-idea-item .pm-item-menu-btn:hover {
   background: var(--background-modifier-hover);
   color: var(--text-normal);
 }
