@@ -565,7 +565,7 @@ export class PaperView extends ItemView {
     // 刷新按钮
     const refreshBtn = buttonRow.createEl('button', {
       cls: 'pm-action-button-secondary',
-      text: '刷新'
+      text: '🔄 刷新'
     });
     refreshBtn.addEventListener('click', () => this.render());
   }
@@ -943,10 +943,12 @@ export class PaperView extends ItemView {
     const valhallaCount = (this.plugin.settings.ideas || []).filter(idea => idea.inValhalla).length;
     const card = section.createDiv({ cls: 'valhalla-card' });
     card.addEventListener('click', () => this.showValhallaModal());
-    const icon = card.createSpan({ cls: 'valhalla-icon', text: '⚔️' });
-    const header = card.createDiv({ cls: 'valhalla-header' });
+    const layout = card.createDiv({ cls: 'valhalla-layout' });
+    const left = layout.createDiv({ cls: 'valhalla-left' });
+    left.createSpan({ cls: 'valhalla-icon', text: '⚔️' });
+    const header = left.createDiv({ cls: 'valhalla-header' });
     header.createEl('h3', { cls: 'valhalla-title', text: '英灵殿' });
-    header.createSpan({ cls: 'valhalla-count', text: `${valhallaCount} 位英灵` });
+    layout.createSpan({ cls: 'valhalla-number', text: String(valhallaCount) });
   }
 
   private showValhallaModal(): void {
@@ -1144,13 +1146,15 @@ export class PaperView extends ItemView {
   private showIdeasLibraryModal(): void {
     const modal = new Modal(this.app);
     const { contentEl } = modal;
+    modal.modalEl.style.cssText = 'max-width: 640px; width: 90vw;';
 
     // 标题栏 - 清晰简洁
     const header = contentEl.createDiv({ cls: 'pm-modal-header' });
+    header.style.cssText = 'display: flex; align-items: flex-start; justify-content: flex-start; padding: 8px 0 16px 0; margin: 0;';
     header.createEl('h2', {
       text: '灵感库',
       cls: 'pm-modal-title'
-    });
+    }).style.cssText = 'margin: 0; text-align: left; width: 100%; font-size: 22px; font-weight: 700; color: var(--text-normal);';
 
     const ideas = (this.plugin.settings.ideas || []).filter(idea => !idea.inValhalla);
 

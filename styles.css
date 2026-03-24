@@ -302,6 +302,47 @@
   box-shadow: var(--pm-shadow-sm);
 }
 
+.pm-action-button-primary,
+.pm-action-button-idea,
+.pm-action-button-ideas,
+.pm-action-button-secondary {
+  position: relative;
+  overflow: hidden;
+}
+
+.pm-action-button-primary::after,
+.pm-action-button-idea::after,
+.pm-action-button-ideas::after,
+.pm-action-button-secondary::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 20%, rgba(255, 255, 255, 0.22) 50%, transparent 80%);
+  transform: translateX(-120%);
+  transition: transform 0.6s ease;
+  pointer-events: none;
+}
+
+.pm-action-button-primary:hover::after,
+.pm-action-button-idea:hover::after,
+.pm-action-button-ideas:hover::after,
+.pm-action-button-secondary:hover::after {
+  transform: translateX(120%);
+}
+
+.pm-action-button-primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%) !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.28);
+}
+
+.pm-action-button-primary:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.34);
+}
+
 .pm-action-button-secondary {
   background: var(--background-primary);
   color: var(--text-normal);
@@ -311,6 +352,35 @@
 .pm-action-button-secondary:hover {
   background: var(--background-modifier-hover);
   border-color: var(--background-modifier-border-hover);
+}
+
+.pm-action-button-ideas {
+  background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%) !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.28);
+  position: relative;
+  overflow: hidden;
+}
+
+.pm-action-button-ideas:hover {
+  background: linear-gradient(135deg, #7c3aed 0%, #db2777 100%) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(139, 92, 246, 0.34);
+}
+
+.pm-action-button-secondary {
+  background: linear-gradient(135deg, #22c55e 0%, #14b8a6 100%);
+  color: white !important;
+  border: none;
+  box-shadow: 0 4px 12px rgba(20, 184, 166, 0.22);
+}
+
+.pm-action-button-secondary:hover {
+  background: linear-gradient(135deg, #16a34a 0%, #0d9488 100%);
+  border-color: transparent;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(20, 184, 166, 0.28);
 }
 
 /* ── 环形图样式 ────────────────────────────────────────────────────────── */
@@ -782,20 +852,21 @@ details summary:hover {
 
 /* ── 灵感管理样式 ───────────────────────────────────────────────────────── */
 .pm-action-button-idea {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border: none;
-  color: white;
+  background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%) !important;
+  border: none !important;
+  color: white !important;
   padding: 8px 16px;
   border-radius: 6px;
   cursor: pointer;
   font-size: 14px;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.24);
 }
 
 .pm-action-button-idea:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(135deg, #d97706 0%, #dc2626 100%) !important;
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3);
 }
 
 .pm-action-button-ideas {
@@ -1101,17 +1172,32 @@ details summary:hover {
   color: white;
 }
 
+.valhalla-layout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.valhalla-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
 .valhalla-icon {
   font-size: 30px;
   display: block;
-  margin-bottom: 6px;
+  flex-shrink: 0;
+  margin-bottom: 0;
 }
 
 .valhalla-header {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 4px;
+  align-items: flex-start;
+  gap: 2px;
 }
 
 .valhalla-title {
@@ -1124,6 +1210,18 @@ details summary:hover {
 .valhalla-count {
   font-size: 12px;
   opacity: 0.9;
+}
+
+.valhalla-number {
+  font-size: 42px;
+  line-height: 1;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.95);
+  font-family: "Georgia", "Times New Roman", serif;
+  font-style: italic;
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
 }
 
 /* ── 月份选择器 ───────────────────────────────────────────────────────── */
