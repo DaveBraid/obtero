@@ -1,0 +1,48 @@
+/* 横向渐变颜色指示条 */
+.pm-calendar-header-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  gap: 16px;
+}
+
+.pm-calendar-legend-inline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.pm-legend-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-normal);
+  white-space: nowrap;
+}
+
+.pm-calendar-legend-gradient {
+  display: flex;
+  height: 12px;
+  flex: 1;
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+  min-width: 200px;
+}
+
+.pm-calendar-legend-segment {
+  flex: 1;
+  height: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pm-calendar-legend-label-inline {
+  position: absolute;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+}

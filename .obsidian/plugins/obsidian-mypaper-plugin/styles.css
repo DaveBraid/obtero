@@ -1,0 +1,495 @@
+/* ───────────────────────────────────────────────────────────────────────────────
+   灵感详情 Modal - 重新设计的优雅布局
+   ─────────────────────────────────────────────────────────────────────────────── */
+
+/* 更宽的 Modal */
+.pm-modal-wide {
+  max-width: 600px !important;
+  width: 90vw !important;
+}
+
+/* 头部卡片 */
+.pm-idea-detail-header {
+  padding: 24px 24px 20px 24px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+  border-radius: 12px 12px 0 0;
+}
+
+/* 标题区域 */
+.pm-idea-detail-title-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+/* 标题 */
+.pm-idea-detail-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-normal);
+  line-height: 1.3;
+  flex: 1;
+}
+
+/* 领域标签 */
+.pm-idea-detail-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* 时间信息 */
+.pm-idea-detail-time {
+  font-size: 13px;
+  color: var(--text-faint);
+  font-weight: 500;
+  padding-left: 4px;
+}
+
+/* 内容卡片 */
+.pm-idea-detail-body-card {
+  background: var(--background-primary);
+  border-radius: 0 0 12px 12px;
+  overflow: hidden;
+}
+
+.pm-idea-detail-content {
+  padding: 24px;
+}
+
+/* 内容文本 */
+.pm-idea-detail-text {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--text-normal);
+  font-weight: 400;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+/* Hover 效果 - 卡片式 */
+.pm-idea-detail-modal .modal-content {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+/* ───────────────────────────────────────────────────────────────────────────────
+   灵感详情 Modal - 优化的按钮布局（右对齐，分散布局）
+   ─────────────────────────────────────────────────────────────────────────────── */
+
+/* Modal 容器 */
+.pm-idea-detail-modal {
+  max-width: 500px;
+}
+
+/* ── 头部区域 ───────────────────────────────────────────────────────────────── */
+.pm-idea-detail-header {
+  padding: 24px 24px 20px 24px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+}
+
+/* 标题行：标题 + 标签在同一行 */
+.pm-idea-detail-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.pm-idea-detail-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-normal);
+  line-height: 1.3;
+  flex: 1;
+}
+
+/* 领域标签 */
+.pm-idea-detail-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* 时间信息 */
+.pm-idea-detail-time {
+  font-size: 13px;
+  color: var(--text-faint);
+  font-weight: 500;
+  padding-left: 4px;
+}
+
+/* ── 内容区域 ───────────────────────────────────────────────────────────────── */
+.pm-idea-detail-body {
+  padding: 20px 24px;
+}
+
+.pm-idea-detail-text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-normal);
+  font-weight: 400;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* ── 操作按钮区域（右对齐，分散布局）──────────────────────────────────────── */
+.pm-idea-detail-actions {
+  display: flex;
+  justify-content: flex-end; /* 右对齐 */
+  gap: 12px; /* 按钮间距 */
+  padding: 16px 24px 24px 24px;
+  background: var(--background-secondary);
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+/* 按钮基础样式 */
+.pm-idea-action-btn {
+  min-height: 38px;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pm-idea-action-btn:focus {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+/* 主操作按钮 - 归入英灵殿（最突出） */
+.pm-idea-action-primary {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-color: var(--interactive-accent);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.pm-idea-action-primary:hover {
+  background: var(--interactive-accent-hover);
+  border-color: var(--interactive-accent-hover);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transform: translateY(-1px);
+}
+
+.pm-idea-action-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+/* 次要按钮 - 取消 */
+.pm-idea-action-secondary {
+  background: var(--background-primary);
+  color: var(--text-normal);
+  border-color: var(--background-modifier-border);
+}
+
+.pm-idea-action-secondary:hover {
+  background: var(--background-modifier-hover);
+  border-color: var(--background-modifier-border-hover);
+}
+
+/* 危险按钮 - 删除 */
+.pm-idea-action-destructive {
+  background: transparent;
+  color: var(--text-error);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.pm-idea-action-destructive:hover {
+  background: rgba(255, 59, 48, 0.1);
+  color: #ff3b30;
+  border-color: transparent;
+}
+
+/* Modal 内容容器 - 圆角 */
+.pm-idea-detail-modal .modal-content {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+}
+
+/* ───────────────────────────────────────────────────────────────────────────────
+   动态日历热力图 - 渐变指示条
+   ─────────────────────────────────────────────────────────────────────────────── */
+
+/* 年月和指示条的横向布局 */
+.pm-calendar-header-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  gap: 16px;
+}
+
+/* 指示条容器 */
+.pm-calendar-legend-inline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+/* 标签文字 */
+.pm-legend-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-normal);
+  white-space: nowrap;
+  min-width: 24px;
+  text-align: center;
+}
+
+/* 渐变条容器 */
+.pm-calendar-legend-gradient {
+  display: flex;
+  height: 12px;
+  flex: 1;
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+  min-width: 200px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* 渐变条分段 */
+.pm-calendar-legend-segment {
+  flex: 1;
+  height: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.pm-calendar-legend-segment:hover {
+  transform: scaleY(1.2);
+  z-index: 1;
+}
+
+/* 当前位置指示器 */
+.pm-legend-current-position {
+  position: relative;
+}
+
+.pm-legend-indicator {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  border: 2px solid var(--text-normal);
+  border-radius: 4px;
+  pointer-events: none;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+}
+
+/* 日历天数 - 热力图背景 */
+.pm-calendar-day {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  background: var(--background-secondary);
+}
+
+.pm-calendar-day:hover {
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 2;
+}
+
+.pm-calendar-day-number {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-normal);
+  z-index: 1;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* 确保有灵感的天数文字可见 */
+.pm-calendar-day-has-ideas .pm-calendar-day-number {
+  color: var(--text-normal);
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5), 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* ───────────────────────────────────────────────────────────────────────────────
+   Modal 通用样式 - Apple HIG 风格
+   ─────────────────────────────────────────────────────────────────────────────── */
+
+/* Modal 按钮区域 */
+.pm-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px 24px 24px;
+  background: var(--background-secondary);
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+/* 按钮组 */
+.pm-button-group {
+  display: flex;
+  gap: 12px;
+}
+
+/* Modal 按钮基础样式 */
+.pm-modal-btn {
+  min-height: 38px;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pm-modal-btn:focus {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+/* 主按钮（主要操作） */
+.pm-modal-btn-primary {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-color: var(--interactive-accent);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.pm-modal-btn-primary:hover {
+  background: var(--interactive-accent-hover);
+  border-color: var(--interactive-accent-hover);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transform: translateY(-1px);
+}
+
+.pm-modal-btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+/* 次要按钮 */
+.pm-modal-btn-secondary {
+  background: var(--background-primary);
+  color: var(--text-normal);
+  border-color: var(--background-modifier-border);
+}
+
+.pm-modal-btn-secondary:hover {
+  background: var(--background-modifier-hover);
+  border-color: var(--interactive-accent);
+}
+
+/* 危险按钮（删除操作） */
+.pm-modal-btn-destructive {
+  background: #ff3b30;
+  color: white;
+  border-color: #ff3b30;
+  box-shadow: 0 2px 8px rgba(255, 59, 48, 0.3);
+}
+
+.pm-modal-btn-destructive:hover {
+  background: #ff2d1a;
+  border-color: #ff2d1a;
+  box-shadow: 0 4px 12px rgba(255, 59, 48, 0.4);
+  transform: translateY(-1px);
+}
+
+.pm-modal-btn-destructive:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(255, 59, 48, 0.3);
+}
+
+/* ───────────────────────────────────────────────────────────────────────────────
+   灵感详情 Modal - 编辑输入框样式
+   ─────────────────────────────────────────────────────────────────────────────── */
+
+/* 标题容器 */
+.pm-idea-detail-title-container {
+  flex: 1;
+}
+
+/* 标签容器 */
+.pm-idea-detail-tag-container {
+  display: flex;
+  flex-shrink: 0;
+}
+
+/* 标题输入框（编辑模式） */
+.pm-idea-detail-title-input {
+  width: 100%;
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-normal);
+  line-height: 1.3;
+  padding: 4px 8px;
+  border: 1px solid var(--interactive-accent);
+  border-radius: 4px;
+  background: var(--background-primary);
+}
+
+.pm-idea-detail-title-input:focus {
+  outline: none;
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 3px rgba(var(--interactive-accent-rgb), 0.1);
+}
+
+/* 内容输入框（编辑模式） */
+.pm-idea-detail-textarea {
+  width: 100%;
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-normal);
+  font-weight: 400;
+  padding: 12px;
+  border: 1px solid var(--interactive-accent);
+  border-radius: 8px;
+  background: var(--background-primary);
+  resize: vertical;
+  font-family: inherit;
+}
+
+.pm-idea-detail-textarea:focus {
+  outline: none;
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 3px rgba(var(--interactive-accent-rgb), 0.1);
+}

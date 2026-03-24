@@ -946,7 +946,14 @@ export class PaperView extends ItemView {
 
   private showAddIdeaModal(): void {
     const modal = new Modal(this.app);
-    modal.contentEl.createEl('h2', { text: '记录灵感' });
+
+    // 标题栏
+    const header = modal.contentEl.createDiv();
+    header.style.cssText = 'padding: 24px 24px 16px 24px; background: var(--background-secondary); border-bottom: 1px solid var(--background-modifier-border);';
+    header.createEl('h2', { text: '记录灵感' }).style.cssText = 'margin: 0 0 8px 0; font-size: 20px; font-weight: 700; color: var(--text-normal);';
+
+    // 激励语
+    header.createEl('p', { text: '不记录的灵感，就像没有按下快门的风景。' }).style.cssText = 'margin: 0; font-size: 13px; color: var(--text-muted); font-style: italic;';
 
     let title = '';
     let content = '';
@@ -1068,14 +1075,29 @@ export class PaperView extends ItemView {
     const modal = new Modal(this.app);
     const { contentEl } = modal;
 
-    contentEl.createEl('h2', { text: '灵感库' });
+    // 标题栏 - 清晰简洁
+    const header = contentEl.createDiv({ cls: 'pm-modal-header' });
+    header.createEl('h2', {
+      text: '灵感库',
+      cls: 'pm-modal-title'
+    });
 
     const ideas = (this.plugin.settings.ideas || []).filter(idea => !idea.inValhalla);
 
+    // 空状态 - 友好引导
     if (ideas.length === 0) {
-      contentEl.createDiv({
-        cls: 'pm-empty',
-        text: '暂无灵感，点击"记录灵感"开始收集吧！'
+      const empty = contentEl.createDiv({ cls: 'pm-empty' });
+      empty.createDiv({
+        text: '📝',
+        cls: 'pm-empty-icon'
+      });
+      empty.createDiv({
+        cls: 'pm-empty-text',
+        text: '暂无灵感'
+      });
+      empty.createDiv({
+        cls: 'pm-empty-hint',
+        text: '点击下方"记录灵感"开始收集吧'
       });
     } else {
       const list = contentEl.createDiv({ cls: 'pm-ideas-list' });
@@ -1131,35 +1153,60 @@ export class PaperView extends ItemView {
 
   private showIdeaDeleteConfirmModal(idea: IdeaItem, parentModal: Modal): void {
     const modal = new Modal(this.app);
-    modal.contentEl.addClass('pm-idea-delete-modal');
-    
-    // 标题和图标
-    const header = modal.contentEl.createDiv({ cls: 'pm-modal-header' });
-    header.createEl('h2', { text: '删除灵感' });
-    
-    // 内容区域
-    const content = modal.contentEl.createDiv({ cls: 'pm-modal-content' });
-    content.createEl('p', {
-      text: `确定要删除「${idea.title}」吗？此操作不可撤销。`,
-      cls: 'pm-modal-warning-text'
-    });
 
-    // 按钮区域
-    const buttonContainer = modal.contentEl.createDiv({ cls: 'pm-modal-actions' });
-    
-    const cancelBtn = buttonContainer.createEl('button', { 
-      text: '取消',
-      cls: 'pm-modal-btn pm-modal-btn-secondary'
-    });
+    // 设置 Modal 容器
+    modal.modalEl.style.cssText = 'max-width: 420px; width: 90vw;';
+
+    // 主容器
+    const container = modal.contentEl.createDiv();
+    container.style.cssText = 'display: flex; flex-direction: column; background: var(--background-primary); border-radius: 12px; overflow: hidden; box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);';
+
+    // 头部
+    const header = container.createDiv();
+    header.style.cssText = 'padding: 24px 24px 20px 24px; background: var(--background-secondary); border-bottom: 1px solid var(--background-modifier-border);';
+
+    // 标题
+    header.createEl('h2', { text: '删除灵感' }).style.cssText = 'margin: 0; font-size: 20px; font-weight: 700; color: var(--text-normal); line-height: 1.3;';
+
+    // 内容区域
+    const body = container.createDiv();
+    body.style.cssText = 'padding: 24px; background: var(--background-primary);';
+
+    // 警告图标 + 文字
+    const warningRow = body.createDiv();
+    warningRow.style.cssText = 'display: flex; gap: 12px; align-items: flex-start;';
+
+    // 警告图标
+    const icon = warningRow.createSpan({ text: '⚠️' });
+    icon.style.cssText = 'font-size: 24px; flex-shrink: 0;';
+
+    // 警告文字
+    const text = warningRow.createDiv();
+    text.style.cssText = 'flex: 1;';
+
+    text.createEl('p', {
+      text: `确定要删除「${idea.title}」吗？`
+    }).style.cssText = 'margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: var(--text-normal);';
+
+    text.createEl('p', {
+      text: '此操作不可撤销。'
+    }).style.cssText = 'margin: 0; font-size: 14px; color: var(--text-muted); line-height: 1.5;';
+
+    // 按钮区域（右对齐）
+    const actions = container.createDiv();
+    actions.style.cssText = 'display: flex; justify-content: flex-end; gap: 12px; padding: 16px 24px 24px 24px; background: var(--background-secondary); border-top: 1px solid var(--background-modifier-border);';
+
+    // 取消按钮
+    const cancelBtn = actions.createEl('button', { text: '取消' });
+    cancelBtn.style.cssText = 'min-height: 38px; padding: 8px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: 1px solid var(--background-modifier-border); background: var(--background-primary); color: var(--text-normal);';
     cancelBtn.addEventListener('click', () => modal.close());
 
-    const confirmBtn = buttonContainer.createEl('button', {
-      text: '确认删除',
-      cls: 'pm-modal-btn pm-modal-btn-destructive'
-    });
+    // 确认删除按钮（危险操作）
+    const confirmBtn = actions.createEl('button', { text: '删除' });
+    confirmBtn.style.cssText = 'min-height: 38px; padding: 8px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: 1px solid #ff3b30; background: #ff3b30; color: white; box-shadow: 0 2px 8px rgba(255, 59, 48, 0.3);';
     confirmBtn.addEventListener('click', () => {
-      this.plugin.deleteIdea(idea.id);
-      new Notice('灵感已删除');
+      this.plugin.removeIdea(idea.id);
+      new Notice('✓ 灵感已删除');
       modal.close();
       parentModal.close();
       this.showIdeasLibraryModal();
@@ -1170,88 +1217,202 @@ export class PaperView extends ItemView {
     cancelBtn.focus();
   }
 
+
   private showIdeaActionModal(idea: IdeaItem, parentModal: Modal): void {
     const modal = new Modal(this.app);
-    modal.contentEl.addClass('pm-idea-detail-modal');
-    
-    // 头部区域：标题和标签
-    const header = modal.contentEl.createDiv({ cls: 'pm-modal-header' });
-    
-    const titleRow = header.createDiv({ cls: 'pm-modal-title-row' });
-    titleRow.createEl('h2', { 
-      text: idea.title,
-      cls: 'pm-modal-title'
-    });
-    
-    // 领域标签
+
+    // 设置 Modal 容器
+    modal.modalEl.style.cssText = 'max-width: 500px; width: 90vw;';
+
+    // 主容器
+    const container = modal.contentEl.createDiv();
+    container.style.cssText = 'display: flex; flex-direction: column; gap: 0; background: var(--background-primary); border-radius: 12px; overflow: hidden; box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);';
+
+    // 头部
+    const header = container.createDiv();
+    header.style.cssText = 'padding: 24px; background: var(--background-secondary); border-bottom: 1px solid var(--background-modifier-border);';
+
+    // 标题行
+    const titleRow = header.createDiv();
+    titleRow.style.cssText = 'display: flex; align-items: center; gap: 12px; margin-bottom: 8px;';
+
+    // 标题容器（用于切换显示模式）
+    const titleContainer = titleRow.createDiv();
+    titleContainer.style.cssText = 'flex: 1; display: flex; align-items: center;';
+
+    // 只读标题
+    const titleRead = titleContainer.createDiv();
+    titleRead.style.cssText = 'font-size: 22px; font-weight: 700; color: var(--text-normal); line-height: 1.3; flex: 1;';
+    titleRead.textContent = idea.title;
+
+    // 领域标签（查看模式显示）
+    let tagElement: HTMLElement | null = null;
     if (idea.field) {
       const fieldStyle = this.plugin.settings.fields.find(f =>
         f.name === idea.field || (f.aliases && f.aliases.includes(idea.field!))
       );
       if (fieldStyle) {
-        const tag = titleRow.createSpan({ cls: 'pm-modal-tag' });
-        tag.textContent = idea.field;
-        tag.style.backgroundColor = fieldStyle.backgroundColor;
-        tag.style.color = this.getContrastColor(fieldStyle.backgroundColor);
+        tagElement = titleRow.createSpan({ text: idea.field });
+        tagElement.style.cssText = 'display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; white-space: nowrap; flex-shrink: 0; background-color: ' + fieldStyle.backgroundColor + '; color: ' + this.getContrastColor(fieldStyle.backgroundColor) + '; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);';
       }
     } else if (idea.isCustomTag && idea.color) {
-      const tag = titleRow.createSpan({ cls: 'pm-modal-tag' });
-      tag.textContent = '自定义';
-      tag.style.backgroundColor = idea.color;
-      tag.style.color = this.getContrastColor(idea.color);
+      tagElement = titleRow.createSpan({ text: '自定义' });
+      tagElement.style.cssText = 'display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; white-space: nowrap; flex-shrink: 0; background-color: ' + idea.color + '; color: ' + this.getContrastColor(idea.color) + '; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);';
     }
-    
-    // 时间信息
+
+    // 可编辑标题（初始隐藏）
+    const titleEdit = titleContainer.createEl('input', { type: 'text' });
+    titleEdit.value = idea.title;
+    titleEdit.style.cssText = 'flex: 1; margin: 0; font-size: 22px; font-weight: 700; color: var(--text-normal); line-height: 1.3; padding: 4px 8px; border: 1px solid var(--interactive-accent); border-radius: 4px; background: var(--background-primary); display: none;';
+
+    // 时间
     const date = new Date(idea.createdAt);
-    header.createEl('p', { 
-      text: this.formatIdeaTime(date),
-      cls: 'pm-modal-time'
-    });
+    const timeEl = header.createDiv({ text: this.formatIdeaTime(date) });
+    timeEl.style.cssText = 'font-size: 13px; color: var(--text-faint); font-weight: 500; padding-left: 4px;';
 
     // 内容区域
-    const content = modal.contentEl.createDiv({ cls: 'pm-modal-body' });
-    content.createEl('p', { 
-      text: idea.content,
-      cls: 'pm-modal-text'
+    const body = container.createDiv();
+    body.style.cssText = 'padding: 20px 24px; background: var(--background-primary);';
+
+    // 只读内容（初始显示）
+    const contentRead = body.createDiv();
+    contentRead.style.cssText = 'font-size: 15px; line-height: 1.6; color: var(--text-normal); font-weight: 400; white-space: pre-wrap; word-wrap: break-word;';
+    contentRead.textContent = idea.content;
+
+    // 可编辑内容（初始隐藏）
+    const contentEdit = body.createEl('textarea');
+    contentEdit.value = idea.content;
+    contentEdit.style.cssText = 'width: 100%; margin: 0; font-size: 15px; line-height: 1.6; color: var(--text-normal); font-weight: 400; padding: 12px; border: 1px solid var(--interactive-accent); border-radius: 8px; background: var(--background-primary); resize: vertical; font-family: inherit; display: none;';
+
+    // 按钮区域（右对齐）
+    const actions = container.createDiv();
+    actions.style.cssText = 'display: flex; justify-content: flex-end; gap: 12px; padding: 16px 24px 24px 24px; background: var(--background-secondary); border-top: 1px solid var(--background-modifier-border);';
+
+    // 编辑按钮（查看模式显示）
+    const editBtn = actions.createEl('button', { text: '✏️ 编辑' });
+    editBtn.style.cssText = 'min-height: 38px; padding: 8px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: 1px solid var(--interactive-accent); background: var(--interactive-accent); color: var(--text-on-accent); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);';
+
+    // 保存按钮（编辑模式显示，初始隐藏）
+    const saveBtn = actions.createEl('button', { text: '💾 保存' });
+    saveBtn.style.cssText = 'min-height: 38px; padding: 8px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: 1px solid var(--interactive-accent); background: var(--interactive-accent); color: var(--text-on-accent); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); display: none;';
+
+    // 取消按钮（编辑模式显示，初始隐藏）
+    const cancelEditBtn = actions.createEl('button', { text: '取消' });
+    cancelEditBtn.style.cssText = 'min-height: 38px; padding: 8px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: 1px solid var(--background-modifier-border); background: var(--background-primary); color: var(--text-normal); display: none;';
+
+    // 归入英灵殿（查看模式显示）
+    const valhallaBtn = actions.createEl('button', { text: '✨ 归入英灵殿' });
+    valhallaBtn.style.cssText = 'min-height: 38px; padding: 8px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: 1px solid #9773f7; background: #9773f7; color: white; box-shadow: 0 2px 8px rgba(151, 115, 247, 0.3);';
+
+    // 删除（查看模式显示）
+    const deleteBtn = actions.createEl('button', { text: '删除' });
+    deleteBtn.style.cssText = 'min-height: 38px; padding: 8px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: 1px solid #ff3b30; background: #ff3b30; color: white; box-shadow: 0 2px 8px rgba(255, 59, 48, 0.3);';
+
+    // 切换到编辑模式
+    const enterEditMode = () => {
+      titleRead.style.display = 'none';
+      titleEdit.style.display = 'block';
+      contentRead.style.display = 'none';
+      contentEdit.style.display = 'block';
+
+      // 隐藏领域标签
+      if (tagElement) {
+        tagElement.style.display = 'none';
+      }
+
+      editBtn.style.display = 'none';
+      saveBtn.style.display = 'inline-flex';
+      cancelEditBtn.style.display = 'inline-flex';
+      valhallaBtn.style.display = 'none';
+      deleteBtn.style.display = 'none';
+
+      titleEdit.focus();
+    };
+
+    // 切换到查看模式
+    const exitEditMode = () => {
+      titleRead.style.display = 'block';
+      titleEdit.style.display = 'none';
+      titleRead.textContent = titleEdit.value;
+
+      contentRead.style.display = 'block';
+      contentEdit.style.display = 'none';
+      contentRead.textContent = contentEdit.value;
+
+      // 显示领域标签
+      if (tagElement) {
+        tagElement.style.display = 'inline-flex';
+      }
+
+      editBtn.style.display = 'inline-flex';
+      saveBtn.style.display = 'none';
+      cancelEditBtn.style.display = 'none';
+      valhallaBtn.style.display = 'inline-flex';
+      deleteBtn.style.display = 'inline-flex';
+    };
+
+    // 点击编辑按钮
+    editBtn.addEventListener('click', () => {
+      enterEditMode();
     });
 
-    // 操作按钮区域
-    const actions = modal.contentEl.createDiv({ cls: 'pm-modal-actions' });
-    
-    // 主操作：归入英灵殿
-    const valhallaBtn = actions.createEl('button', {
-      text: '✨ 归入英灵殿',
-      cls: 'pm-modal-btn pm-modal-btn-primary'
+    // 点击保存按钮
+    saveBtn.addEventListener('click', async () => {
+      const newTitle = titleEdit.value.trim();
+      const newContent = contentEdit.value.trim();
+
+      if (!newTitle || !newContent) {
+        new Notice('标题和内容不能为空');
+        return;
+      }
+
+      // @ts-ignore
+      const ideaIndex = this.plugin.settings.ideas.findIndex(i => i.id === idea.id);
+      if (ideaIndex !== -1) {
+        // @ts-ignore
+        const targetIdea = this.plugin.settings.ideas[ideaIndex];
+        if (targetIdea) {
+          targetIdea.title = newTitle;
+          targetIdea.content = newContent;
+          await this.plugin.saveSettings();
+          new Notice('✓ 灵感已更新');
+          exitEditMode();
+          parentModal.close();
+          this.showIdeasLibraryModal();
+          this.render();
+        }
+      }
     });
+
+    // 点击取消按钮
+    cancelEditBtn.addEventListener('click', () => {
+      // 恢复原始值
+      titleEdit.value = idea.title;
+      contentEdit.value = idea.content;
+      exitEditMode();
+    });
+
+    // 归入英灵殿
     valhallaBtn.addEventListener('click', async () => {
       await this.plugin.moveIdeaToValhalla(idea.id);
-      new Notice('✨ 已归入英灵殿');
+      new Notice('✓ 已归入英灵殿');
       modal.close();
       parentModal.close();
       this.showIdeasLibraryModal();
       this.render();
     });
 
-    // 次要操作：取消
-    const cancelBtn = actions.createEl('button', {
-      text: '取消',
-      cls: 'pm-modal-btn pm-modal-btn-secondary'
-    });
-    cancelBtn.addEventListener('click', () => modal.close());
-
-    // 危险操作：删除
-    const deleteBtn = actions.createEl('button', {
-      text: '删除',
-      cls: 'pm-modal-btn pm-modal-btn-text pm-modal-btn-destructive-text'
-    });
+    // 删除
     deleteBtn.addEventListener('click', () => {
       modal.close();
       this.showIdeaDeleteConfirmModal(idea, parentModal);
     });
 
     modal.open();
-    cancelBtn.focus();
   }
+
+
+
 
   private formatIdeaTime(date: Date): string {
     const now = new Date();
@@ -1282,13 +1443,57 @@ export class PaperView extends ItemView {
     let currentYear = currentDate.getFullYear();
     let currentMonth = currentDate.getMonth() + 1;
 
-    // 年月显示 - 可点击
-    const yearMonthDisplay = header.createDiv({ cls: 'pm-calendar-yearmonth-clickable' });
+    // 年月显示 + 动态热力图指示条
+    const headerMain = header.createDiv({ cls: 'pm-calendar-header-main' });
+
+    const yearMonthDisplay = headerMain.createDiv({ cls: 'pm-calendar-yearmonth-clickable' });
     yearMonthDisplay.createSpan({
       cls: 'pm-calendar-current',
       text: `${currentYear}年${currentMonth}月`
     });
     yearMonthDisplay.addEventListener('click', () => this.showMonthPickerModal());
+
+    // 动态热力图指示条
+    const monthIdeas = (this.plugin.settings.ideas || []).filter(idea => {
+      const ideaDate = new Date(idea.createdAt);
+      return ideaDate.getFullYear() === currentYear && ideaDate.getMonth() + 1 === currentMonth;
+    });
+
+    const currentTotal = monthIdeas.length;
+    const maxCount = Math.max(5, currentTotal);
+
+    const legend = headerMain.createDiv({ cls: 'pm-calendar-legend-inline' });
+    legend.createSpan({ cls: 'pm-legend-label', text: `${currentTotal}` });
+
+    const legendBar = legend.createDiv({ cls: 'pm-calendar-legend-gradient' });
+
+    // 创建渐变段
+    const segmentCount = 20;
+    for (let i = 0; i < segmentCount; i++) {
+      const segment = legendBar.createDiv({ cls: 'pm-calendar-legend-segment' });
+
+      // 计算该段在整体中的位置（0到maxCount之间）
+      const position = (i / (segmentCount - 1)) * maxCount;
+      const ratio = position / maxCount;
+
+      // 颜色渐变：浅蓝 → 浅红
+      const lightBlue = { r: 135, g: 206, b: 250 };
+      const lightRed = { r: 255, g: 182, b: 193 };
+
+      const r = Math.round(lightBlue.r + (lightRed.r - lightBlue.r) * ratio);
+      const g = Math.round(lightBlue.g + (lightRed.g - lightBlue.g) * ratio);
+      const b = Math.round(lightBlue.b + (lightRed.b - lightBlue.b) * ratio);
+
+      segment.style.cssText = `background: rgb(${r}, ${g}, ${b});`;
+
+      // 标记当前总数的位置
+      if (currentTotal > 0 && Math.abs(i / (segmentCount - 1) - (currentTotal / maxCount)) < 0.03) {
+        segment.classList.add('pm-legend-current-position');
+        const indicator = segment.createDiv({ cls: 'pm-legend-indicator' });
+      }
+    }
+
+    legend.createSpan({ cls: 'pm-calendar-legend-label', text: `${maxCount}+` });
 
     const calendarGrid = section.createDiv({ cls: 'pm-calendar-grid' });
 
@@ -1318,16 +1523,34 @@ export class PaperView extends ItemView {
       const dayNumber = dayCell.createDiv({ cls: 'pm-calendar-day-number' });
       dayNumber.textContent = String(day);
 
-      if (dayIdeas.length > 0) {
+      // 根据灵感数量计算颜色（动态渐变）
+      const ideaCount = dayIdeas.length;
+      if (ideaCount > 0) {
         dayCell.classList.add('pm-calendar-day-has-ideas');
-        const dot = dayCell.createDiv({ cls: 'pm-calendar-day-dot' });
+
+        // 计算该天数在渐变区间的位置
+        const ratio = Math.min(ideaCount / maxCount, 1);
+
+        // 颜色渐变：浅蓝 → 浅红
+        const lightBlue = { r: 135, g: 206, b: 250 };
+        const lightRed = { r: 255, g: 182, b: 193 };
+
+        const r = Math.round(lightBlue.r + (lightRed.r - lightBlue.r) * ratio);
+        const g = Math.round(lightBlue.g + (lightRed.g - lightBlue.g) * ratio);
+        const b = Math.round(lightBlue.b + (lightRed.b - lightBlue.b) * ratio);
+
+        dayCell.style.cssText = `background: rgb(${r}, ${g}, ${b});`;
 
         dayCell.addEventListener('click', () => {
           this.showDayIdeasModal(dateStr, dayIdeas);
         });
+      } else {
+        // 无灵感的天数显示浅灰色背景
+        dayCell.style.cssText = 'background: var(--background-secondary);';
       }
     }
   }
+
 
   private showMonthPickerModal(): void {
     const modal = new Modal(this.app);

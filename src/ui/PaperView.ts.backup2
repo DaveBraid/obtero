@@ -1068,14 +1068,29 @@ export class PaperView extends ItemView {
     const modal = new Modal(this.app);
     const { contentEl } = modal;
 
-    contentEl.createEl('h2', { text: '灵感库' });
+    // 标题栏 - 清晰简洁
+    const header = contentEl.createDiv({ cls: 'pm-modal-header' });
+    header.createEl('h2', {
+      text: '灵感库',
+      cls: 'pm-modal-title'
+    });
 
     const ideas = (this.plugin.settings.ideas || []).filter(idea => !idea.inValhalla);
 
+    // 空状态 - 友好引导
     if (ideas.length === 0) {
-      contentEl.createDiv({
-        cls: 'pm-empty',
-        text: '暂无灵感，点击"记录灵感"开始收集吧！'
+      const empty = contentEl.createDiv({ cls: 'pm-empty' });
+      empty.createDiv({
+        text: '📝',
+        cls: 'pm-empty-icon'
+      });
+      empty.createDiv({
+        cls: 'pm-empty-text',
+        text: '暂无灵感'
+      });
+      empty.createDiv({
+        cls: 'pm-empty-hint',
+        text: '点击下方"记录灵感"开始收集吧'
       });
     } else {
       const list = contentEl.createDiv({ cls: 'pm-ideas-list' });
@@ -1132,34 +1147,39 @@ export class PaperView extends ItemView {
   private showIdeaDeleteConfirmModal(idea: IdeaItem, parentModal: Modal): void {
     const modal = new Modal(this.app);
     modal.contentEl.addClass('pm-idea-delete-modal');
-    
-    // 标题和图标
+
+    // 标题
     const header = modal.contentEl.createDiv({ cls: 'pm-modal-header' });
-    header.createEl('h2', { text: '删除灵感' });
-    
+    header.createEl('h2', {
+      text: '删除灵感',
+      cls: 'pm-modal-title'
+    });
+
     // 内容区域
     const content = modal.contentEl.createDiv({ cls: 'pm-modal-content' });
     content.createEl('p', {
-      text: `确定要删除「${idea.title}」吗？此操作不可撤销。`,
+      text: `确定要删除«${idea.title}»吗？此操作不可撤销。`,
       cls: 'pm-modal-warning-text'
     });
 
-    // 按钮区域
+    // 按钮区域 - Apple HIG: 左侧取消，右侧危险操作
     const buttonContainer = modal.contentEl.createDiv({ cls: 'pm-modal-actions' });
-    
-    const cancelBtn = buttonContainer.createEl('button', { 
+
+    // 取消按钮 - 左侧
+    const cancelBtn = buttonContainer.createEl('button', {
       text: '取消',
       cls: 'pm-modal-btn pm-modal-btn-secondary'
     });
     cancelBtn.addEventListener('click', () => modal.close());
 
+    // 确认删除按钮 - 右侧，危险样式
     const confirmBtn = buttonContainer.createEl('button', {
-      text: '确认删除',
+      text: '删除',
       cls: 'pm-modal-btn pm-modal-btn-destructive'
     });
     confirmBtn.addEventListener('click', () => {
-      this.plugin.deleteIdea(idea.id);
-      new Notice('灵感已删除');
+      this.plugin.removeIdea(idea.id);
+      new Notice('✓ 灵感已删除');
       modal.close();
       parentModal.close();
       this.showIdeasLibraryModal();

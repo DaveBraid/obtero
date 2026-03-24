@@ -122,26 +122,11 @@
   white-space: nowrap;
 }
 
-.pm-item-menu-btn {
-  flex-shrink: 0;
-  padding: 4px 8px;
-  border-radius: var(--pm-radius-sm);
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--text-faint);
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.15s;
-}
 
 .pm-paper-item:hover .pm-item-menu-btn {
   opacity: 1;
 }
 
-.pm-item-menu-btn:hover {
-  background: var(--background-modifier-hover);
-  color: var(--text-normal);
-}
 
 /* ── Empty State ────────────────────────────────────────────────────────── */
 .pm-empty {
@@ -694,7 +679,7 @@ details summary:hover {
 .valhalla-card {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: var(--pm-radius-md);
-  padding: var(--pm-spacing-lg);
+  padding: 12px;
   cursor: pointer;
   transition: all var(--pm-transition-normal);
   box-shadow: var(--pm-shadow-md);
@@ -708,9 +693,9 @@ details summary:hover {
 }
 
 .valhalla-icon {
-  font-size: 48px;
+  font-size: 32px;
   display: block;
-  margin-bottom: var(--pm-spacing-sm);
+  margin-bottom: 6px;
 }
 
 .valhalla-header {
@@ -718,24 +703,18 @@ details summary:hover {
   flex-direction: column;
   align-items: center;
   gap: var(--pm-spacing-xs);
-  margin-bottom: var(--pm-spacing-sm);
 }
 
 .valhalla-title {
   margin: 0;
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 600;
   color: white;
 }
 
 .valhalla-count {
-  font-size: 14px;
-  opacity: 0.9;
-}
-
-.valhalla-desc {
   font-size: 13px;
-  opacity: 0.8;
+  opacity: 0.9;
 }
 
 /* 英灵殿列表 */
@@ -815,6 +794,7 @@ details summary:hover {
 }
 
 /* 灵感列表 */
+/* 灵感列表 */
 .pm-ideas-list {
   display: flex;
   flex-direction: column;
@@ -827,9 +807,6 @@ details summary:hover {
   background: var(--background-secondary);
   border-radius: 8px;
   padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
   position: relative;
   transition: box-shadow 0.2s ease;
 }
@@ -840,29 +817,72 @@ details summary:hover {
 
 .pm-idea-content {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: stretch;
+  gap: 12px;
   flex: 1;
-}
-
-.pm-idea-tag {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 600;
-  align-self: flex-start;
+  width: 100%;
 }
 
 .pm-idea-text {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  flex: 1;
+  min-width: 0;
+  padding-right: 8px;
+}
+
+.pm-idea-tag-wrapper {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+
+.pm-idea-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .pm-idea-title {
   font-size: 14px;
   font-weight: 600;
+  color: var(--text-normal);
+}
+
+.pm-idea-body {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.pm-idea-time {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.pm-idea-body {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.pm-idea-time {
+  font-size: 12px;
+  color: var(--text-faint);
+}
   color: var(--text-normal);
 }
 
@@ -896,12 +916,6 @@ details summary:hover {
   margin-bottom: 16px;
 }
 
-.pm-calendar-header h4 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-normal);
-}
 
 .pm-calendar-yearmonth {
   display: flex;
@@ -996,14 +1010,6 @@ details summary:hover {
 }
 
 /* 增加灵感列表项高度 */
-.pm-idea-item {
-  min-height: 80px;
-}
-
-/* ── 灵感列表项新布局 ───────────────────────────────────────────────────── */
-.pm-idea-content {
-  display: flex;
-  flex-direction: column;
   gap: 4px;
   position: relative;
   padding: 4px;
@@ -1040,48 +1046,6 @@ details summary:hover {
 
 
 
-/* 英灵殿卡片 - 更紧凑 */
-.valhalla-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: var(--pm-radius-md);
-  padding: 16px;
-  cursor: pointer;
-  transition: all var(--pm-transition-normal);
-  box-shadow: var(--pm-shadow-md);
-  text-align: center;
-  color: white;
-}
-
-.valhalla-icon {
-  font-size: 36px;
-  display: block;
-  margin-bottom: 8px;
-}
-
-.valhalla-header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
-
-.valhalla-title {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: white;
-}
-
-.valhalla-count {
-  font-size: 13px;
-  opacity: 0.9;
-}
-
-/* ── 月份选择器 ───────────────────────────────────────────────────────── */
-.pm-month-picker-container {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
 }
 
 .pm-month-picker-section h3 {
@@ -1130,12 +1094,6 @@ details summary:hover {
 .pm-idea-item:hover .pm-idea-delete-btn {
   opacity: 1;
 }
-
-
-/* 确保灵感项有合适的高度 */
-.pm-idea-item {
-  min-height: 60px;
-  padding: 8px;
 }
 
 /* ── 年份选择器（左右箭头） ─────────────────────────────────────────── */
@@ -1180,83 +1138,144 @@ details summary:hover {
 
 .pm-year-nav-btn:active {
   transform: scale(0.95);
+  padding: 16px;
+  background: var(--background-secondary);
+  border-radius: 8px;
 }
 
-/* ── 灵感列表项（简化版） ───────────────────────────────────────────────── */
-.pm-idea-item {
-  position: relative;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  padding: 8px;
-  border-radius: 6px;
-}
-
-.pm-idea-item:hover {
-  background-color: var(--background-modifier-hover);
-}
-
-.pm-item-menu-btn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 24px;
-  height: 24px;
-  border-radius: 4px;
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  font-size: 16px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  line-height: 1;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.pm-idea-item:hover .pm-item-menu-btn {
-  opacity: 1;
-}
-
-.pm-item-menu-btn:hover {
-  background: var(--background-modifier-hover);
+.pm-idea-info h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
   color: var(--text-normal);
 }
-/* ═════════════════════════════════════════════════════════════════════════════════════════════════════
-   Modal 通用样式 - Apple HIG 风格（查看/编辑模式按钮）
-   ═════════════════════════════════════════════════════════════════════════════════════════════════════ */
 
-/* Modal 按钮区域 */
-.pm-modal-actions {
-  display: flex !important;
-  justify-content: flex-end !important;
-  gap: 12px;
-  padding: 16px 24px 24px 24px;
-  background: var(--background-secondary);
-  border-top: 1px solid var(--background-modifier-border);
-}
-
-/* 按钮组 */
-.pm-button-group {
-  display: flex !important;
-  gap: 12px;
-}
-
-/* Modal 按钮基础样式 */
-.pm-modal-btn {
-  min-height: 38px;
-  padding: 8px 20px;
-  border-radius: 8px;
+.pm-idea-modal-body {
   font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.6;
+
+/* ── 灵感操作模态框 - 更优雅 ──────────────────────────────────────────────── */
+.pm-idea-modal-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0;
+}
+
+.pm-idea-tag-large {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 12px;
   font-weight: 600;
+  align-self: flex-start;
+}
+
+.pm-idea-modal-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.pm-idea-modal-content {
+
+/* ── 灵感操作弹窗 - Apple HIG 风格 ───────────────────────────────────────── */
+.pm-idea-detail-modal {
+  max-width: 560px;
+}
+
+.pm-idea-delete-modal {
+  max-width: 400px;
+}
+
+/* 弹窗头部 */
+.pm-modal-header {
+  padding: 24px 24px 16px 24px;
+}
+
+.pm-modal-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.pm-modal-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-normal);
+  line-height: 1.3;
+  flex: 1;
+}
+
+.pm-modal-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.pm-modal-time {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+/* 弹窗内容区 */
+.pm-modal-body {
+  padding: 0 24px 24px 24px;
+}
+
+.pm-modal-text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-normal);
+  font-weight: 400;
+}
+
+.pm-modal-content {
+  padding: 0 24px 24px 24px;
+}
+
+.pm-modal-warning-text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-normal);
+}
+
+/* 按钮区域 */
+.pm-modal-actions {
+  display: flex;
+  gap: 8px;
+  padding: 16px 24px 24px 24px;
+  border-top: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+  margin: 0 -24px -24px -24px;
+}
+
+.pm-modal-btn {
+  min-height: 36px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   border: 1px solid transparent;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
 }
 
 .pm-modal-btn:focus {
@@ -1264,111 +1283,118 @@ details summary:hover {
   outline-offset: 2px;
 }
 
-/* 主按钮（主要操作） */
+/* 主要按钮 - 实心 */
 .pm-modal-btn-primary {
-  background: var(--interactive-accent) !important;
-  color: var(--text-on-accent) !important;
-  border-color: var(--interactive-accent) !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-color: var(--interactive-accent);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .pm-modal-btn-primary:hover {
-  background: var(--interactive-accent-hover) !important;
-  border-color: var(--interactive-accent-hover) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  transform: translateY(-1px);
+  background: var(--interactive-accent-hover);
+  border-color: var(--interactive-accent-hover);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 .pm-modal-btn-primary:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-/* 次要按钮 */
+/* 次要按钮 - 描边 */
 .pm-modal-btn-secondary {
-  background: var(--background-primary) !important;
-  color: var(--text-normal) !important;
-  border: 1px solid var(--background-modifier-border) !important;
+  background: var(--background-primary);
+  color: var(--text-normal);
+  border-color: var(--background-modifier-border);
 }
 
 .pm-modal-btn-secondary:hover {
-  background: var(--background-modifier-hover) !important;
-  border-color: var(--interactive-accent) !important;
+  background: var(--background-modifier-hover);
+  border-color: var(--background-modifier-border-hover);
 }
 
-/* 危险按钮（删除操作） */
+/* 文本按钮 - 无背景 */
+.pm-modal-btn-text {
+  background: transparent;
+  color: var(--text-muted);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.pm-modal-btn-text:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+/* 危险操作按钮 - 文本 */
+.pm-modal-btn-destructive-text {
+  color: var(--text-error);
+}
+
+.pm-modal-btn-destructive-text:hover {
+  background: rgba(255, 0, 0, 0.08);
+  color: var(--text-error);
+}
+
+/* 危险操作按钮 - 实心 */
 .pm-modal-btn-destructive {
-  background: #ff3b30 !important;
-  color: white !important;
-  border: 1px solid #ff3b30 !important;
-  box-shadow: 0 2px 8px rgba(255, 59, 48, 0.3);
+  background: var(--text-error);
+  color: white;
+  border-color: var(--text-error);
+  box-shadow: 0 1px 3px rgba(255, 0, 0, 0.2);
 }
 
 .pm-modal-btn-destructive:hover {
-  background: #ff2d1a !important;
-  border-color: #ff2d1a !important;
-  box-shadow: 0 4px 12px rgba(255, 59, 48, 0.4);
-  transform: translateY(-1px);
+  background: #e53935;
+  border-color: #e53935;
+  box-shadow: 0 2px 6px rgba(255, 0, 0, 0.3);
 }
 
 .pm-modal-btn-destructive:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(255, 59, 48, 0.3);
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(255, 0, 0, 0.2);
 }
 
-/* ═════════════════════════════════════════════════════════════════════════════════════════════════════
-   灵感详情 Modal - 编辑输入框样式
-   ═════════════════════════════════════════════════════════════════════════════════════════════════════ */
-
-/* 标题容器 */
-.pm-idea-detail-title-container {
-  flex: 1;
+/* 按钮组布局 */
+.pm-modal-actions {
+  justify-content: flex-end;
 }
 
-/* 标签容器 */
-.pm-idea-detail-tag-container {
-  display: flex !important;
-  flex-shrink: 0;
+.pm-modal-btn-primary {
+  order: 1;
 }
 
-/* 标题输入框（编辑模式） */
-.pm-idea-detail-title-input {
-  width: 100%;
-  margin: 0;
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--text-normal);
-  line-height: 1.3;
-  padding: 4px 8px;
-  border: 1px solid var(--interactive-accent);
-  border-radius: 4px;
-  background: var(--background-primary);
+.pm-modal-btn-secondary {
+  order: 2;
 }
 
-.pm-idea-detail-title-input:focus {
-  outline: none;
-  border-color: var(--interactive-accent);
-  box-shadow: 0 0 0 3px rgba(var(--interactive-accent-rgb), 0.1);
+.pm-modal-btn-text {
+  order: 3;
 }
 
-/* 内容输入框（编辑模式） */
-.pm-idea-detail-textarea {
-  width: 100%;
-  margin: 0;
-  font-size: 15px;
-  line-height: 1.6;
-  color: var(--text-normal);
-  font-weight: 400;
-  padding: 12px;
-  border: 1px solid var(--interactive-accent);
-  border-radius: 8px;
-  background: var(--background-primary);
-  resize: vertical;
-  font-family: inherit;
-}
-
-.pm-idea-detail-textarea:focus {
-  outline: none;
-  border-color: var(--interactive-accent);
-  box-shadow: 0 0 0 3px rgba(var(--interactive-accent-rgb), 0.1);
+/* 响应式调整 */
+@media (max-width: 480px) {
+  .pm-modal-header {
+    padding: 20px 20px 12px 20px;
+  }
+  
+  .pm-modal-body {
+    padding: 0 20px 20px 20px;
+  }
+  
+  .pm-modal-content {
+    padding: 0 20px 20px 20px;
+  }
+  
+  .pm-modal-actions {
+    padding: 12px 20px 20px 20px;
+    margin: 0 -20px -20px -20px;
+    flex-wrap: wrap;
+  }
+  
+  .pm-modal-btn {
+    flex: 1;
+    min-width: 120px;
+  }
 }

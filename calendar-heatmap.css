@@ -1,0 +1,98 @@
+/* ───────────────────────────────────────────────────────────────────────────────
+   日历热力图 - 颜色指示条
+   ─────────────────────────────────────────────────────────────────────────────── */
+
+/* 年月和指示条的布局 */
+.pm-calendar-header-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+/* 颜色指示条容器 */
+.pm-calendar-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: var(--background-secondary);
+  border-radius: 8px;
+  margin-top: 8px;
+}
+
+.pm-calendar-legend-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-normal);
+}
+
+.pm-calendar-legend-bar {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.pm-calendar-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pm-calendar-legend-color {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.pm-calendar-legend-text {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* 日历天数 - 热力图背景 */
+.pm-calendar-day {
+  aspect-rq: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  background: var(--background-secondary);
+}
+
+.pm-calendar-day:hover {
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.pm-calendar-day-number {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-normal);
+  z-index: 1;
+}
+
+/* 有灵感的天数 - 移除原有的点样式 */
+.pm-calendar-day-has-ideas .pm-calendar-day-dot {
+  display: none;
+}
+
+/* 热力图颜色级别 */
+/* 0个灵感 - 灰色（默认背景） */
+/* 1个灵感 - 浅绿色 (30%) */
+/* 2个灵感 - 中绿色 (50%) */
+/* 3个灵感 - 深绿色 (70%) */
+/* 4个灵感 - 更深绿色 (85%) */
+/* 5+个灵感 - 纯绿色 (100%) */
+
+/* 确保有灵感的天数文字可见 */
+.pm-calendar-day-has-ideas .pm-calendar-day-number {
+  color: var(--text-on-accent);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
