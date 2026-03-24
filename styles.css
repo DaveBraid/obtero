@@ -794,6 +794,7 @@ details summary:hover {
 }
 
 /* 灵感列表 */
+/* 灵感列表 */
 .pm-ideas-list {
   display: flex;
   flex-direction: column;
@@ -806,9 +807,6 @@ details summary:hover {
   background: var(--background-secondary);
   border-radius: 8px;
   padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
   position: relative;
   transition: box-shadow 0.2s ease;
 }
@@ -819,29 +817,72 @@ details summary:hover {
 
 .pm-idea-content {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: stretch;
+  gap: 12px;
   flex: 1;
-}
-
-.pm-idea-tag {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 600;
-  align-self: flex-start;
+  width: 100%;
 }
 
 .pm-idea-text {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  flex: 1;
+  min-width: 0;
+  padding-right: 8px;
+}
+
+.pm-idea-tag-wrapper {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+
+.pm-idea-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .pm-idea-title {
   font-size: 14px;
   font-weight: 600;
+  color: var(--text-normal);
+}
+
+.pm-idea-body {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.pm-idea-time {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.pm-idea-body {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.pm-idea-time {
+  font-size: 12px;
+  color: var(--text-faint);
+}
   color: var(--text-normal);
 }
 
@@ -1053,12 +1094,6 @@ details summary:hover {
 .pm-idea-item:hover .pm-idea-delete-btn {
   opacity: 1;
 }
-
-
-/* 确保灵感项有合适的高度 */
-.pm-idea-item {
-  min-height: 60px;
-  padding: 8px;
 }
 
 /* ── 年份选择器（左右箭头） ─────────────────────────────────────────── */
@@ -1103,17 +1138,6 @@ details summary:hover {
 
 .pm-year-nav-btn:active {
   transform: scale(0.95);
-}
-
-/* ── 灵感列表项（简化版） ───────────────────────────────────────────────── */
-.pm-idea-item {
-  position: relative;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  padding: 8px;
-  border-radius: 6px;
-}
-  margin-bottom: 16px;
   padding: 16px;
   background: var(--background-secondary);
   border-radius: 8px;
@@ -1130,22 +1154,6 @@ details summary:hover {
   font-size: 14px;
   color: var(--text-muted);
   line-height: 1.6;
-}
-
-/* ── 灵感列表项 - 更紧凑 ───────────────────────────────────────────────────── */
-.pm-idea-item {
-  min-height: 48px;
-  padding: 6px 8px;
-  border-radius: 6px;
-  transition: background-color 0.2s ease;
-}
-
-.pm-idea-tag-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-bottom: 4px;
-}
 
 /* ── 灵感操作模态框 - 更优雅 ──────────────────────────────────────────────── */
 .pm-idea-modal-container {
@@ -1172,3 +1180,221 @@ details summary:hover {
 }
 
 .pm-idea-modal-content {
+
+/* ── 灵感操作弹窗 - Apple HIG 风格 ───────────────────────────────────────── */
+.pm-idea-detail-modal {
+  max-width: 560px;
+}
+
+.pm-idea-delete-modal {
+  max-width: 400px;
+}
+
+/* 弹窗头部 */
+.pm-modal-header {
+  padding: 24px 24px 16px 24px;
+}
+
+.pm-modal-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.pm-modal-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-normal);
+  line-height: 1.3;
+  flex: 1;
+}
+
+.pm-modal-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.pm-modal-time {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+/* 弹窗内容区 */
+.pm-modal-body {
+  padding: 0 24px 24px 24px;
+}
+
+.pm-modal-text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-normal);
+  font-weight: 400;
+}
+
+.pm-modal-content {
+  padding: 0 24px 24px 24px;
+}
+
+.pm-modal-warning-text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-normal);
+}
+
+/* 按钮区域 */
+.pm-modal-actions {
+  display: flex;
+  gap: 8px;
+  padding: 16px 24px 24px 24px;
+  border-top: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+  margin: 0 -24px -24px -24px;
+}
+
+.pm-modal-btn {
+  min-height: 36px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.pm-modal-btn:focus {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
+/* 主要按钮 - 实心 */
+.pm-modal-btn-primary {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-color: var(--interactive-accent);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.pm-modal-btn-primary:hover {
+  background: var(--interactive-accent-hover);
+  border-color: var(--interactive-accent-hover);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.pm-modal-btn-primary:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* 次要按钮 - 描边 */
+.pm-modal-btn-secondary {
+  background: var(--background-primary);
+  color: var(--text-normal);
+  border-color: var(--background-modifier-border);
+}
+
+.pm-modal-btn-secondary:hover {
+  background: var(--background-modifier-hover);
+  border-color: var(--background-modifier-border-hover);
+}
+
+/* 文本按钮 - 无背景 */
+.pm-modal-btn-text {
+  background: transparent;
+  color: var(--text-muted);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.pm-modal-btn-text:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+/* 危险操作按钮 - 文本 */
+.pm-modal-btn-destructive-text {
+  color: var(--text-error);
+}
+
+.pm-modal-btn-destructive-text:hover {
+  background: rgba(255, 0, 0, 0.08);
+  color: var(--text-error);
+}
+
+/* 危险操作按钮 - 实心 */
+.pm-modal-btn-destructive {
+  background: var(--text-error);
+  color: white;
+  border-color: var(--text-error);
+  box-shadow: 0 1px 3px rgba(255, 0, 0, 0.2);
+}
+
+.pm-modal-btn-destructive:hover {
+  background: #e53935;
+  border-color: #e53935;
+  box-shadow: 0 2px 6px rgba(255, 0, 0, 0.3);
+}
+
+.pm-modal-btn-destructive:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(255, 0, 0, 0.2);
+}
+
+/* 按钮组布局 */
+.pm-modal-actions {
+  justify-content: flex-end;
+}
+
+.pm-modal-btn-primary {
+  order: 1;
+}
+
+.pm-modal-btn-secondary {
+  order: 2;
+}
+
+.pm-modal-btn-text {
+  order: 3;
+}
+
+/* 响应式调整 */
+@media (max-width: 480px) {
+  .pm-modal-header {
+    padding: 20px 20px 12px 20px;
+  }
+  
+  .pm-modal-body {
+    padding: 0 20px 20px 20px;
+  }
+  
+  .pm-modal-content {
+    padding: 0 20px 20px 20px;
+  }
+  
+  .pm-modal-actions {
+    padding: 12px 20px 20px 20px;
+    margin: 0 -20px -20px -20px;
+    flex-wrap: wrap;
+  }
+  
+  .pm-modal-btn {
+    flex: 1;
+    min-width: 120px;
+  }
+}
