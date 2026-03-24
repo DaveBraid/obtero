@@ -162,6 +162,8 @@ class FieldPapersModal extends Modal {
 
 export class PaperView extends ItemView {
   plugin: MyPlugin;
+  private calendarDisplayYear: number | null = null;
+  private calendarDisplayMonth: number | null = null;
 
   constructor(leaf: WorkspaceLeaf, plugin: MyPlugin) {
     super(leaf);
@@ -1134,19 +1136,13 @@ export class PaperView extends ItemView {
 
     const content = item.createDiv({ cls: 'pm-idea-content' });
 
-    // 标题和正文容器
-    const textContainer = content.createDiv({ cls: 'pm-idea-text' });
+    const topRow = content.createDiv({ cls: 'pm-idea-top-row' });
 
-    // 标题
-    const titleSpan = textContainer.createSpan({ cls: 'pm-idea-title', text: idea.title });
+    // 标题和领域标签同一行
+    const titleRow = topRow.createDiv({ cls: 'pm-idea-title-row' });
+    titleRow.createSpan({ cls: 'pm-idea-title', text: idea.title });
 
-    // 内容和时间
-    const bodyText = textContainer.createDiv({ cls: 'pm-idea-body', text: idea.content });
-    const date = new Date(idea.createdAt);
-    textContainer.createSpan({ cls: 'pm-idea-time', text: this.formatIdeaTime(date) });
-
-    // 右侧标签
-    const tagWrapper = content.createDiv({ cls: 'pm-idea-tag-wrapper' });
+    const tagWrapper = topRow.createDiv({ cls: 'pm-idea-tag-wrapper' });
 
     if (idea.field) {
       const fieldStyle = this.plugin.settings.fields.find(f =>
@@ -1164,6 +1160,11 @@ export class PaperView extends ItemView {
       tag.style.backgroundColor = idea.color;
       tag.style.color = this.getContrastColor(idea.color);
     }
+
+    const textContainer = content.createDiv({ cls: 'pm-idea-text' });
+    textContainer.createDiv({ cls: 'pm-idea-body', text: idea.content });
+    const date = new Date(idea.createdAt);
+    textContainer.createSpan({ cls: 'pm-idea-time', text: this.formatIdeaTime(date) });
 
     // Click to show action modal
     item.addEventListener('click', () => {
@@ -1237,13 +1238,74 @@ export class PaperView extends ItemView {
     cancelBtn.focus();
   }
 
+  private showIdeaEditModal(idea: IdeaItem, parentModal: Modal): void {
+    const modal = new Modal(this.app);
+    modal.contentEl.addClass('pm-idea-detail-modal');
+
+    const header = modal.contentEl.createDiv({ cls: 'pm-idea-detail-header' });
+    header.createEl('h2', {
+      text: '编辑灵感',
+      cls: 'pm-idea-detail-title'
+    });
+
+    const body = modal.contentEl.createDiv({ cls: 'pm-idea-detail-body' });
+
+    const titleInput = body.createEl('input', {
+      type: 'text',
+      value: idea.title,
+      cls: 'pm-idea-detail-title-input'
+    });
+
+    const contentInput = body.createEl('textarea', {
+      cls: 'pm-idea-detail-textarea'
+    });
+    contentInput.value = idea.content;
+    contentInput.rows = 6;
+
+    const actions = modal.contentEl.createDiv({ cls: 'pm-modal-actions' });
+    const buttons = actions.createDiv({ cls: 'pm-button-group' });
+
+    const cancelBtn = buttons.createEl('button', {
+      text: '取消',
+      cls: 'pm-modal-btn pm-modal-btn-secondary'
+    });
+    cancelBtn.addEventListener('click', () => modal.close());
+
+    const saveBtn = buttons.createEl('button', {
+      text: '保存',
+      cls: 'pm-modal-btn pm-modal-btn-primary'
+    });
+    saveBtn.addEventListener('click', async () => {
+      const newTitle = titleInput.value.trim();
+      const newContent = contentInput.value.trim();
+
+      if (!newTitle || !newContent) {
+        new Notice('标题和内容不能为空');
+        return;
+      }
+
+      const ideas = this.plugin.settings.ideas || [];
+      const ideaIndex = ideas.findIndex(i => i.id === idea.id);
+      if (ideaIndex !== -1 && ideas[ideaIndex]) {
+        ideas[ideaIndex]!.title = newTitle;
+        ideas[ideaIndex]!.content = newContent;
+        await this.plugin.saveSettings();
+        new Notice('✓ 灵感已更新');
+        modal.close();
+        parentModal.close();
+        this.showIdeasLibraryModal();
+        this.render();
+      }
+    });
+
+    modal.open();
+    setTimeout(() => titleInput.focus(), 50);
+  }
+
 
   private showIdeaActionModal(idea: IdeaItem, parentModal: Modal): void {
     const modal = new Modal(this.app);
     modal.contentEl.addClass('pm-idea-detail-modal');
-
-    // 编辑模式状态
-    let isEditMode = false;
 
     // ── 头部区域 ────────────────────────────────────────────────────────
     const header = modal.contentEl.createDiv({ cls: 'pm-idea-detail-header' });
@@ -1259,14 +1321,6 @@ export class PaperView extends ItemView {
       text: idea.title,
       cls: 'pm-idea-detail-title'
     });
-
-    // 编辑模式：标题输入框（初始隐藏）
-    const titleInput = titleContainer.createEl('input', {
-      type: 'text',
-      value: idea.title,
-      cls: 'pm-idea-detail-title-input'
-    });
-    titleInput.style.display = 'none';
 
     // 时间信息
     const date = new Date(idea.createdAt);
@@ -1284,14 +1338,6 @@ export class PaperView extends ItemView {
       cls: 'pm-idea-detail-text'
     });
 
-    // 编辑模式：内容输入框（初始隐藏）
-    const contentInput = body.createEl('textarea', {
-      value: idea.content,
-      cls: 'pm-idea-detail-textarea'
-    });
-    contentInput.rows = 6;
-    contentInput.style.display = 'none';
-
     // ── 操作按钮区域 ───────────────────────────────────────────────────
     const actions = modal.contentEl.createDiv({ cls: 'pm-modal-actions' });
 
@@ -1303,15 +1349,8 @@ export class PaperView extends ItemView {
       cls: 'pm-modal-btn pm-modal-btn-primary'
     });
     editBtn.addEventListener('click', () => {
-      isEditMode = true;
-      // 切换到编辑模式
-      titleDisplay.style.display = 'none';
-      titleInput.style.display = 'block';
-      contentDisplay.style.display = 'none';
-      contentInput.style.display = 'block';
-      // 切换按钮
-      viewModeButtons.style.display = 'none';
-      editModeButtons.style.display = 'flex';
+      modal.close();
+      this.showIdeaEditModal(idea, parentModal);
     });
 
     const valhallaBtn = viewModeButtons.createEl('button', {
@@ -1327,6 +1366,15 @@ export class PaperView extends ItemView {
       this.render();
     });
 
+    // 查看模式下的取消/关闭按钮
+    const closeBtn = viewModeButtons.createEl('button', {
+      text: '取消',
+      cls: 'pm-modal-btn pm-modal-btn-secondary'
+    });
+    closeBtn.addEventListener('click', () => {
+      modal.close();
+    });
+
     const deleteViewBtn = viewModeButtons.createEl('button', {
       text: '删除',
       cls: 'pm-modal-btn pm-modal-btn-destructive'
@@ -1334,57 +1382,6 @@ export class PaperView extends ItemView {
     deleteViewBtn.addEventListener('click', () => {
       modal.close();
       this.showIdeaDeleteConfirmModal(idea, parentModal);
-    });
-
-    // 编辑模式按钮组（初始隐藏）
-    const editModeButtons = actions.createDiv({ cls: 'pm-button-group' });
-    editModeButtons.style.display = 'none';
-
-    const saveBtn = editModeButtons.createEl('button', {
-      text: '保存',
-      cls: 'pm-modal-btn pm-modal-btn-primary'
-    });
-    saveBtn.addEventListener('click', async () => {
-      const newTitle = titleInput.value.trim();
-      const newContent = contentInput.value.trim();
-
-      if (!newTitle || !newContent) {
-        new Notice('标题和内容不能为空');
-        return;
-      }
-
-      // 更新灵感
-      const ideas = this.plugin.settings.ideas || [];
-      const ideaIndex = ideas.findIndex(i => i.id === idea.id);
-      if (ideaIndex !== -1 && ideas[ideaIndex]) {
-        ideas[ideaIndex]!.title = newTitle;
-        ideas[ideaIndex]!.content = newContent;
-        await this.plugin.saveSettings();
-        new Notice('✓ 灵感已更新');
-        modal.close();
-        parentModal.close();
-        this.showIdeasLibraryModal();
-        this.render();
-      }
-    });
-
-    const cancelEditBtn = editModeButtons.createEl('button', {
-      text: '取消',
-      cls: 'pm-modal-btn pm-modal-btn-secondary'
-    });
-    cancelEditBtn.addEventListener('click', () => {
-      // 重置输入值
-      titleInput.value = idea.title;
-      contentInput.value = idea.content;
-      // 切换回查看模式
-      isEditMode = false;
-      titleDisplay.style.display = 'block';
-      titleInput.style.display = 'none';
-      contentDisplay.style.display = 'block';
-      contentInput.style.display = 'none';
-      // 切换按钮
-      viewModeButtons.style.display = 'flex';
-      editModeButtons.style.display = 'none';
     });
 
     modal.open();
@@ -1418,8 +1415,8 @@ export class PaperView extends ItemView {
     const header = section.createDiv({ cls: 'pm-calendar-header' });
 
     const currentDate = new Date();
-    let currentYear = currentDate.getFullYear();
-    let currentMonth = currentDate.getMonth() + 1;
+    const currentYear = this.calendarDisplayYear ?? currentDate.getFullYear();
+    const currentMonth = this.calendarDisplayMonth ?? (currentDate.getMonth() + 1);
 
     // 年月显示 + 动态热力图指示条
     const headerMain = header.createDiv({ cls: 'pm-calendar-header-main' });
@@ -1429,7 +1426,7 @@ export class PaperView extends ItemView {
       cls: 'pm-calendar-current',
       text: `${currentYear}年${currentMonth}月`
     });
-    yearMonthDisplay.addEventListener('click', () => this.showMonthPickerModal());
+    yearMonthDisplay.addEventListener('click', () => this.showMonthPickerModal(currentYear, currentMonth));
 
     // 动态热力图指示条
     const monthIdeas = (this.plugin.settings.ideas || []).filter(idea => {
@@ -1439,26 +1436,21 @@ export class PaperView extends ItemView {
 
     const currentTotal = monthIdeas.length;
     const maxCount = Math.max(5, currentTotal);
-    const ratio = Math.min(currentTotal / maxCount, 1);
 
     const legend = headerMain.createDiv({ cls: 'pm-calendar-legend-inline' });
     legend.createSpan({ cls: 'pm-legend-label', text: `${currentTotal}` });
 
-    // 渐变进度条（类似阅读进度）
+    // 渐变进度条（全宽，浅蓝→浅红）
     const legendBar = legend.createDiv({ cls: 'pm-calendar-legend-gradient' });
     const progressFill = legendBar.createDiv({ cls: 'pm-calendar-legend-segment' });
 
-    // 设置进度条的宽度（根据当前总数在最大值中的比例）
-    progressFill.style.width = `${ratio * 100}%`;
+    progressFill.style.width = '100%';
+    progressFill.style.background = 'linear-gradient(90deg, rgb(135, 206, 250) 0%, rgb(255, 182, 193) 100%)';
 
-    // 颜色渐变：浅蓝 → 浅红（根据当前比例动态计算）
-    const lightBlue = { r: 135, g: 206, b: 250 };
-    const lightRed = { r: 255, g: 182, b: 193 };
-    const r = Math.round(lightBlue.r + (lightRed.r - lightBlue.r) * ratio);
-    const g = Math.round(lightBlue.g + (lightRed.g - lightBlue.g) * ratio);
-    const b = Math.round(lightBlue.b + (lightRed.b - lightBlue.b) * ratio);
-    progressFill.style.background = `linear-gradient(90deg, rgb(135, 206, 250) 0%, rgb(${r}, ${g}, ${b}) 100%)`;
-    progressFill.style.transition = 'width 0.3s ease';
+    // 添加指示器
+    const indicatorRatio = Math.min(currentTotal / maxCount, 1);
+    const indicator = legendBar.createDiv({ cls: 'pm-legend-indicator' });
+    indicator.style.left = `${indicatorRatio * 100}%`;
 
     legend.createSpan({ cls: 'pm-legend-label', text: `${maxCount}+` });
 
@@ -1519,16 +1511,17 @@ export class PaperView extends ItemView {
   }
 
 
-  private showMonthPickerModal(): void {
+  private showMonthPickerModal(initialYear?: number, initialMonth?: number): void {
     const modal = new Modal(this.app);
     const { contentEl } = modal;
 
     const container = contentEl.createDiv({ cls: 'pm-month-picker-container' });
 
-    const currentYear = new Date().getFullYear();
-    const currentMonth = new Date().getMonth() + 1;
-    let selectedYear = currentYear;
-    let selectedMonth = currentMonth;
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth() + 1;
+    let selectedYear = initialYear ?? this.calendarDisplayYear ?? currentYear;
+    let selectedMonth = initialMonth ?? this.calendarDisplayMonth ?? currentMonth;
 
     // 年份选择器（左右箭头）
     const yearSection = container.createDiv({ cls: 'pm-year-selector' });
@@ -1590,6 +1583,8 @@ export class PaperView extends ItemView {
       cls: 'mod-cta'
     });
     confirmBtn.addEventListener('click', () => {
+      this.calendarDisplayYear = selectedYear;
+      this.calendarDisplayMonth = selectedMonth;
       modal.close();
       this.render();
     });

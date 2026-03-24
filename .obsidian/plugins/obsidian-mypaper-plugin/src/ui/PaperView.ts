@@ -1292,6 +1292,14 @@ export class PaperView extends ItemView {
     const editBtn = actions.createEl('button', { text: '✏️ 编辑' });
     editBtn.style.cssText = 'min-height: 38px; padding: 8px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: 1px solid var(--interactive-accent); background: var(--interactive-accent); color: var(--text-on-accent); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);';
 
+    // 归入英灵殿（查看模式显示）
+    const valhallaBtn = actions.createEl('button', { text: '✨ 归入英灵殿' });
+    valhallaBtn.style.cssText = 'min-height: 38px; padding: 8px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: 1px solid #9773f7; background: #9773f7; color: white; box-shadow: 0 2px 8px rgba(151, 115, 247, 0.3);';
+
+    // 删除（查看模式显示）- 放在最右边
+    const deleteBtn = actions.createEl('button', { text: '删除' });
+    deleteBtn.style.cssText = 'min-height: 38px; padding: 8px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: 1px solid #ff3b30; background: #ff3b30; color: white; box-shadow: 0 2px 8px rgba(255, 59, 48, 0.3);';
+
     // 保存按钮（编辑模式显示，初始隐藏）
     const saveBtn = actions.createEl('button', { text: '💾 保存' });
     saveBtn.style.cssText = 'min-height: 38px; padding: 8px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: 1px solid var(--interactive-accent); background: var(--interactive-accent); color: var(--text-on-accent); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); display: none;';
@@ -1299,14 +1307,6 @@ export class PaperView extends ItemView {
     // 取消按钮（编辑模式显示，初始隐藏）
     const cancelEditBtn = actions.createEl('button', { text: '取消' });
     cancelEditBtn.style.cssText = 'min-height: 38px; padding: 8px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: 1px solid var(--background-modifier-border); background: var(--background-primary); color: var(--text-normal); display: none;';
-
-    // 归入英灵殿（查看模式显示）
-    const valhallaBtn = actions.createEl('button', { text: '✨ 归入英灵殿' });
-    valhallaBtn.style.cssText = 'min-height: 38px; padding: 8px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: 1px solid #9773f7; background: #9773f7; color: white; box-shadow: 0 2px 8px rgba(151, 115, 247, 0.3);';
-
-    // 删除（查看模式显示）
-    const deleteBtn = actions.createEl('button', { text: '删除' });
-    deleteBtn.style.cssText = 'min-height: 38px; padding: 8px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: 1px solid #ff3b30; background: #ff3b30; color: white; box-shadow: 0 2px 8px rgba(255, 59, 48, 0.3);';
 
     // 切换到编辑模式
     const enterEditMode = () => {

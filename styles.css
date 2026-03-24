@@ -821,6 +821,9 @@ details summary:hover {
   gap: 12px;
   max-height: 500px;
   overflow-y: auto;
+  flex: 1;
+  min-width: 0;
+  width: 100%;
 }
 
 .pm-idea-item {
@@ -840,10 +843,28 @@ details summary:hover {
 
 .pm-idea-content {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   flex: 1;
+  min-width: 0;
 }
+
+.pm-idea-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+.pm-idea-tag-wrapper {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
 
 .pm-idea-tag {
   display: inline-block;
@@ -858,18 +879,29 @@ details summary:hover {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  text-align: left;
+  align-items: flex-start;
+  flex: 1;
+  min-width: 0;
+  width: 100%;
 }
 
 .pm-idea-title {
   font-size: 14px;
   font-weight: 600;
   color: var(--text-normal);
+  text-align: left;
+  align-self: stretch;
+  width: 100%;
 }
 
 .pm-idea-body {
   font-size: 13px;
   color: var(--text-muted);
   line-height: 1.5;
+  text-align: left;
+  align-self: stretch;
+  width: 100%;
 }
 
 .pm-idea-time {
@@ -1007,13 +1039,16 @@ details summary:hover {
   gap: 4px;
   position: relative;
   padding: 4px;
+  align-items: stretch;
 }
 
 .pm-idea-title-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 8px;
+  flex: 1;
+  min-width: 0;
 }
 
 .pm-idea-title {
@@ -1022,12 +1057,18 @@ details summary:hover {
   color: var(--text-normal);
   flex: 1;
   min-width: 0;
+  text-align: left;
+  align-self: stretch;
+  width: 100%;
 }
 
 .pm-idea-body {
   font-size: 13px;
   color: var(--text-muted);
   line-height: 1.5;
+  text-align: left;
+  align-self: stretch;
+  width: 100%;
 }
 
 /* 滑动区域 - 绝对定位覆盖整个内容 */
@@ -1410,20 +1451,20 @@ details summary:hover {
   transition: background 0.3s ease;
 }
 
-/* 指示器 */
+/* 日历进度条指示器 */
 .pm-legend-indicator {
   position: absolute;
   top: -2px;
-  left: 50%;
-  transform: translateX(-50%);
   width: 4px;
   height: 12px;
   background: var(--interactive-accent);
   border-radius: 2px;
   box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+  transform: translateX(-50%);
+  transition: left 0.3s ease;
 }
 
-/* 当前位置标记 */
+/* 当前位置标记
 .pm-legend-current-position .pm-legend-indicator {
   background: var(--interactive-accent);
   animation: pm-legend-pulse 2s ease-in-out infinite;
@@ -1438,7 +1479,7 @@ details summary:hover {
     opacity: 0.7;
     box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
   }
-}
+} */
 
 /* 右侧数字 */
 .pm-calendar-legend-label:last-child {
@@ -1446,3 +1487,5 @@ details summary:hover {
   color: var(--text-muted);
   min-width: auto;
 }
+
+
