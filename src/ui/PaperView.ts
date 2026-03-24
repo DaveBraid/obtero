@@ -165,6 +165,54 @@ export class PaperView extends ItemView {
   private calendarDisplayYear: number | null = null;
   private calendarDisplayMonth: number | null = null;
 
+  private getIdeaHeatmapColor(count: number, maxCount: number): string {
+    if (count <= 0 || maxCount <= 0) return 'var(--background-secondary)';
+    if (maxCount === 1) return 'rgb(90, 170, 255)';
+
+    const stops = [
+      { at: 0, color: { r: 90, g: 170, b: 255 } },
+      { at: 0.35, color: { r: 120, g: 205, b: 255 } },
+      { at: 0.6, color: { r: 186, g: 145, b: 255 } },
+      { at: 0.8, color: { r: 255, g: 150, b: 210 } },
+      { at: 1, color: { r: 255, g: 92, b: 92 } },
+    ];
+
+    const ratio = Math.max(0, Math.min(1, (count - 1) / (maxCount - 1)));
+
+    let left = stops[0]!;
+    let right = stops[stops.length - 1]!;
+    for (let i = 0; i < stops.length - 1; i++) {
+      const current = stops[i]!;
+      const next = stops[i + 1]!;
+      if (ratio >= current.at && ratio <= next.at) {
+        left = current;
+        right = next;
+        break;
+      }
+    }
+
+    const segmentRatio = right.at === left.at ? 0 : (ratio - left.at) / (right.at - left.at);
+    const r = Math.round(left.color.r + (right.color.r - left.color.r) * segmentRatio);
+    const g = Math.round(left.color.g + (right.color.g - left.color.g) * segmentRatio);
+    const b = Math.round(left.color.b + (right.color.b - left.color.b) * segmentRatio);
+    return `rgb(${r}, ${g}, ${b})`;
+  }
+
+  private getIdeaHeatmapGradient(maxCount: number): string {
+    if (maxCount <= 1) {
+      const single = this.getIdeaHeatmapColor(1, 1);
+      return `linear-gradient(90deg, ${single} 0%, ${single} 100%)`;
+    }
+
+    const samples = [0, 0.25, 0.5, 0.75, 1].map(ratio => {
+      const count = 1 + ratio * (maxCount - 1);
+      const mappedCount = Math.round(count * 1000) / 1000;
+      return this.getIdeaHeatmapColor(mappedCount, maxCount);
+    });
+
+    return `linear-gradient(90deg, ${samples[0]} 0%, ${samples[1]} 25%, ${samples[2]} 50%, ${samples[3]} 75%, ${samples[4]} 100%)`;
+  }
+
   constructor(leaf: WorkspaceLeaf, plugin: MyPlugin) {
     super(leaf);
     this.plugin = plugin;
@@ -1435,24 +1483,28 @@ export class PaperView extends ItemView {
     });
 
     const currentTotal = monthIdeas.length;
-    const maxCount = Math.max(5, currentTotal);
+
+    const dayIdeaCounts = new Map<string, number>();
+    for (const idea of monthIdeas) {
+      const ideaDate = new Date(idea.createdAt);
+      const key = `${ideaDate.getFullYear()}-${String(ideaDate.getMonth() + 1).padStart(2, '0')}-${String(ideaDate.getDate()).padStart(2, '0')}`;
+      dayIdeaCounts.set(key, (dayIdeaCounts.get(key) || 0) + 1);
+    }
+
+    const maxCount = Math.max(...Array.from(dayIdeaCounts.values()), 0);
+    const minLegendCount = maxCount > 0 ? 1 : 0;
 
     const legend = headerMain.createDiv({ cls: 'pm-calendar-legend-inline' });
-    legend.createSpan({ cls: 'pm-legend-label', text: `${currentTotal}` });
+    legend.createSpan({ cls: 'pm-legend-label', text: `${minLegendCount}` });
 
-    // 渐变进度条（全宽，浅蓝→浅红）
+    // 渐变进度条（浅蓝→浅红）
     const legendBar = legend.createDiv({ cls: 'pm-calendar-legend-gradient' });
     const progressFill = legendBar.createDiv({ cls: 'pm-calendar-legend-segment' });
 
     progressFill.style.width = '100%';
-    progressFill.style.background = 'linear-gradient(90deg, rgb(135, 206, 250) 0%, rgb(255, 182, 193) 100%)';
+    progressFill.style.background = this.getIdeaHeatmapGradient(maxCount);
 
-    // 添加指示器
-    const indicatorRatio = Math.min(currentTotal / maxCount, 1);
-    const indicator = legendBar.createDiv({ cls: 'pm-legend-indicator' });
-    indicator.style.left = `${indicatorRatio * 100}%`;
-
-    legend.createSpan({ cls: 'pm-legend-label', text: `${maxCount}+` });
+    legend.createSpan({ cls: 'pm-legend-label', text: `${maxCount}` });
 
     const calendarGrid = section.createDiv({ cls: 'pm-calendar-grid' });
 
@@ -1473,7 +1525,7 @@ export class PaperView extends ItemView {
       const dayCell = calendarGrid.createDiv({ cls: 'pm-calendar-day' });
 
       const dateStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      const dayIdeas = (this.plugin.settings.ideas || []).filter(idea => {
+      const dayIdeas = monthIdeas.filter(idea => {
         const ideaDate = new Date(idea.createdAt);
         const ideaDateStr = `${ideaDate.getFullYear()}-${String(ideaDate.getMonth() + 1).padStart(2, '0')}-${String(ideaDate.getDate()).padStart(2, '0')}`;
         return ideaDateStr === dateStr;
@@ -1487,18 +1539,7 @@ export class PaperView extends ItemView {
       if (ideaCount > 0) {
         dayCell.classList.add('pm-calendar-day-has-ideas');
 
-        // 计算该天数在渐变区间的位置
-        const ratio = Math.min(ideaCount / maxCount, 1);
-
-        // 颜色渐变：浅蓝 → 浅红
-        const lightBlue = { r: 135, g: 206, b: 250 };
-        const lightRed = { r: 255, g: 182, b: 193 };
-
-        const r = Math.round(lightBlue.r + (lightRed.r - lightBlue.r) * ratio);
-        const g = Math.round(lightBlue.g + (lightRed.g - lightBlue.g) * ratio);
-        const b = Math.round(lightBlue.b + (lightRed.b - lightBlue.b) * ratio);
-
-        dayCell.style.cssText = `background: rgb(${r}, ${g}, ${b});`;
+        dayCell.style.cssText = `background: ${this.getIdeaHeatmapColor(ideaCount, maxCount)};`;
 
         dayCell.addEventListener('click', () => {
           this.showDayIdeasModal(dateStr, dayIdeas);
