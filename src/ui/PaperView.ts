@@ -488,15 +488,13 @@ export class PaperView extends ItemView {
     };
 
     try {
-      // 只有设置启用时才添加卡片
-      if (this.plugin.settings.addCardToExcalidraw) {
-        await insertPaperToExcalidraw(
-          this.app,
-          this.plugin.settings,
-          paperInfo,
-          file
-        );
-      }
+      // 手动入口应始终允许添加卡片；设置开关只控制“添加论文时自动创建卡片”。
+      await insertPaperToExcalidraw(
+        this.app,
+        this.plugin.settings,
+        paperInfo,
+        file
+      );
       new Notice(`已添加到 Excalidraw`);
 
       // Open Excalidraw file (reuse existing tab if possible)
