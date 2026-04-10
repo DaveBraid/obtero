@@ -1461,6 +1461,7 @@ export class PaperView extends ItemView {
 
   private renderCalendar(container: HTMLElement): void {
     const section = container.createDiv({ cls: 'pm-dashboard-section' });
+    const allPapers = this.getAllPapers();
 
     const header = section.createDiv({ cls: 'pm-calendar-header' });
 
@@ -1527,14 +1528,28 @@ export class PaperView extends ItemView {
       const dayCell = calendarGrid.createDiv({ cls: 'pm-calendar-day' });
 
       const dateStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const isToday =
+        currentYear === currentDate.getFullYear() &&
+        currentMonth === currentDate.getMonth() + 1 &&
+        day === currentDate.getDate();
       const dayIdeas = monthIdeas.filter(idea => {
         const ideaDate = new Date(idea.createdAt);
         const ideaDateStr = `${ideaDate.getFullYear()}-${String(ideaDate.getMonth() + 1).padStart(2, '0')}-${String(ideaDate.getDate()).padStart(2, '0')}`;
         return ideaDateStr === dateStr;
       });
+      const dayPapers = allPapers.filter(file => this.getFileDateString(file.stat.ctime) === dateStr);
+      const hasPapers = dayPapers.length > 0;
 
       const dayNumber = dayCell.createDiv({ cls: 'pm-calendar-day-number' });
       dayNumber.textContent = String(day);
+
+      if (isToday) {
+        dayCell.classList.add('pm-calendar-day-today');
+      }
+
+      if (hasPapers) {
+        dayCell.classList.add('pm-calendar-day-has-papers');
+      }
 
       // 根据灵感数量计算颜色（动态渐变）
       const ideaCount = dayIdeas.length;
@@ -1542,14 +1557,16 @@ export class PaperView extends ItemView {
         dayCell.classList.add('pm-calendar-day-has-ideas');
 
         dayCell.style.cssText = `background: ${this.getIdeaHeatmapColor(ideaCount, maxCount)};`;
-
-        dayCell.addEventListener('click', () => {
-          this.showDayIdeasModal(dateStr, dayIdeas);
-        });
+      } else if (hasPapers) {
+        dayCell.style.cssText = 'background: var(--background-modifier-form-field);';
       } else {
         // 无灵感的天数显示浅灰色背景
         dayCell.style.cssText = 'background: var(--background-secondary);';
       }
+
+      dayCell.addEventListener('click', () => {
+        this.showDaySummaryModal(dateStr, dayIdeas, dayPapers);
+      });
     }
   }
 
@@ -1635,18 +1652,92 @@ export class PaperView extends ItemView {
     modal.open();
   }
 
-  private showDayIdeasModal(dateStr: string, ideas: IdeaItem[]): void {
+  private getAllPapers(): TFile[] {
+    const byCategory = getPapersByCategory(this.app, this.plugin.settings);
+    const papers: TFile[] = [];
+
+    for (const files of Object.values(byCategory)) {
+      for (const file of files) {
+        papers.push(file as TFile);
+      }
+    }
+
+    return papers;
+  }
+
+  private getFileDateString(timestamp: number): string {
+    const date = new Date(timestamp);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  }
+
+  private renderDayPaperItem(list: HTMLElement, file: TFile, modal: Modal): void {
+    const item = list.createDiv({ cls: 'pm-field-paper-item' });
+    const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
+
+    const fieldName = fm?.field || this.plugin.settings.defaultField;
+    const fieldStyle = getFieldStyle(this.plugin.settings, fieldName);
+    if (fieldStyle) {
+      item.style.borderLeft = `3px solid ${fieldStyle.backgroundColor}`;
+    }
+
+    const content = item.createDiv({ cls: 'pm-field-paper-content' });
+
+    const titleRow = content.createDiv({ cls: 'pm-field-paper-title-row' });
+    const displayName = file.basename.replace(/^【.+?】-/, '');
+    titleRow.createSpan({ cls: 'pm-field-paper-title', text: displayName });
+
+    const fieldTag = titleRow.createSpan({ cls: 'pm-subfield-tag' });
+    fieldTag.textContent = fieldName;
+    if (fieldStyle) {
+      fieldTag.style.backgroundColor = fieldStyle.backgroundColor;
+      fieldTag.style.color = this.getContrastColor(fieldStyle.backgroundColor);
+    }
+
+    const metaRow = content.createDiv({ cls: 'pm-field-paper-meta' });
+    const metaParts: string[] = [];
+    if (fm?.date) metaParts.push(fm.date);
+    if (fm?.journal) metaParts.push(fm.journal);
+    if (fm?.authors) {
+      const authors = Array.isArray(fm.authors) ? fm.authors[0] : fm.authors.split(',')[0];
+      metaParts.push(authors);
+    }
+    metaRow.textContent = metaParts.join(' · ');
+
+    item.addEventListener('click', async () => {
+      const leaf = this.app.workspace.getLeaf(false);
+      await leaf.openFile(file);
+      modal.close();
+    });
+  }
+
+  private showDaySummaryModal(dateStr: string, ideas: IdeaItem[], papers: TFile[]): void {
     const modal = new Modal(this.app);
     const { contentEl } = modal;
 
-    contentEl.createEl('h2', { text: `${dateStr} 的灵感` });
+    contentEl.createEl('h2', { text: `${dateStr}` });
+
+    const ideaSection = contentEl.createDiv();
+    ideaSection.createEl('h3', { text: '每日灵感' });
 
     if (ideas.length === 0) {
-      contentEl.createDiv({ cls: 'pm-empty', text: '暂无灵感' });
+      ideaSection.createDiv({ cls: 'pm-empty', text: '暂无灵感' });
     } else {
-      const list = contentEl.createDiv({ cls: 'pm-ideas-list' });
+      const list = ideaSection.createDiv({ cls: 'pm-ideas-list' });
       for (const idea of ideas) {
         this.renderIdeaListItem(list, idea, modal);
+      }
+    }
+
+    const paperSection = contentEl.createDiv();
+    paperSection.createEl('h3', { text: '当天添加的论文' });
+
+    if (papers.length === 0) {
+      paperSection.createDiv({ cls: 'pm-empty', text: '当天没有新增论文' });
+    } else {
+      papers.sort((a, b) => b.stat.ctime - a.stat.ctime);
+      const list = paperSection.createDiv({ cls: 'pm-field-papers-list' });
+      for (const paper of papers) {
+        this.renderDayPaperItem(list, paper, modal);
       }
     }
 
