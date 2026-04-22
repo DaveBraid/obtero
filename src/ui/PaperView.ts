@@ -9,6 +9,23 @@ import { SetupModal } from './SetupModal';
 
 export const PAPER_VIEW_TYPE = 'paper-plugin-view';
 
+// 排序选项类型
+export type SortOption = 'date' | 'field' | 'title';
+
+// 排序选项标签
+export const SORT_LABELS: Record<SortOption, string> = {
+  'date': '添加日期',
+  'field': '大领域',
+  'title': '标题 A-Z',
+};
+
+// 排序选项图标
+export const SORT_ICONS: Record<SortOption, string> = {
+  'date': '📅',
+  'field': '🏷️',
+  'title': '🔤',
+};
+
 // 删除确认对话框
 class DeleteConfirmModal extends Modal {
   onConfirm: () => void;
@@ -164,6 +181,8 @@ export class PaperView extends ItemView {
   plugin: MyPlugin;
   private calendarDisplayYear: number | null = null;
   private calendarDisplayMonth: number | null = null;
+  // 每个分类的排序状态
+  private categorySortOptions: Map<string, SortOption> = new Map();
 
   private getIdeaHeatmapColor(count: number, maxCount: number): string {
     if (count <= 0 || maxCount <= 0) return 'var(--background-secondary)';
@@ -301,7 +320,7 @@ export class PaperView extends ItemView {
     measureSpan.style.position = 'absolute';
     measureSpan.style.whiteSpace = 'nowrap';
     document.body.appendChild(measureSpan);
-    
+
     for (const field of this.plugin.settings.fields) {
       measureSpan.textContent = field.name.toUpperCase();
       const width = measureSpan.offsetWidth;
@@ -310,7 +329,7 @@ export class PaperView extends ItemView {
       }
     }
     document.body.removeChild(measureSpan);
-    
+
     // 加上 padding (左右各 8px)
     maxFieldWidth += 16;
     // 最小宽度 60px
@@ -322,19 +341,113 @@ export class PaperView extends ItemView {
       // Section header
       const header = section.createDiv({ cls: 'pm-section-header' });
       header.createSpan({ cls: 'pm-section-title', text: label });
-      header.createSpan({ cls: 'pm-section-count', text: String(files.length) });
+
+      // 右侧容器：排序按钮 + 数量
+      const headerRight = header.createDiv({ cls: 'pm-section-header-right' });
+
+      // 排序按钮
+      const currentSort = this.categorySortOptions.get(label) || 'date';
+      const sortBtn = headerRight.createEl('button', {
+        cls: 'pm-sort-btn',
+        text: `${SORT_ICONS[currentSort]}`,
+        attr: { title: `排序: ${SORT_LABELS[currentSort]}` }
+      });
+      sortBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.showSortMenu(e, label);
+      });
+
+      headerRight.createSpan({ cls: 'pm-section-count', text: String(files.length) });
 
       if (files.length === 0) {
         section.createDiv({ cls: 'pm-empty', text: '暂无论文' });
         continue;
       }
 
+      // 对文件进行排序
+      const sortedFiles = this.sortFiles(files as TFile[], currentSort);
+
       // Paper list
       const list = section.createDiv({ cls: 'pm-paper-list' });
-      for (const file of files) {
+      for (const file of sortedFiles) {
         this.renderPaperItem(list, file as TFile, label, maxFieldWidth);
       }
     }
+  }
+
+  // 排序文件
+  private sortFiles(files: TFile[], sortOption: SortOption): TFile[] {
+    const sorted = [...files];
+
+    switch (sortOption) {
+      case 'date':
+        // 按添加日期（创建时间）降序
+        sorted.sort((a, b) => b.stat.ctime - a.stat.ctime);
+        break;
+      case 'field':
+        // 按大领域（主领域）A-Z，大领域相同则按小领域（实际标记的field值）A-Z
+        sorted.sort((a, b) => {
+          const fmA = this.app.metadataCache.getFileCache(a)?.frontmatter;
+          const fmB = this.app.metadataCache.getFileCache(b)?.frontmatter;
+          const paperFieldA = fmA?.field || this.plugin.settings.defaultField;
+          const paperFieldB = fmB?.field || this.plugin.settings.defaultField;
+
+          // 获取主领域（通过查找配置，将别名映射到主领域）
+          const getMainField = (paperField: string): string => {
+            for (const field of this.plugin.settings.fields) {
+              if (field.name === paperField) return field.name;
+              if (field.aliases?.includes(paperField)) return field.name;
+            }
+            return paperField;
+          };
+
+          const mainFieldA = getMainField(paperFieldA);
+          const mainFieldB = getMainField(paperFieldB);
+
+          // 先比较主领域
+          const mainCompare = mainFieldA.localeCompare(mainFieldB, 'zh-CN');
+          if (mainCompare !== 0) {
+            return mainCompare;
+          }
+
+          // 主领域相同，比较实际标记的field值（小领域/别名）
+          return paperFieldA.localeCompare(paperFieldB, 'zh-CN');
+        });
+        break;
+      case 'title':
+        // 按标题（A-Z）
+        sorted.sort((a, b) => {
+          const titleA = a.basename.replace(/^【.+?】-/, '').toLowerCase();
+          const titleB = b.basename.replace(/^【.+?】-/, '').toLowerCase();
+          return titleA.localeCompare(titleB, 'zh-CN');
+        });
+        break;
+    }
+
+    return sorted;
+  }
+
+  // 显示排序菜单
+  private showSortMenu(e: MouseEvent, category: string): void {
+    const menu = new Menu();
+    const currentSort = this.categorySortOptions.get(category) || 'date';
+
+    for (const [value, label] of Object.entries(SORT_LABELS)) {
+      const sortOption = value as SortOption;
+      const icon = SORT_ICONS[sortOption];
+      const isActive = currentSort === sortOption;
+
+      menu.addItem(item => {
+        item
+          .setTitle(`${icon} ${label}${isActive ? ' ✓' : ''}`)
+          .onClick(() => {
+            this.categorySortOptions.set(category, sortOption);
+            this.render();
+          });
+      });
+    }
+
+    menu.showAtMouseEvent(e);
   }
 
   private renderPaperItem(list: HTMLElement, file: TFile, category: string, maxFieldWidth: number): void {

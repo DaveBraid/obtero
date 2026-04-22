@@ -60,6 +60,34 @@
   text-align: center;
 }
 
+/* 排序按钮样式 */
+.pm-section-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pm-sort-btn {
+  background: transparent;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  color: var(--text-muted);
+}
+
+.pm-sort-btn:hover {
+  background: var(--background-modifier-hover);
+  border-color: var(--interactive-accent);
+  color: var(--text-normal);
+}
+
+.pm-sort-btn:active {
+  transform: scale(0.95);
+}
+
 /* ── Paper List ─────────────────────────────────────────────────────────── */
 .pm-paper-list {
   background: var(--background-secondary);
