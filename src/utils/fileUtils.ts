@@ -120,6 +120,10 @@ export async function createPaperFile(
 }
 
 function buildPaperContent(paper: PaperInfo, translatedAbstract: string = ''): string {
+  const paperFields = Array.from(
+    new Set((paper.fields && paper.fields.length > 0 ? paper.fields : paper.field ? [paper.field] : []).filter(Boolean))
+  );
+  const primaryField = paperFields[0];
   const lines: string[] = ['---'];
   lines.push(`title: "${escapeYaml(paper.title)}"`);
   lines.push(`journal: "${escapeYaml(paper.journal || '')}"`);
@@ -134,7 +138,10 @@ function buildPaperContent(paper: PaperInfo, translatedAbstract: string = ''): s
         .join(', ')}]`
     );
   }
-  if (paper.field) lines.push(`field: "${escapeYaml(paper.field)}"`);
+  if (paperFields.length > 0) {
+    lines.push(`fields: [${paperFields.map(field => `"${escapeYaml(field)}"`).join(', ')}]`);
+  }
+  if (primaryField) lines.push(`field: "${escapeYaml(primaryField)}"`);
   if (paper.arxivId) lines.push(`arxivId: "${escapeYaml(paper.arxivId)}"`);
   if (paper.doi) lines.push(`doi: "${paper.doi}"`);
   lines.push('---', '');
@@ -145,8 +152,8 @@ function buildPaperContent(paper: PaperInfo, translatedAbstract: string = ''): s
   if (paper.institutions && paper.institutions.length > 0) {
     lines.push(`**作者单位**：${paper.institutions.join('; ')}  `);
   }
-  if (paper.field) {
-    lines.push(`**研究领域**：${paper.field}  `);
+  if (paperFields.length > 0) {
+    lines.push(`**研究领域**：${paperFields.join(' / ')}  `);
   }
 
   // 添加 arxivId 多链接

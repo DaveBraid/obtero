@@ -1,18 +1,21 @@
-import { App, Modal, Notice, Setting } from 'obsidian';
+import { App, Modal, Notice, Setting, TFile } from 'obsidian';
 import MyPlugin from '../main';
 import { PaperInfo, FieldStyle } from '../types';
 import { searchArxiv } from '../api/arxivSearch';
 import { searchIEEE } from '../api/ieeeSearch';
+import { isRateLimitError } from '../api/requestGuards';
 import { createPaperFile } from '../utils/fileUtils';
 import { insertPaperToExcalidraw } from '../utils/excalidrawUtils';
+import { normalizePaperFields } from '../utils/paperFields';
 
 export class AddPaperModal extends Modal {
   private plugin: MyPlugin;
   private results: PaperInfo[] = [];
   private selected: PaperInfo | null = null;
   private category: string;
-  private field: string;
-  private onComplete?: () => void;
+  private selectedFields: string[];
+  private onComplete?: (file?: TFile) => void | Promise<void>;
+  private isAdding = false;
   // 手动输入表单数据
   private manualInput: {
     title: string;
@@ -34,18 +37,46 @@ export class AddPaperModal extends Modal {
     abstract: '',
   };
 
-  constructor(app: App, plugin: MyPlugin, onComplete?: () => void) {
+  constructor(app: App, plugin: MyPlugin, onComplete?: (file?: TFile) => void | Promise<void>) {
     super(app);
     this.plugin = plugin;
     this.category = '待阅读';
     // 验证 defaultField 是否在 fields 列表中存在，不存在则使用第一个字段
     const validFields = plugin.settings.fields.map(f => f.name);
     if (validFields.includes(plugin.settings.defaultField)) {
-      this.field = plugin.settings.defaultField;
+      this.selectedFields = [plugin.settings.defaultField];
     } else {
-      this.field = validFields[0] || '';
+      this.selectedFields = validFields[0] ? [validFields[0]] : [];
     }
     this.onComplete = onComplete;
+  }
+
+  private getFieldSelections(): string[] {
+    return normalizePaperFields(
+      {
+        fields: this.selectedFields,
+      }
+    );
+  }
+
+  private setFieldSelections(values: string[]): string[] {
+    this.selectedFields = normalizePaperFields({ fields: values });
+    return this.selectedFields;
+  }
+
+  private getFieldOptions(): Array<{ value: string; label: string }> {
+    const fieldOptions: Array<{ value: string; label: string }> = [
+      { value: '', label: '未选择' }
+    ];
+
+    this.plugin.settings.fields.forEach(field => {
+      fieldOptions.push({ value: field.name, label: field.name });
+      field.aliases?.forEach(alias => {
+        fieldOptions.push({ value: alias, label: `${alias} (${field.name})` });
+      });
+    });
+
+    return fieldOptions;
   }
 
   onOpen(): void {
@@ -284,21 +315,40 @@ export class AddPaperModal extends Modal {
     loadingEl.createSpan({ text: ' 搜索中...' });
 
     try {
-      const [arxiv, ieee] = await Promise.all([
+      const [arxivResult, ieeeResult] = await Promise.allSettled([
         searchArxiv(query),
         this.plugin.settings.ieeeApiKey
           ? searchIEEE(query, this.plugin.settings.ieeeApiKey)
           : Promise.resolve([]),
       ]);
+      const arxiv = arxivResult.status === 'fulfilled' ? arxivResult.value : [];
+      const ieee = ieeeResult.status === 'fulfilled' ? ieeeResult.value : [];
       this.results = [...arxiv, ...ieee];
       this.renderResults(container);
+
+      const failures = [arxivResult, ieeeResult].filter(
+        result => result.status === 'rejected'
+      );
+      if (failures.length > 0) {
+        const rateLimited = failures.some(
+          result => result.status === 'rejected' && isRateLimitError(result.reason)
+        );
+        if (this.results.length > 0 && !rateLimited) return;
+        new Notice(
+          rateLimited
+            ? '部分论文源请求过于频繁，已显示可用结果。请稍等几秒再搜索。'
+            : '部分论文源搜索失败，已显示可用结果。'
+        );
+      }
     } catch (e) {
       container.empty();
       const errorEl = container.createDiv();
       errorEl.style.color = 'var(--text-error)';
       errorEl.style.textAlign = 'center';
       errorEl.style.padding = '16px';
-      errorEl.textContent = `搜索失败：${(e as Error).message}`;
+      errorEl.textContent = isRateLimitError(e)
+        ? '搜索请求过于频繁，请稍等几秒后再试。'
+        : `搜索失败：${(e as Error).message}`;
     } finally {
       this.isSearching = false;
     }
@@ -373,37 +423,78 @@ export class AddPaperModal extends Modal {
         });
       });
 
-    // 研究领域（可选，包含主领域和关联领域）
-    const fieldOptions: { value: string; label: string }[] = [
-      { value: '', label: '未选择（可选）' }
-    ];
-    this.plugin.settings.fields.forEach(f => {
-      // 添加主领域
-      fieldOptions.push({ value: f.name, label: f.name });
-      // 添加关联领域（显示为 "别名 (主领域)"）
-      if (f.aliases) {
-        f.aliases.forEach(alias => {
-          fieldOptions.push({ value: alias, label: `${alias} (${f.name})` });
-        });
-      }
+    const fieldOptions = this.getFieldOptions();
+    const fieldSection = contentEl.createDiv({ cls: 'pm-multi-field-section' });
+    const fieldHeader = fieldSection.createDiv({ cls: 'pm-multi-field-header' });
+    fieldHeader.createDiv({ text: '研究领域', cls: 'pm-multi-field-title' });
+    fieldHeader.createDiv({
+      text: '支持任意多个标签，第一项决定 Excalidraw 卡片样式',
+      cls: 'pm-multi-field-desc'
     });
-    new Setting(contentEl)
-      .setName('研究领域')
-      .setDesc('选择该论文所属领域（可选，决定 Excalidraw 卡片样式）')
-      .addDropdown(drop => {
-        fieldOptions.forEach(opt => drop.addOption(opt.value, opt.label));
-        drop.setValue(this.field).onChange(v => {
-          this.field = v;
+
+    const fieldList = fieldSection.createDiv({ cls: 'pm-multi-field-list' });
+    const fieldActions = fieldSection.createDiv({ cls: 'pm-multi-field-actions' });
+    const addFieldBtn = fieldActions.createEl('button', { text: '+ 添加标签' });
+    const addFieldStyleBtn = fieldActions.createEl('button', { text: '+ 新建领域' });
+
+    const renderFieldSelectors = () => {
+      fieldList.empty();
+      const fieldSelections = this.getFieldSelections();
+
+      fieldSelections.forEach((selectedField, index) => {
+        const row = fieldList.createDiv({ cls: 'pm-multi-field-row' });
+        row.createDiv({
+          cls: 'pm-multi-field-row-label',
+          text: `标签 ${index + 1}${index === 0 ? '（主）' : ''}`
         });
-      })
-      .addButton(btn => {
-        btn
-          .setButtonText('+ 新建')
-          .setTooltip('创建新的研究领域')
-          .onClick(() => {
-            this.showNewFieldModal();
-          });
+        const controls = row.createDiv({ cls: 'pm-multi-field-row-controls' });
+        const select = controls.createEl('select');
+        fieldOptions.forEach(opt => select.createEl('option', { value: opt.value, text: opt.label }));
+        select.value = selectedField;
+        select.addEventListener('change', () => {
+          const nextFields = [...this.getFieldSelections()];
+          if (select.value && nextFields.some((value, currentIndex) => currentIndex !== index && value === select.value)) {
+            new Notice('领域标签不能重复');
+            select.value = selectedField;
+            return;
+          }
+
+          nextFields[index] = select.value;
+          this.setFieldSelections(nextFields);
+          renderFieldSelectors();
+        });
+
+        const removeBtn = controls.createEl('button', { text: '删除' });
+        removeBtn.disabled = fieldSelections.length <= 1;
+        removeBtn.addEventListener('click', () => {
+          const nextFields = this.getFieldSelections().filter((_, currentIndex) => currentIndex !== index);
+          this.setFieldSelections(nextFields);
+          renderFieldSelectors();
+        });
       });
+
+      if (fieldSelections.length === 0) {
+        const empty = fieldList.createDiv({ cls: 'pm-multi-field-empty' });
+        empty.textContent = '未选择领域标签';
+      }
+    };
+
+    addFieldBtn.addEventListener('click', () => {
+      const existing = this.getFieldSelections();
+      const candidate = fieldOptions.find(opt => opt.value && !existing.includes(opt.value));
+      if (!candidate) {
+        new Notice('没有可新增的领域标签了');
+        return;
+      }
+      this.selectedFields = [...existing, candidate.value];
+      renderFieldSelectors();
+    });
+
+    addFieldStyleBtn.addEventListener('click', () => {
+      this.showNewFieldModal();
+    });
+
+    renderFieldSelectors();
 
     // 按钮
     const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
@@ -419,7 +510,7 @@ export class AddPaperModal extends Modal {
       text: '确定添加',
       cls: 'mod-cta'
     });
-    addBtn.addEventListener('click', () => this.doAdd());
+    addBtn.addEventListener('click', () => this.doAdd(addBtn));
   }
 
   // ── 新建领域模态框 ─────────────────────────────────────────────────────
@@ -533,7 +624,9 @@ export class AddPaperModal extends Modal {
 
           this.plugin.settings.fields.push(newField);
           this.plugin.saveSettings();
-          this.field = fieldName;
+          if (!this.selectedFields.includes(fieldName)) {
+            this.selectedFields = [...this.getFieldSelections(), fieldName];
+          }
           this.showDetailPage();
           modal.close();
         });
@@ -544,11 +637,18 @@ export class AddPaperModal extends Modal {
 
   // ── 添加论文 ─────────────────────────────────────────────────────────────
 
-  private async doAdd(): Promise<void> {
-    if (!this.selected) return;
+  private async doAdd(addBtn?: HTMLButtonElement): Promise<void> {
+    if (!this.selected || this.isAdding) return;
 
-    this.selected.field = this.field;
-    console.log(`[MyPaper] doAdd: 设置 paper.field="${this.field}"`);
+    const paperFields = this.getFieldSelections();
+    this.selected.fields = paperFields;
+    this.selected.field = paperFields[0];
+    this.isAdding = true;
+    if (addBtn) {
+      addBtn.disabled = true;
+      addBtn.addClass('pm-add-button-loading');
+      addBtn.textContent = '添加中...';
+    }
 
     try {
       const file = await createPaperFile(
@@ -570,12 +670,30 @@ export class AddPaperModal extends Modal {
           file
         );
       }
+      await waitForPaperMetadata(this.app, file, paperFields);
+      await this.onComplete?.(file);
+      this.showAddSuccess();
       new Notice(`已将「${this.selected.title}」添加到「${this.category}」`);
+      await sleep(520);
       this.close();
-      this.onComplete?.();
     } catch (e) {
       new Notice('添加论文失败：' + (e as Error).message);
+      if (addBtn) {
+        addBtn.disabled = false;
+        addBtn.removeClass('pm-add-button-loading');
+        addBtn.textContent = '确定添加';
+      }
+    } finally {
+      this.isAdding = false;
     }
+  }
+
+  private showAddSuccess(): void {
+    this.contentEl.empty();
+    const success = this.contentEl.createDiv({ cls: 'pm-add-success' });
+    success.createDiv({ cls: 'pm-add-success-icon', text: '✓' });
+    success.createEl('h2', { text: '已添加' });
+    success.createDiv({ cls: 'pm-add-success-text', text: '论文列表已更新' });
   }
 
   // ── 手动输入详情页面 ───────────────────────────────────────────────────────
@@ -606,5 +724,25 @@ export class AddPaperModal extends Modal {
 
   onClose(): void {
     this.contentEl.empty();
+  }
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => window.setTimeout(resolve, ms));
+}
+
+// Obsidian 写入文件后 metadataCache 可能晚一点才读到 frontmatter。
+async function waitForPaperMetadata(app: App, file: TFile, expectedFields: string[]): Promise<void> {
+  const deadline = Date.now() + 2500;
+  while (Date.now() < deadline) {
+    const fm = app.metadataCache.getFileCache(file)?.frontmatter;
+    const actualFields = normalizePaperFields(fm);
+    if (
+      fm &&
+      (expectedFields.length === 0 || expectedFields.every(field => actualFields.includes(field)))
+    ) {
+      return;
+    }
+    await sleep(100);
   }
 }

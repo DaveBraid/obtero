@@ -1,5 +1,6 @@
 import { requestUrl } from 'obsidian';
 import { PaperInfo } from '../types';
+import { isRateLimitError, SearchRateLimitError } from './requestGuards';
 
 interface IEEEAuthor {
   full_name?: string;
@@ -26,6 +27,7 @@ export async function searchIEEE(query: string, apiKey: string): Promise<PaperIn
     `?querytext=${encodeURIComponent(query)}&max_records=10&apikey=${apiKey}`;
   try {
     const response = await requestUrl({ url });
+    if (response.status === 429) throw new SearchRateLimitError('IEEE');
     const data = response.json as IEEEResponse;
     if (!data.articles) return [];
 
@@ -46,7 +48,8 @@ export async function searchIEEE(query: string, apiKey: string): Promise<PaperIn
       abstract: a.abstract,
       source: 'ieee' as const,
     }));
-  } catch {
+  } catch (error) {
+    if (isRateLimitError(error)) return [];
     return [];
   }
 }

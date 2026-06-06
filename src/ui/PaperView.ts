@@ -1,4 +1,4 @@
-import { App, ItemView, Menu, Modal, Notice, Setting, TFile, WorkspaceLeaf } from 'obsidian';
+import { App, ItemView, MarkdownRenderer, Menu, Modal, Notice, Setting, TFile, WorkspaceLeaf } from 'obsidian';
 import MyPlugin from '../main';
 import { getPapersByCategory, movePaper, resolveExcalidrawPath } from '../utils/fileUtils';
 import { insertPaperToExcalidraw } from '../utils/excalidrawUtils';
@@ -6,6 +6,7 @@ import { getFieldStyle } from '../utils/excalidrawUtils';
 import { PaperInfo, IdeaItem } from '../types';
 import { AddPaperModal } from './AddPaperModal';
 import { SetupModal } from './SetupModal';
+import { getPrimaryPaperField, normalizePaperFields, paperMatchesField, resolveMainFieldName } from '../utils/paperFields';
 
 export const PAPER_VIEW_TYPE = 'paper-plugin-view';
 
@@ -66,12 +67,14 @@ class FieldPapersModal extends Modal {
   private fieldName: string;
   private papers: TFile[];
   private plugin: MyPlugin;
+  private showExactTagMatches: boolean;
 
-  constructor(app: App, plugin: MyPlugin, fieldName: string, papers: TFile[]) {
+  constructor(app: App, plugin: MyPlugin, fieldName: string, papers: TFile[], showExactTagMatches = false) {
     super(app);
     this.plugin = plugin;
     this.fieldName = fieldName;
     this.papers = papers;
+    this.showExactTagMatches = showExactTagMatches;
   }
 
   onOpen() {
@@ -87,7 +90,7 @@ class FieldPapersModal extends Modal {
     header.createSpan({ cls: 'pm-field-papers-count', text: `${this.papers.length} 篇` });
     
     // 显示关联子标签
-    if (fieldStyle?.aliases && fieldStyle.aliases.length > 0) {
+    if (!this.showExactTagMatches && fieldStyle?.aliases && fieldStyle.aliases.length > 0) {
       const aliasesRow = container.createDiv({ cls: 'pm-field-papers-aliases' });
       aliasesRow.createSpan({ text: '子领域：', cls: 'pm-aliases-label' });
       for (const alias of fieldStyle.aliases) {
@@ -95,10 +98,25 @@ class FieldPapersModal extends Modal {
         aliasTag.textContent = alias;
         const aliasCount = this.papers.filter(f => {
           const fm = this.app.metadataCache.getFileCache(f)?.frontmatter;
-          return (fm?.field || this.plugin.settings.defaultField) === alias;
+          return normalizePaperFields(fm, this.plugin.settings.defaultField).includes(alias);
         }).length;
         if (aliasCount > 0) {
           aliasTag.createSpan({ cls: 'pm-alias-count', text: ` ${aliasCount}` });
+        }
+        if (aliasCount > 0) {
+          aliasTag.addEventListener('click', () => {
+            const exactMatchedPapers = Object.values(
+              getPapersByCategory(this.app, this.plugin.settings)
+            )
+              .flat()
+              .filter(file => {
+                const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
+                return normalizePaperFields(fm, this.plugin.settings.defaultField).includes(alias);
+              })
+              .sort((a, b) => b.stat.mtime - a.stat.mtime);
+            this.close();
+            new FieldPapersModal(this.app, this.plugin, alias, exactMatchedPapers, true).open();
+          });
         }
       }
     }
@@ -116,8 +134,9 @@ class FieldPapersModal extends Modal {
     const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
     
     // 获取该论文的领域
-    const paperField = fm?.field || this.plugin.settings.defaultField;
-    const fieldStyle = getFieldStyle(this.plugin.settings, paperField);
+    const paperFields = normalizePaperFields(fm, this.plugin.settings.defaultField);
+    const primaryField = paperFields[0] || this.plugin.settings.defaultField;
+    const fieldStyle = getFieldStyle(this.plugin.settings, primaryField);
     
     // 左边框颜色
     if (fieldStyle) {
@@ -133,13 +152,14 @@ class FieldPapersModal extends Modal {
     titleRow.createSpan({ cls: 'pm-field-paper-title', text: displayName });
     
     // 子领域标签（如果与主领域不同，显示具体子领域）
-    const isAlias = fieldStyle?.name === this.fieldName && paperField !== this.fieldName;
-    if (isAlias || paperField !== this.fieldName) {
-      const subFieldTag = titleRow.createSpan({ cls: 'pm-subfield-tag' });
+    const tagContainer = titleRow.createDiv({ cls: 'pm-inline-field-tags' });
+    for (const paperField of paperFields) {
+      const subFieldTag = tagContainer.createSpan({ cls: 'pm-subfield-tag' });
       subFieldTag.textContent = paperField;
-      if (fieldStyle) {
-        subFieldTag.style.backgroundColor = fieldStyle.backgroundColor;
-        subFieldTag.style.color = this.getContrastColor(fieldStyle.backgroundColor);
+      const subFieldStyle = getFieldStyle(this.plugin.settings, paperField);
+      if (subFieldStyle) {
+        subFieldTag.style.backgroundColor = subFieldStyle.backgroundColor;
+        subFieldTag.style.color = this.getContrastColor(subFieldStyle.backgroundColor);
       }
     }
     
@@ -183,6 +203,51 @@ export class PaperView extends ItemView {
   private calendarDisplayMonth: number | null = null;
   // 每个分类的排序状态
   private categorySortOptions: Map<string, SortOption> = new Map();
+
+  private getPaperFields(frontmatter: Record<string, unknown> | undefined): string[] {
+    return normalizePaperFields(frontmatter, this.plugin.settings.defaultField);
+  }
+
+  private createFieldTags(
+    container: HTMLElement,
+    fieldNames: string[],
+    maxFieldWidth?: number,
+    className = 'pm-field-tag'
+  ): void {
+    if (fieldNames.length === 0) {
+      return;
+    }
+
+    const tagRow = container.createDiv({ cls: 'pm-field-tag-row' });
+    const primaryFieldName = fieldNames[0]!;
+    const primaryFieldStyle = getFieldStyle(this.plugin.settings, primaryFieldName);
+    const primaryTag = tagRow.createSpan({ cls: className });
+    primaryTag.textContent = primaryFieldName;
+    if (typeof maxFieldWidth === 'number') {
+      primaryTag.style.minWidth = `${maxFieldWidth}px`;
+    }
+    primaryTag.style.textAlign = 'center';
+    if (primaryFieldStyle) {
+      primaryTag.style.backgroundColor = primaryFieldStyle.backgroundColor;
+      primaryTag.style.color = this.getContrastColor(primaryFieldStyle.backgroundColor);
+    }
+
+    if (fieldNames.length > 1) {
+      const extraTags = tagRow.createDiv({ cls: 'pm-field-tag-squares' });
+      for (const fieldName of fieldNames.slice(1)) {
+        const fieldStyle = getFieldStyle(this.plugin.settings, fieldName);
+        const squareSlot = extraTags.createSpan({ cls: 'pm-field-tag-collapsible-slot' });
+        const square = squareSlot.createSpan({ cls: 'pm-field-tag-collapsible' });
+        const squareLabel = square.createSpan({ cls: 'pm-field-tag-collapsible-label' });
+        squareLabel.textContent = fieldName;
+        if (fieldStyle) {
+          square.style.backgroundColor = fieldStyle.backgroundColor;
+          square.style.borderColor = fieldStyle.backgroundColor;
+          square.style.color = this.getContrastColor(fieldStyle.backgroundColor);
+        }
+      }
+    }
+  }
 
   private getIdeaHeatmapColor(count: number, maxCount: number): string {
     if (count <= 0 || maxCount <= 0) return 'var(--background-secondary)';
@@ -284,7 +349,7 @@ export class PaperView extends ItemView {
 
     // 左侧区域（论文列表）
     const leftContainer = mainContainer.createDiv({ cls: 'pm-left-container' });
-    this.renderPaperList(leftContainer);
+    await this.renderPaperList(leftContainer);
 
     // 右侧看板
     const rightContainer = mainContainer.createDiv({ cls: 'pm-right-container' });
@@ -306,7 +371,7 @@ export class PaperView extends ItemView {
       });
   }
 
-  private renderPaperList(root: HTMLElement): void {
+  private async renderPaperList(root: HTMLElement): Promise<void> {
     const byCategory = getPapersByCategory(this.app, this.plugin.settings);
 
     // 计算最长领域名称的实际像素宽度，用于统一标签宽度
@@ -322,10 +387,13 @@ export class PaperView extends ItemView {
     document.body.appendChild(measureSpan);
 
     for (const field of this.plugin.settings.fields) {
-      measureSpan.textContent = field.name.toUpperCase();
-      const width = measureSpan.offsetWidth;
-      if (width > maxFieldWidth) {
-        maxFieldWidth = width;
+      const candidateNames = [field.name, ...(field.aliases || [])];
+      for (const candidateName of candidateNames) {
+        measureSpan.textContent = candidateName.toUpperCase();
+        const width = measureSpan.offsetWidth;
+        if (width > maxFieldWidth) {
+          maxFieldWidth = width;
+        }
       }
     }
     document.body.removeChild(measureSpan);
@@ -337,6 +405,13 @@ export class PaperView extends ItemView {
 
     for (const [label, files] of Object.entries(byCategory)) {
       const section = root.createDiv({ cls: 'pm-section' });
+      const typedFiles = files as TFile[];
+      const maxExtraTagCount = typedFiles.reduce((maxCount, file) => {
+        const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
+        const extraCount = Math.max(0, this.getPaperFields(fm).length - 1);
+        return Math.max(maxCount, extraCount);
+      }, 0);
+      const tagColumnWidth = maxFieldWidth + maxExtraTagCount * 16 + (maxExtraTagCount > 0 ? 6 : 0);
 
       // Section header
       const header = section.createDiv({ cls: 'pm-section-header' });
@@ -365,12 +440,12 @@ export class PaperView extends ItemView {
       }
 
       // 对文件进行排序
-      const sortedFiles = this.sortFiles(files as TFile[], currentSort);
+      const sortedFiles = this.sortFiles(typedFiles, currentSort);
 
       // Paper list
       const list = section.createDiv({ cls: 'pm-paper-list' });
       for (const file of sortedFiles) {
-        this.renderPaperItem(list, file as TFile, label, maxFieldWidth);
+        await this.renderPaperItem(list, file as TFile, label, maxFieldWidth, tagColumnWidth);
       }
     }
   }
@@ -385,33 +460,23 @@ export class PaperView extends ItemView {
         sorted.sort((a, b) => b.stat.ctime - a.stat.ctime);
         break;
       case 'field':
-        // 按大领域（主领域）A-Z，大领域相同则按小领域（实际标记的field值）A-Z
+        // 按主领域 A-Z，再按该论文的所有领域标签排序
         sorted.sort((a, b) => {
           const fmA = this.app.metadataCache.getFileCache(a)?.frontmatter;
           const fmB = this.app.metadataCache.getFileCache(b)?.frontmatter;
-          const paperFieldA = fmA?.field || this.plugin.settings.defaultField;
-          const paperFieldB = fmB?.field || this.plugin.settings.defaultField;
+          const paperFieldsA = this.getPaperFields(fmA);
+          const paperFieldsB = this.getPaperFields(fmB);
+          const primaryFieldA = paperFieldsA[0] || this.plugin.settings.defaultField;
+          const primaryFieldB = paperFieldsB[0] || this.plugin.settings.defaultField;
+          const mainFieldA = resolveMainFieldName(this.plugin.settings, primaryFieldA);
+          const mainFieldB = resolveMainFieldName(this.plugin.settings, primaryFieldB);
 
-          // 获取主领域（通过查找配置，将别名映射到主领域）
-          const getMainField = (paperField: string): string => {
-            for (const field of this.plugin.settings.fields) {
-              if (field.name === paperField) return field.name;
-              if (field.aliases?.includes(paperField)) return field.name;
-            }
-            return paperField;
-          };
-
-          const mainFieldA = getMainField(paperFieldA);
-          const mainFieldB = getMainField(paperFieldB);
-
-          // 先比较主领域
           const mainCompare = mainFieldA.localeCompare(mainFieldB, 'zh-CN');
           if (mainCompare !== 0) {
             return mainCompare;
           }
 
-          // 主领域相同，比较实际标记的field值（小领域/别名）
-          return paperFieldA.localeCompare(paperFieldB, 'zh-CN');
+          return paperFieldsA.join('|').localeCompare(paperFieldsB.join('|'), 'zh-CN');
         });
         break;
       case 'title':
@@ -450,14 +515,19 @@ export class PaperView extends ItemView {
     menu.showAtMouseEvent(e);
   }
 
-  private renderPaperItem(list: HTMLElement, file: TFile, category: string, maxFieldWidth: number): void {
+  private async renderPaperItem(
+    list: HTMLElement,
+    file: TFile,
+    category: string,
+    maxFieldWidth: number,
+    tagColumnWidth?: number
+  ): Promise<void> {
     const item = list.createDiv({ cls: 'pm-paper-item' });
 
-    // 获取论文的领域信息
     const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
-    const fieldName = fm?.field || this.plugin.settings.defaultField;
-    // 使用辅助函数查找领域样式（支持关联领域）
-    const fieldStyle = getFieldStyle(this.plugin.settings, fieldName);
+    const paperFields = this.getPaperFields(fm);
+    const primaryField = getPrimaryPaperField(fm, this.plugin.settings.defaultField);
+    const fieldStyle = getFieldStyle(this.plugin.settings, primaryField);
     const defaultField = getFieldStyle(this.plugin.settings, this.plugin.settings.defaultField);
     const activeField = fieldStyle || defaultField;
 
@@ -481,18 +551,16 @@ export class PaperView extends ItemView {
     const titleContainer = contentContainer.createDiv({ cls: 'pm-paper-title-container' });
     titleContainer.style.flex = '1';
     titleContainer.style.minWidth = '0';
-    titleContainer.createSpan({ cls: 'pm-paper-title', text: displayName });
 
-    // 领域标签 - 背景色使用卡片背景色，宽度统一
-    const fieldTag = contentContainer.createSpan({ cls: 'pm-field-tag' });
-    fieldTag.textContent = fieldName;
-    fieldTag.style.flexShrink = '0';
-    fieldTag.style.minWidth = `${maxFieldWidth}px`;
-    fieldTag.style.textAlign = 'center';
-    if (activeField) {
-      fieldTag.style.backgroundColor = activeField.backgroundColor;
-      fieldTag.style.color = this.getContrastColor(activeField.backgroundColor);
+    // 使用 MarkdownRenderer 渲染标题（支持公式）
+    const titleSpan = titleContainer.createSpan({ cls: 'pm-paper-title' });
+    await MarkdownRenderer.render(this.app, displayName, titleSpan, file.path, this);
+
+    const fieldTagContainer = contentContainer.createDiv({ cls: 'pm-paper-field-tags' });
+    if (typeof tagColumnWidth === 'number') {
+      fieldTagContainer.style.width = `${tagColumnWidth}px`;
     }
+    this.createFieldTags(fieldTagContainer, paperFields, maxFieldWidth);
 
     // Click to open
     item.addEventListener('click', async (e) => {
@@ -597,7 +665,8 @@ export class PaperView extends ItemView {
       institutions: Array.isArray(fm?.institutions) ? fm.institutions : [],
       arxivId: fm?.arxivId,
       doi: fm?.doi,
-      field: fm?.field,  // 从 frontmatter 读取领域
+      field: fm?.field,
+      fields: this.getPaperFields(fm),
     };
 
     try {
@@ -695,9 +764,14 @@ export class PaperView extends ItemView {
       for (const [category, files] of Object.entries(byCategory)) {
         for (const file of files) {
           const fm = this.app.metadataCache.getFileCache(file as TFile)?.frontmatter;
-          const paperField = fm?.field || this.plugin.settings.defaultField;
-          // 检查是否匹配主领域名称或别名
-          if (paperField === field.name || (field.aliases && field.aliases.includes(paperField))) {
+          if (
+            paperMatchesField(
+              this.plugin.settings,
+              fm,
+              field.name,
+              this.plugin.settings.defaultField
+            )
+          ) {
             count++;
           }
         }
@@ -946,7 +1020,7 @@ export class PaperView extends ItemView {
   // 修改领域模态框
   private showFieldChangeModal(file: TFile, displayName: string): void {
     const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
-    const currentField = fm?.field || this.plugin.settings.defaultField;
+    const currentFields = this.getPaperFields(fm);
 
     const modal = new Modal(this.app);
     modal.contentEl.createEl('h2', { text: '修改论文领域' });
@@ -956,28 +1030,79 @@ export class PaperView extends ItemView {
     desc.style.marginBottom = '16px';
     desc.style.color = 'var(--text-muted)';
 
-    // 构建领域选项：主领域 + 别名
-    const fieldOptions: { value: string; label: string; isAlias: boolean }[] = [];
+    const fieldOptions: Array<{ value: string; label: string }> = [
+      { value: '', label: '未选择' }
+    ];
     for (const field of this.plugin.settings.fields) {
-      // 添加主领域
-      fieldOptions.push({ value: field.name, label: field.name, isAlias: false });
-      // 添加别名
+      fieldOptions.push({ value: field.name, label: field.name });
       if (field.aliases) {
         for (const alias of field.aliases) {
-          fieldOptions.push({ value: alias, label: `${alias} (${field.name})`, isAlias: true });
+          fieldOptions.push({ value: alias, label: `${alias} (${field.name})` });
         }
       }
     }
 
-    new Setting(modal.contentEl)
-      .setName('研究领域')
-      .setDesc('选择该论文所属领域')
-      .addDropdown(drop => {
-        fieldOptions.forEach(opt => drop.addOption(opt.value, opt.label));
-        drop.setValue(currentField).onChange(v => {
-          // 临时存储选择的领域
+    let nextFields = [...currentFields];
+    const fieldSection = modal.contentEl.createDiv({ cls: 'pm-multi-field-section' });
+    const fieldHeader = fieldSection.createDiv({ cls: 'pm-multi-field-header' });
+    fieldHeader.createDiv({ text: '研究领域', cls: 'pm-multi-field-title' });
+    fieldHeader.createDiv({
+      text: '支持任意多个标签，第一项作为主领域',
+      cls: 'pm-multi-field-desc'
+    });
+
+    const fieldList = fieldSection.createDiv({ cls: 'pm-multi-field-list' });
+    const fieldActions = fieldSection.createDiv({ cls: 'pm-multi-field-actions' });
+    const addFieldBtn = fieldActions.createEl('button', { text: '+ 添加标签' });
+
+    const renderFieldSelectors = () => {
+      fieldList.empty();
+
+      nextFields.forEach((selectedField, index) => {
+        const row = fieldList.createDiv({ cls: 'pm-multi-field-row' });
+        row.createDiv({
+          cls: 'pm-multi-field-row-label',
+          text: `标签 ${index + 1}${index === 0 ? '（主）' : ''}`
+        });
+
+        const controls = row.createDiv({ cls: 'pm-multi-field-row-controls' });
+        const select = controls.createEl('select');
+        fieldOptions.forEach(opt => select.createEl('option', { value: opt.value, text: opt.label }));
+        select.value = selectedField;
+        select.addEventListener('change', () => {
+          if (select.value && nextFields.some((value, currentIndex) => currentIndex !== index && value === select.value)) {
+            new Notice('领域标签不能重复');
+            select.value = selectedField;
+            return;
+          }
+
+          const updatedFields = [...nextFields];
+          updatedFields[index] = select.value;
+          nextFields = normalizePaperFields({ fields: updatedFields });
+          renderFieldSelectors();
+        });
+
+        const removeBtn = controls.createEl('button', { text: '删除' });
+        removeBtn.disabled = nextFields.length <= 1;
+        removeBtn.addEventListener('click', () => {
+          nextFields = nextFields.filter((_, currentIndex) => currentIndex !== index);
+          renderFieldSelectors();
         });
       });
+    };
+
+    addFieldBtn.addEventListener('click', () => {
+      const candidate = fieldOptions.find(opt => opt.value && !nextFields.includes(opt.value));
+      if (!candidate) {
+        new Notice('没有可新增的领域标签了');
+        return;
+      }
+
+      nextFields = [...nextFields, candidate.value];
+      renderFieldSelectors();
+    });
+
+    renderFieldSelectors();
 
     const buttonContainer = modal.contentEl.createDiv({ cls: 'modal-button-container' });
     buttonContainer.style.display = 'flex';
@@ -994,10 +1119,8 @@ export class PaperView extends ItemView {
     });
 
     confirmBtn.addEventListener('click', async () => {
-      const dropdown = modal.contentEl.querySelector('select') as HTMLSelectElement;
-      const newField = dropdown.value;
-
-      if (newField === currentField) {
+      const normalizedNextFields = normalizePaperFields({ fields: nextFields });
+      if (normalizedNextFields.join('|') === currentFields.join('|')) {
         modal.close();
         return;
       }
@@ -1006,9 +1129,14 @@ export class PaperView extends ItemView {
       modal.close();
 
       try {
-        // 更新文件的 frontmatter
         await this.app.fileManager.processFrontMatter(file, fm => {
-          fm.field = newField;
+          const primaryField = normalizedNextFields[0] || this.plugin.settings.defaultField;
+          fm.field = primaryField;
+          if (normalizedNextFields.length > 0) {
+            fm.fields = normalizedNextFields;
+          } else {
+            delete fm.fields;
+          }
         });
 
         // 等待一小段时间确保 frontmatter 更新完成
@@ -1017,7 +1145,7 @@ export class PaperView extends ItemView {
         // 刷新界面
         await this.render();
 
-        new Notice(`已将「${displayName}」移至领域「${newField}」`);
+        new Notice(`已更新「${displayName}」的领域标签`);
       } catch (err) {
         new Notice('修改失败：' + (err as Error).message);
       }
@@ -1029,16 +1157,20 @@ export class PaperView extends ItemView {
   // 显示领域论文列表
   private showFieldPapers(fieldName: string): void {
     const byCategory = getPapersByCategory(this.app, this.plugin.settings);
-    const fieldStyle = this.plugin.settings.fields.find(f => f.name === fieldName);
     
     // 收集该领域的所有论文（包括别名匹配）
     const papers: TFile[] = [];
     for (const [category, files] of Object.entries(byCategory)) {
       for (const file of files) {
         const fm = this.app.metadataCache.getFileCache(file as TFile)?.frontmatter;
-        const paperField = fm?.field || this.plugin.settings.defaultField;
-        // 匹配主领域名称或别名
-        if (paperField === fieldName || (fieldStyle?.aliases && fieldStyle.aliases.includes(paperField))) {
+        if (
+          paperMatchesField(
+            this.plugin.settings,
+            fm,
+            fieldName,
+            this.plugin.settings.defaultField
+          )
+        ) {
           papers.push(file as TFile);
         }
       }
@@ -1049,6 +1181,7 @@ export class PaperView extends ItemView {
     
     new FieldPapersModal(this.app, this.plugin, fieldName, papers).open();
   }
+
   private renderValhalla(container: HTMLElement): void {
     const section = container.createDiv({ cls: 'pm-dashboard-section' });
     const valhallaCount = (this.plugin.settings.ideas || []).filter(idea => idea.inValhalla).length;
@@ -1787,8 +1920,9 @@ export class PaperView extends ItemView {
     const item = list.createDiv({ cls: 'pm-field-paper-item' });
     const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
 
-    const fieldName = fm?.field || this.plugin.settings.defaultField;
-    const fieldStyle = getFieldStyle(this.plugin.settings, fieldName);
+    const paperFields = this.getPaperFields(fm);
+    const primaryField = paperFields[0] || this.plugin.settings.defaultField;
+    const fieldStyle = getFieldStyle(this.plugin.settings, primaryField);
     if (fieldStyle) {
       item.style.borderLeft = `3px solid ${fieldStyle.backgroundColor}`;
     }
@@ -1798,13 +1932,7 @@ export class PaperView extends ItemView {
     const titleRow = content.createDiv({ cls: 'pm-field-paper-title-row' });
     const displayName = file.basename.replace(/^【.+?】-/, '');
     titleRow.createSpan({ cls: 'pm-field-paper-title', text: displayName });
-
-    const fieldTag = titleRow.createSpan({ cls: 'pm-subfield-tag' });
-    fieldTag.textContent = fieldName;
-    if (fieldStyle) {
-      fieldTag.style.backgroundColor = fieldStyle.backgroundColor;
-      fieldTag.style.color = this.getContrastColor(fieldStyle.backgroundColor);
-    }
+    this.createFieldTags(titleRow, paperFields, undefined, 'pm-subfield-tag');
 
     const metaRow = content.createDiv({ cls: 'pm-field-paper-meta' });
     const metaParts: string[] = [];

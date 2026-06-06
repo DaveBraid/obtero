@@ -3,6 +3,7 @@ import * as LZString from 'lz-string';
 import { MyPluginSettings } from '../settings';
 import { PaperInfo, FieldStyle } from '../types';
 import { ensureExcalidrawFile } from './fileUtils';
+import { getPrimaryPaperField } from './paperFields';
 
 // 根据领域名称（含关联领域）查找样式
 export function getFieldStyle(settings: MyPluginSettings, fieldName: string | undefined): FieldStyle | undefined {
@@ -24,10 +25,16 @@ export function getFieldStyle(settings: MyPluginSettings, fieldName: string | un
 }
 
 // 获取有效的领域名称（用于回退逻辑）
-export function getEffectiveFieldName(settings: MyPluginSettings, paperField?: string): string {
-  // 优先使用 paper.field
-  if (paperField && getFieldStyle(settings, paperField)) {
-    return paperField;
+export function getEffectiveFieldName(
+  settings: MyPluginSettings,
+  paperField?: string,
+  paperFields?: string[]
+): string {
+  const primaryField = getPrimaryPaperField({ field: paperField, fields: paperFields });
+
+  // 优先使用 paper.field / paper.fields[0]
+  if (primaryField && getFieldStyle(settings, primaryField)) {
+    return primaryField;
   }
   
   // 其次尝试 defaultField
@@ -214,7 +221,7 @@ async function insertPaperViaEA(
   ).length;
 
   // 获取领域样式 - 使用辅助函数（支持关联领域）
-  const fieldName = getEffectiveFieldName(settings, paper.field);
+  const fieldName = getEffectiveFieldName(settings, paper.field, paper.fields);
   const fieldStyle = getFieldStyle(settings, fieldName);
 
   if (!fieldStyle) {
@@ -411,7 +418,7 @@ async function insertPaperViaFile(
   const cardCount = paperRectangles.length;
 
   // 获取领域样式 - 使用辅助函数（支持关联领域）
-  const fieldName = getEffectiveFieldName(settings, paper.field);
+  const fieldName = getEffectiveFieldName(settings, paper.field, paper.fields);
   const fieldStyle = getFieldStyle(settings, fieldName);
 
   if (!fieldStyle) {

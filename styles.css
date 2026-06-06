@@ -138,16 +138,113 @@
   display: block;
 }
 
+.pm-paper-field-tags {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.pm-field-tag-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  min-width: 0;
+  overflow: visible;
+}
+
+.pm-field-tag-squares {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow: visible;
+}
+
+.pm-field-tag-collapsible-slot {
+  position: relative;
+  width: 10px;
+  min-width: 10px;
+  height: 10px;
+  overflow: visible;
+  transition: opacity 0.12s ease;
+}
+
 /* 领域标签样式 */
 .pm-field-tag {
   flex-shrink: 0;
-  padding: 2px 8px;
+  padding: 1px 8px;
   border-radius: 4px;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   white-space: nowrap;
+  line-height: 1.35;
+}
+
+.pm-field-tag-collapsible {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 10px;
+  min-width: 10px;
+  max-width: 10px;
+  height: 10px;
+  padding: 0;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+  cursor: default;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  transition: min-width 0.18s ease, max-width 0.18s ease, width 0.18s ease, padding 0.18s ease, height 0.18s ease, box-shadow 0.18s ease;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.pm-field-tag-collapsible:hover {
+  width: auto;
+  min-width: max-content;
+  max-width: max-content;
+  height: auto;
+  padding: 1px 6px;
+  justify-content: center;
+  z-index: 20;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+}
+
+.pm-field-tag-squares:has(.pm-field-tag-collapsible:hover) .pm-field-tag-collapsible-slot:not(:has(.pm-field-tag-collapsible:hover)) {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pm-field-tag-row:has(.pm-field-tag-collapsible:hover) > .pm-field-tag:first-child {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pm-field-tag-collapsible-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  line-height: 1.35;
+  opacity: 0;
+  transform: translateX(-8px);
+  transition: opacity 0.14s ease, transform 0.18s ease;
+  pointer-events: none;
+}
+
+.pm-field-tag-collapsible:hover .pm-field-tag-collapsible-label {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 .pm-item-menu-btn {
@@ -164,6 +261,31 @@
 
 .pm-paper-item:hover .pm-item-menu-btn {
   opacity: 1;
+}
+
+.pm-paper-item,
+.pm-field-paper-item {
+  position: relative;
+  isolation: isolate;
+}
+
+.pm-paper-item:has(.pm-field-tag-collapsible:hover)::after,
+.pm-field-paper-item:has(.pm-field-tag-collapsible:hover)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(24, 24, 24, 0.18);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: inherit;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.pm-paper-field-tags,
+.pm-inline-field-tags {
+  position: relative;
+  z-index: 3;
 }
 
 .pm-item-menu-btn:hover {
@@ -581,6 +703,69 @@
   animation: pm-fade-in 0.2s ease;
 }
 
+.pm-add-button-loading {
+  opacity: 0.75;
+  cursor: progress;
+}
+
+.pm-add-success {
+  display: flex;
+  min-height: 220px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+  animation: pm-add-success-in 0.24s ease-out;
+}
+
+.pm-add-success-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  font-size: 30px;
+  line-height: 48px;
+  transform-origin: center;
+  animation: pm-add-success-pop 0.36s ease-out;
+}
+
+.pm-add-success h2 {
+  margin: 4px 0 0;
+}
+
+.pm-add-success-text {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+@keyframes pm-add-success-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pm-add-success-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 /* ── 折叠区域样式 ───────────────────────────────────────────────────────── */
 details summary {
   list-style: none;
@@ -679,6 +864,12 @@ details summary:hover {
   padding: 2px 8px;
   border-radius: 4px;
   font-size: 12px;
+  cursor: pointer;
+  transition: background var(--pm-transition-fast), color var(--pm-transition-fast);
+}
+
+.pm-alias-tag:hover {
+  background: rgba(255, 255, 255, 0.28);
 }
 
 .pm-alias-count {
@@ -714,7 +905,7 @@ details summary:hover {
 
 .pm-field-paper-title-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
 }
@@ -731,11 +922,18 @@ details summary:hover {
 }
 
 .pm-subfield-tag {
-  font-size: 11px;
-  padding: 2px 6px;
+  font-size: 10px;
+  padding: 1px 6px;
   border-radius: 4px;
   flex-shrink: 0;
   font-weight: 500;
+  line-height: 1.35;
+}
+
+.pm-inline-field-tags {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
 }
 
 .pm-field-paper-meta {
@@ -781,11 +979,79 @@ details summary:hover {
   border-radius: 4px;
   font-size: 12px;
   color: var(--text-normal);
+  cursor: pointer;
+  transition: background var(--pm-transition-fast), color var(--pm-transition-fast);
+}
+
+.pm-alias-tag:hover {
+  background: var(--background-modifier-border-hover);
 }
 
 .pm-alias-count {
   color: var(--text-faint);
   font-size: 11px;
+}
+
+.pm-multi-field-section {
+  margin-top: 12px;
+  margin-bottom: 8px;
+}
+
+.pm-multi-field-header {
+  margin-bottom: 10px;
+}
+
+.pm-multi-field-title {
+  font-weight: 600;
+  color: var(--text-normal);
+  margin-bottom: 2px;
+}
+
+.pm-multi-field-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.pm-multi-field-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pm-multi-field-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pm-multi-field-row-label {
+  width: 72px;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.pm-multi-field-row-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.pm-multi-field-row-controls select {
+  flex: 1;
+  min-width: 0;
+}
+
+.pm-multi-field-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.pm-multi-field-empty {
+  font-size: 12px;
+  color: var(--text-faint);
 }
 
 /* ── 英灵殿 ───────────────────────────────────────────────────────────── */

@@ -9,6 +9,7 @@ export interface PaperInfo {
   abstract?: string;
   source?: 'arxiv' | 'ieee' | 'semantic_scholar';
   field?: string; // 领域/研究方向
+  fields?: string[]; // 最多支持多个领域，首个领域仍同步到 field 兼容旧逻辑
   // 兼容旧字段
   venue?: string;
   year?: string;
