@@ -5,6 +5,7 @@ import {
   HAPPY_HUES_FIELD_PRESETS,
   applyColorPresetToField,
   createRandomHappyHuesFieldStyle,
+  findMatchingHappyHuesPreset,
 } from './colorPalettes';
 
 export interface MyPluginSettings {
@@ -624,6 +625,7 @@ export class PaperSettingTab extends PluginSettingTab {
         HAPPY_HUES_FIELD_PRESETS.forEach(preset => {
           dropdown.addOption(preset.id, `${preset.name} (${preset.sourcePalette})`);
         });
+        dropdown.setValue(findMatchingHappyHuesPreset(field)?.id || '');
         dropdown.onChange(async value => {
           if (!value) return;
           const preset = HAPPY_HUES_FIELD_PRESETS.find(item => item.id === value);

@@ -236,6 +236,15 @@ export function applyColorPresetToField(field: FieldStyle, preset: FieldColorPre
   };
 }
 
+export function findMatchingHappyHuesPreset(field: FieldStyle): FieldColorPreset | undefined {
+  return HAPPY_HUES_FIELD_PRESETS.find(preset =>
+    field.backgroundColor === preset.backgroundColor &&
+    field.textColor === preset.textColor &&
+    field.borderColor === preset.borderColor &&
+    field.patternColor === preset.patternColor
+  );
+}
+
 export function createRandomHappyHuesFieldStyle(
   name: string,
   random = Math.random

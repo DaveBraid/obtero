@@ -5,6 +5,7 @@ import {
   HAPPY_HUES_FIELD_PRESETS,
   applyColorPresetToField,
   createRandomHappyHuesFieldStyle,
+  findMatchingHappyHuesPreset,
   getRandomHappyHuesPreset,
   relativeLuminance,
 } from '../src/colorPalettes.ts';
@@ -37,4 +38,11 @@ test('applying a preset keeps field identity and synchronizes foreground colors'
   assert.equal(updated.metaTextColor, preset.textColor);
   assert.equal(updated.borderColor, preset.borderColor);
   assert.equal(updated.patternColor, preset.patternColor);
+});
+
+test('finds the selected preset from a field style after it is applied', () => {
+  const preset = HAPPY_HUES_FIELD_PRESETS[3]!;
+  const field = applyColorPresetToField(createRandomHappyHuesFieldStyle('设计系统', () => 0), preset);
+
+  assert.equal(findMatchingHappyHuesPreset(field)?.id, preset.id);
 });

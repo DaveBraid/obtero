@@ -14,6 +14,7 @@
 
 - 不要在正式 Obsidian vault 的 `.obsidian/plugins/obtero` 下开发、编译或提交代码；该目录视为 BRAT 管理的安装目录。
 - 开发、构建和调试只在独立测试目录或独立开发 clone 中进行。
+- 不可以破坏性升级；如果必须破坏兼容性，必须先和用户严肃讨论原因、影响范围、迁移方案和回滚风险。
 - 不提交 `node_modules/`、`main.js`、`data.json`、`*.map`、`.DS_Store`。
 - `data.json` 是用户本地配置，不属于仓库内容。
 - 旧插件 ID `obsidian-mypaper-plugin` 仅用于迁移说明，不应重新作为发布 ID 使用。
