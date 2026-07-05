@@ -23,7 +23,7 @@ export const EMPTY_EXCALIDRAW = JSON.stringify(
 	{
 		type: 'excalidraw',
 		version: 2,
-		source: 'obsidian-mypaper-plugin',
+		source: 'obtero',
 		elements: [],
 		appState: {
 			gridSize: null,

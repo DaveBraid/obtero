@@ -72,7 +72,7 @@ export async function searchSemanticScholar(query: string): Promise<PaperInfo[]>
 		const response = await requestUrl({
 			url,
 			method: 'GET',
-			headers: { 'User-Agent': 'obsidian-mypaper-plugin/1.0' },
+			headers: { 'User-Agent': 'obtero/1.0' },
 		});
 
 		const data = response.json as {

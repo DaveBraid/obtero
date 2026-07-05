@@ -1,10 +1,10 @@
 {
-	"id": "obsidian-mypaper-plugin",
-	"name": "My Paper Manager",
+	"id": "obtero",
+	"name": "Obtero",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
 	"description": "管理学术论文：搜索、分类、追踪阅读状态，并在 Excalidraw 中可视化论文关系。",
-	"author": "User",
+	"author": "DaveBraid",
 	"isDesktopOnly": false,
 	"styles": ["styles.css"]
 }
