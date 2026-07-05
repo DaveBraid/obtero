@@ -159,7 +159,7 @@ class FieldPapersModal extends Modal {
       const subFieldStyle = getFieldStyle(this.plugin.settings, paperField);
       if (subFieldStyle) {
         subFieldTag.style.backgroundColor = subFieldStyle.backgroundColor;
-        subFieldTag.style.color = this.getContrastColor(subFieldStyle.backgroundColor);
+        subFieldTag.style.color = subFieldStyle.textColor || this.getContrastColor(subFieldStyle.backgroundColor);
       }
     }
     
@@ -229,7 +229,7 @@ export class PaperView extends ItemView {
     primaryTag.style.textAlign = 'center';
     if (primaryFieldStyle) {
       primaryTag.style.backgroundColor = primaryFieldStyle.backgroundColor;
-      primaryTag.style.color = this.getContrastColor(primaryFieldStyle.backgroundColor);
+      primaryTag.style.color = primaryFieldStyle.textColor || this.getContrastColor(primaryFieldStyle.backgroundColor);
     }
 
     if (fieldNames.length > 1) {
@@ -243,7 +243,7 @@ export class PaperView extends ItemView {
         if (fieldStyle) {
           square.style.backgroundColor = fieldStyle.backgroundColor;
           square.style.borderColor = fieldStyle.backgroundColor;
-          square.style.color = this.getContrastColor(fieldStyle.backgroundColor);
+          square.style.color = fieldStyle.textColor || this.getContrastColor(fieldStyle.backgroundColor);
         }
       }
     }
@@ -1448,7 +1448,7 @@ export class PaperView extends ItemView {
         const tag = tagWrapper.createSpan({ cls: 'pm-idea-tag' });
         tag.textContent = idea.field;
         tag.style.backgroundColor = fieldStyle.backgroundColor;
-        tag.style.color = this.getContrastColor(fieldStyle.backgroundColor);
+        tag.style.color = fieldStyle.textColor || this.getContrastColor(fieldStyle.backgroundColor);
       }
     } else if (idea.isCustomTag && idea.color) {
       const tag = tagWrapper.createSpan({ cls: 'pm-idea-tag' });

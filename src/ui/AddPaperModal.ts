@@ -7,6 +7,7 @@ import { isRateLimitError } from '../api/requestGuards';
 import { createPaperFile } from '../utils/fileUtils';
 import { insertPaperToExcalidraw } from '../utils/excalidrawUtils';
 import { normalizePaperFields } from '../utils/paperFields';
+import { createRandomHappyHuesFieldStyle } from '../colorPalettes';
 
 export class AddPaperModal extends Modal {
   private plugin: MyPlugin;
@@ -536,9 +537,9 @@ export class AddPaperModal extends Modal {
 
     new Setting(modal.contentEl)
       .setName('样式来源')
-      .setDesc('选择默认样式或复制已有领域')
+      .setDesc('默认随机使用一组 Happy Hues 浅背景色卡，也可以复制已有领域')
       .addDropdown(dropdown => {
-        dropdown.addOption('-1', '默认样式');
+        dropdown.addOption('-1', '随机 Happy Hues 色卡');
         this.plugin.settings.fields.forEach((field, index) => {
           dropdown.addOption(index.toString(), `复制: ${field.name}`);
         });
@@ -598,28 +599,9 @@ export class AddPaperModal extends Modal {
             };
             new Notice(`已复制「${sourceField.name}」的样式创建新领域`);
           } else {
-            // 使用默认样式
-            newField = {
-              name: fieldName,
-              aliases: [],
-              backgroundColor: '#ffffff',
-              backgroundPattern: 'solid',
-              patternColor: '#cccccc',
-              textColor: '#000000',
-              borderColor: '#000000',
-              roughness: 0,
-              opacity: 100,
-              roundness: 2,
-              titleFontSize: 14,
-              titleFontFamily: 1,
-              metaFontSize: 11,
-              metaFontFamily: 1,
-              cardWidth: 280,
-              cardHeight: 180,
-              titleAlignment: 'left',
-              titleTextColor: undefined,
-              metaTextColor: undefined,
-            };
+            // 默认随机使用 Happy Hues 浅背景色卡
+            newField = createRandomHappyHuesFieldStyle(fieldName);
+            new Notice('已随机应用 Happy Hues 色卡');
           }
 
           this.plugin.settings.fields.push(newField);

@@ -1,6 +1,11 @@
 import { App, Modal, Notice, PluginSettingTab, Setting } from 'obsidian';
 import MyPlugin from './main';
 import { FieldStyle, IdeaItem } from './types';
+import {
+  HAPPY_HUES_FIELD_PRESETS,
+  applyColorPresetToField,
+  createRandomHappyHuesFieldStyle,
+} from './colorPalettes';
 
 export interface MyPluginSettings {
   workspaceFolder: string;
@@ -611,6 +616,50 @@ export class PaperSettingTab extends PluginSettingTab {
     const controls = containerEl.createDiv({ cls: 'pm-field-controls' });
     controls.style.marginTop = '16px';
 
+    new Setting(controls)
+      .setName('Happy Hues 色卡')
+      .setDesc('内置 17 组浅背景设计色卡；选择后会同步背景、边框、纹理和文字颜色')
+      .addDropdown(dropdown => {
+        dropdown.addOption('', '选择色卡...');
+        HAPPY_HUES_FIELD_PRESETS.forEach(preset => {
+          dropdown.addOption(preset.id, `${preset.name} (${preset.sourcePalette})`);
+        });
+        dropdown.onChange(async value => {
+          if (!value) return;
+          const preset = HAPPY_HUES_FIELD_PRESETS.find(item => item.id === value);
+          if (!preset || !this.plugin.settings.fields[index]) return;
+          this.plugin.settings.fields[index] = applyColorPresetToField(this.plugin.settings.fields[index]!, preset);
+          await this.plugin.saveSettings();
+          this.display();
+        });
+      })
+      .addButton(button => {
+        button
+          .setButtonText('随机')
+          .setTooltip('随机应用一组 Happy Hues 浅背景色卡')
+          .onClick(async () => {
+            if (!this.plugin.settings.fields[index]) return;
+            const randomField = createRandomHappyHuesFieldStyle(this.plugin.settings.fields[index]!.name);
+            this.plugin.settings.fields[index] = {
+              ...randomField,
+              aliases: this.plugin.settings.fields[index]!.aliases || [],
+              backgroundPattern: this.plugin.settings.fields[index]!.backgroundPattern || randomField.backgroundPattern,
+              roughness: this.plugin.settings.fields[index]!.roughness,
+              opacity: this.plugin.settings.fields[index]!.opacity,
+              roundness: this.plugin.settings.fields[index]!.roundness,
+              titleFontSize: this.plugin.settings.fields[index]!.titleFontSize,
+              titleFontFamily: this.plugin.settings.fields[index]!.titleFontFamily,
+              metaFontSize: this.plugin.settings.fields[index]!.metaFontSize,
+              metaFontFamily: this.plugin.settings.fields[index]!.metaFontFamily,
+              cardWidth: this.plugin.settings.fields[index]!.cardWidth,
+              cardHeight: this.plugin.settings.fields[index]!.cardHeight,
+              titleAlignment: this.plugin.settings.fields[index]!.titleAlignment,
+            };
+            await this.plugin.saveSettings();
+            this.display();
+          });
+      });
+
     // ── 核心设置（常用）────────────────────────────────────────────
     const coreSettings = controls.createDiv();
     coreSettings.style.display = 'grid';
@@ -1102,9 +1151,9 @@ class AddFieldModal extends Modal {
     // 样式来源下拉
     new Setting(contentEl)
       .setName('样式来源')
-      .setDesc('选择默认样式或复制已有领域')
+      .setDesc('默认随机使用一组 Happy Hues 浅背景色卡，也可以复制已有领域')
       .addDropdown(dropdown => {
-        dropdown.addOption('-1', '默认样式');
+        dropdown.addOption('-1', '随机 Happy Hues 色卡');
         this.fields.forEach((field, index) => {
           dropdown.addOption(index.toString(), `复制: ${field.name}`);
         });
@@ -1177,28 +1226,9 @@ class AddFieldModal extends Modal {
       };
       new Notice(`已复制「${sourceField.name}」的样式创建新领域`);
     } else {
-      // 使用默认样式
-      newField = {
-        name: fieldName,
-        aliases: [],
-        backgroundColor: '#ffffff',
-        backgroundPattern: 'solid',
-        patternColor: '#cccccc',
-        textColor: '#000000',
-        borderColor: '#000000',
-        roughness: 0,
-        opacity: 100,
-        roundness: 2,
-        titleFontSize: 14,
-        titleFontFamily: 4,
-        metaFontSize: 11,
-        metaFontFamily: 4,
-        cardWidth: 280,
-        cardHeight: 180,
-        titleAlignment: 'left',
-        titleTextColor: undefined,
-        metaTextColor: undefined,
-      };
+      // 默认随机使用 Happy Hues 浅背景色卡
+      newField = createRandomHappyHuesFieldStyle(fieldName);
+      new Notice('已随机应用 Happy Hues 色卡');
     }
 
     this.onSubmit(newField);
