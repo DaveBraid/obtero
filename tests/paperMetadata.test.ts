@@ -9,6 +9,7 @@ import {
   formatCompactRatingStars,
   formatRatingStars,
   shouldIncludeAbstract,
+  shouldRenderRatingForSection,
   shouldTranslateAbstract,
   upsertBibtexCallout,
   normalizeClaudianModel,
@@ -129,6 +130,12 @@ test('abstract and abstract translation switches keep old defaults but can be di
   assert.equal(shouldTranslateAbstract(undefined, true), true);
   assert.equal(shouldTranslateAbstract(false, true), false);
   assert.equal(shouldTranslateAbstract(true, false), false);
+});
+
+test('rating renderer only targets rating placeholders or BibTeX callouts', () => {
+  assert.equal(shouldRenderRatingForSection({ hasRatingPlaceholder: true, hasBibtexCallout: false }), true);
+  assert.equal(shouldRenderRatingForSection({ hasRatingPlaceholder: false, hasBibtexCallout: true }), true);
+  assert.equal(shouldRenderRatingForSection({ hasRatingPlaceholder: false, hasBibtexCallout: false }), false);
 });
 
 test('Claudian response parser accepts fenced JSON and normalizes missing evidence', () => {

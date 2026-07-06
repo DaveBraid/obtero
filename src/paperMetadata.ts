@@ -100,6 +100,13 @@ export function shouldTranslateAbstract(includeAbstract: unknown, translateAbstr
   return shouldIncludeAbstract(includeAbstract) && translateAbstract === true;
 }
 
+export function shouldRenderRatingForSection(options: {
+  hasRatingPlaceholder: boolean;
+  hasBibtexCallout: boolean;
+}): boolean {
+  return options.hasRatingPlaceholder || options.hasBibtexCallout;
+}
+
 export function buildPaperFrontmatterLines(
   paper: PaperInfo,
   options: PaperMetadataBuildOptions

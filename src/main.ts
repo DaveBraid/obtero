@@ -15,6 +15,7 @@ import {
   parseClaudianEnrichmentResponse,
   shouldAutoEnrichWithClaudian,
   shouldIncludeClaudianMetadata,
+  shouldRenderRatingForSection,
   updatePaperBodyMetadata,
   upsertBibtexCallout,
   upsertRatingPlaceholder,
@@ -304,6 +305,14 @@ export default class PaperPlugin extends Plugin {
 
       const rating = normalizeRating(frontmatter.rating);
       const placeholder = el.querySelector<HTMLElement>('.obtero-rating-placeholder');
+      const bibtexCallout = this.findRenderedBibtexCallout(el);
+      if (!shouldRenderRatingForSection({
+        hasRatingPlaceholder: Boolean(placeholder),
+        hasBibtexCallout: Boolean(bibtexCallout),
+      })) {
+        return;
+      }
+
       if (placeholder) {
         this.renderRatingElement(placeholder, rating);
         return;
@@ -312,24 +321,9 @@ export default class PaperPlugin extends Plugin {
       const ratingEl = document.createElement('div');
       this.renderRatingElement(ratingEl, rating);
 
-      const bibtexCallout = this.findRenderedBibtexCallout(el);
       if (bibtexCallout?.parentElement) {
         bibtexCallout.insertAdjacentElement('beforebegin', ratingEl);
-        return;
       }
-
-      const summaryHeading = this.findRenderedHeading(el, '摘要') || this.findRenderedHeading(el, '笔记');
-      if (summaryHeading?.parentElement) {
-        summaryHeading.insertAdjacentElement('beforebegin', ratingEl);
-        return;
-      }
-
-      const title = el.querySelector('h1');
-      if (title?.parentElement) {
-        title.insertAdjacentElement('afterend', ratingEl);
-        return;
-      }
-      el.prepend(ratingEl);
     });
   }
 
@@ -339,11 +333,6 @@ export default class PaperPlugin extends Plugin {
     element.textContent = formatRatingStars(rating);
   }
 
-  private findRenderedHeading(root: HTMLElement, text: string): HTMLElement | null {
-    const headings = root.querySelectorAll<HTMLElement>('h2');
-    return Array.from(headings).find(heading => heading.textContent?.trim() === text) || null;
-  }
-
   private findRenderedBibtexCallout(root: HTMLElement): HTMLElement | null {
     const nativeCallout = root.querySelector<HTMLElement>('.callout[data-callout="bibtex"]');
     if (nativeCallout) {
@@ -351,7 +340,7 @@ export default class PaperPlugin extends Plugin {
     }
 
     const blockquotes = root.querySelectorAll<HTMLElement>('blockquote');
-    return Array.from(blockquotes).find(blockquote => blockquote.textContent?.includes('BibTeX')) || null;
+    return Array.from(blockquotes).find(blockquote => blockquote.textContent?.includes('[!bibtex]')) || null;
   }
 
   private registerBibtexCopyPostProcessor(): void {
