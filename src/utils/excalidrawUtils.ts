@@ -5,6 +5,15 @@ import { PaperInfo, FieldStyle } from '../types';
 import { ensureExcalidrawFile } from './fileUtils';
 import { getPrimaryPaperField } from './paperFields';
 
+interface ExcalidrawRuntimeApi {
+  getSceneElements(): unknown[];
+  updateScene(scene: { elements: unknown[] }): void;
+}
+
+interface ExcalidrawRuntimeView {
+  excalidrawAPI?: ExcalidrawRuntimeApi;
+}
+
 // 根据领域名称（含关联领域）查找样式
 export function getFieldStyle(settings: MyPluginSettings, fieldName: string | undefined): FieldStyle | undefined {
   // 如果没有指定领域名称，返回 undefined
@@ -354,7 +363,7 @@ async function insertPaperViaEA(
   
   // 触发视图更新
   if (view) {
-    const excalidrawView = view as any;
+    const excalidrawView = view as ExcalidrawRuntimeView;
     if (excalidrawView.excalidrawAPI?.updateScene) {
       const elements = excalidrawView.excalidrawAPI.getSceneElements();
       excalidrawView.excalidrawAPI.updateScene({ elements: [...elements] });

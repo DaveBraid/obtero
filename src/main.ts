@@ -11,19 +11,25 @@ export default class PaperPlugin extends Plugin {
 
     this.registerView(PAPER_VIEW_TYPE, leaf => new PaperView(leaf, this));
 
-    this.addRibbonIcon('book-open', '论文管理', () => this.openPaperView());
+    this.addRibbonIcon('book-open', '论文管理', () => {
+      void this.openPaperView();
+    });
 
     this.addCommand({
       id: 'open-paper-manager',
       name: '打开论文管理界面',
-      callback: () => this.openPaperView(),
+      callback: () => {
+        void this.openPaperView();
+      },
     });
 
     this.addSettingTab(new PaperSettingTab(this.app, this));
 
     this.app.workspace.onLayoutReady(() => {
       if (!this.settings.workspaceFolder) {
-        new SetupModal(this.app, this, () => this.openPaperView()).open();
+        new SetupModal(this.app, this, () => {
+          void this.openPaperView();
+        }).open();
       }
     });
   }
@@ -34,12 +40,12 @@ export default class PaperPlugin extends Plugin {
     const { workspace } = this.app;
     const existing = workspace.getLeavesOfType(PAPER_VIEW_TYPE);
     if (existing.length > 0 && existing[0]) {
-      workspace.revealLeaf(existing[0]);
+      await workspace.revealLeaf(existing[0]);
       return;
     }
     const leaf = workspace.getLeaf(false);
     await leaf.setViewState({ type: PAPER_VIEW_TYPE, active: true });
-    workspace.revealLeaf(leaf);
+    await workspace.revealLeaf(leaf);
   }
 
   async loadSettings(): Promise<void> {

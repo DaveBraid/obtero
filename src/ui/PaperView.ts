@@ -29,9 +29,9 @@ export const SORT_ICONS: Record<SortOption, string> = {
 
 // 删除确认对话框
 class DeleteConfirmModal extends Modal {
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<void>;
 
-  constructor(app: any, paperTitle: string, onConfirm: () => void) {
+  constructor(app: App, paperTitle: string, onConfirm: () => void | Promise<void>) {
     super(app);
     this.onConfirm = onConfirm;
 
@@ -56,10 +56,37 @@ class DeleteConfirmModal extends Modal {
       cls: 'mod-warning',
     });
     confirmBtn.addEventListener('click', () => {
-      this.onConfirm();
+      void this.onConfirm();
       this.close();
     });
   }
+}
+
+type PaperFrontmatter = Record<string, unknown>;
+
+interface FileBackedView {
+  file?: TFile;
+}
+
+function getFrontmatterString(frontmatter: PaperFrontmatter | undefined, key: string): string {
+  const value = frontmatter?.[key];
+  return typeof value === 'string' ? value : '';
+}
+
+function getFrontmatterStringArray(frontmatter: PaperFrontmatter | undefined, key: string): string[] {
+  const value = frontmatter?.[key];
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+}
+
+function getFirstAuthor(frontmatter: PaperFrontmatter | undefined): string {
+  const authors = frontmatter?.authors;
+  if (Array.isArray(authors)) {
+    return typeof authors[0] === 'string' ? authors[0] : '';
+  }
+  if (typeof authors === 'string') {
+    return authors.split(',')[0] || '';
+  }
+  return '';
 }
 
 // 领域论文列表 Modal
@@ -166,10 +193,12 @@ class FieldPapersModal extends Modal {
     // 元信息行
     const metaRow = content.createDiv({ cls: 'pm-field-paper-meta' });
     const metaParts: string[] = [];
-    if (fm?.date) metaParts.push(fm.date);
-    if (fm?.journal) metaParts.push(fm.journal);
-    if (fm?.authors) {
-      const authors = Array.isArray(fm.authors) ? fm.authors[0] : fm.authors.split(',')[0];
+    const date = getFrontmatterString(fm, 'date');
+    const journal = getFrontmatterString(fm, 'journal');
+    const authors = getFirstAuthor(fm);
+    if (date) metaParts.push(date);
+    if (journal) metaParts.push(journal);
+    if (authors) {
       metaParts.push(authors);
     }
     metaRow.textContent = metaParts.join(' · ');
@@ -184,9 +213,9 @@ class FieldPapersModal extends Modal {
   
   private getContrastColor(hexColor: string): string {
     const hex = hexColor.replace('#', '');
-    const r = parseInt(hex.substr(0, 2), 16);
-    const g = parseInt(hex.substr(2, 2), 16);
-    const b = parseInt(hex.substr(4, 2), 16);
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
     const brightness = (r * 299 + g * 587 + b * 114) / 1000;
     return brightness > 128 ? '#000000' : '#ffffff';
   }
@@ -405,7 +434,7 @@ export class PaperView extends ItemView {
 
     for (const [label, files] of Object.entries(byCategory)) {
       const section = root.createDiv({ cls: 'pm-section' });
-      const typedFiles = files as TFile[];
+      const typedFiles = files;
       const maxExtraTagCount = typedFiles.reduce((maxCount, file) => {
         const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
         const extraCount = Math.max(0, this.getPaperFields(fm).length - 1);
@@ -445,7 +474,7 @@ export class PaperView extends ItemView {
       // Paper list
       const list = section.createDiv({ cls: 'pm-paper-list' });
       for (const file of sortedFiles) {
-        await this.renderPaperItem(list, file as TFile, label, maxFieldWidth, tagColumnWidth);
+        await this.renderPaperItem(list, file, label, maxFieldWidth, tagColumnWidth);
       }
     }
   }
@@ -507,7 +536,7 @@ export class PaperView extends ItemView {
           .setTitle(`${icon} ${label}${isActive ? ' ✓' : ''}`)
           .onClick(() => {
             this.categorySortOptions.set(category, sortOption);
-            this.render();
+            void this.render();
           });
       });
     }
@@ -583,9 +612,9 @@ export class PaperView extends ItemView {
   // 根据背景色获取对比色（黑色或白色）
   private getContrastColor(hexColor: string): string {
     const hex = hexColor.replace('#', '');
-    const r = parseInt(hex.substr(0, 2), 16);
-    const g = parseInt(hex.substr(2, 2), 16);
-    const b = parseInt(hex.substr(4, 2), 16);
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
     const brightness = (r * 299 + g * 587 + b * 114) / 1000;
     return brightness > 128 ? '#000000' : '#ffffff';
   }
@@ -642,7 +671,7 @@ export class PaperView extends ItemView {
       mi.setTitle('🗑️ 删除').onClick(() => {
         new DeleteConfirmModal(this.app, displayName, async () => {
           try {
-            await this.app.vault.delete(file);
+            await this.app.fileManager.trashFile(file);
             new Notice(`已删除「${displayName}」`);
             await this.render();
           } catch (err) {
@@ -658,14 +687,14 @@ export class PaperView extends ItemView {
   private async addToExcalidraw(file: TFile, displayName: string): Promise<void> {
     const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
     const paperInfo: PaperInfo = {
-      title: fm?.title ?? displayName,
-      journal: fm?.journal ?? '',
-      date: fm?.date ?? '',
-      authors: Array.isArray(fm?.authors) ? fm.authors : [],
-      institutions: Array.isArray(fm?.institutions) ? fm.institutions : [],
-      arxivId: fm?.arxivId,
-      doi: fm?.doi,
-      field: fm?.field,
+      title: getFrontmatterString(fm, 'title') || displayName,
+      journal: getFrontmatterString(fm, 'journal'),
+      date: getFrontmatterString(fm, 'date'),
+      authors: getFrontmatterStringArray(fm, 'authors'),
+      institutions: getFrontmatterStringArray(fm, 'institutions'),
+      arxivId: getFrontmatterString(fm, 'arxivId') || undefined,
+      doi: getFrontmatterString(fm, 'doi') || undefined,
+      field: getFrontmatterString(fm, 'field') || undefined,
       fields: this.getPaperFields(fm),
     };
 
@@ -684,9 +713,9 @@ export class PaperView extends ItemView {
       const excalidrawFile = this.app.vault.getAbstractFileByPath(excalidrawPath);
 
       if (excalidrawFile instanceof TFile) {
-        let existingLeaf = null;
-        this.app.workspace.iterateAllLeaves((leaf: any) => {
-          const view = leaf.view as any;
+        let existingLeaf: WorkspaceLeaf | null = null;
+        this.app.workspace.iterateAllLeaves((leaf: WorkspaceLeaf) => {
+          const view = leaf.view as FileBackedView;
           if (view.file?.path === excalidrawFile.path) {
             existingLeaf = leaf;
             return true;
@@ -695,7 +724,7 @@ export class PaperView extends ItemView {
         });
 
         if (existingLeaf) {
-          this.app.workspace.revealLeaf(existingLeaf);
+          await this.app.workspace.revealLeaf(existingLeaf);
         } else {
           const leaf = this.app.workspace.getLeaf(false);
           await leaf.openFile(excalidrawFile);
@@ -739,7 +768,9 @@ export class PaperView extends ItemView {
       text: '➕ Add Paper'
     });
     addBtn.addEventListener('click', () =>
-      new AddPaperModal(this.app, this.plugin, () => this.render()).open()
+      new AddPaperModal(this.app, this.plugin, () => {
+        void this.render();
+      }).open()
     );
 
     // 刷新按钮
@@ -747,7 +778,9 @@ export class PaperView extends ItemView {
       cls: 'pm-action-button-secondary',
       text: '🔄 Update'
     });
-    refreshBtn.addEventListener('click', () => this.render());
+    refreshBtn.addEventListener('click', () => {
+      void this.render();
+    });
   }
 
   private renderFieldStats(container: HTMLElement): void {
@@ -761,9 +794,9 @@ export class PaperView extends ItemView {
 
     for (const field of this.plugin.settings.fields) {
       let count = 0;
-      for (const [category, files] of Object.entries(byCategory)) {
+      for (const files of Object.values(byCategory)) {
         for (const file of files) {
-          const fm = this.app.metadataCache.getFileCache(file as TFile)?.frontmatter;
+          const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
           if (
             paperMatchesField(
               this.plugin.settings,
@@ -894,11 +927,11 @@ export class PaperView extends ItemView {
 
     // 收集所有论文并按时间排序
     const allPapers: Array<{ file: TFile; mtime: number }> = [];
-    for (const [category, files] of Object.entries(byCategory)) {
+    for (const files of Object.values(byCategory)) {
       for (const file of files) {
         allPapers.push({
-          file: file as TFile,
-          mtime: (file as TFile).stat.mtime
+          file: file,
+          mtime: (file).stat.mtime
         });
       }
     }
@@ -1130,12 +1163,13 @@ export class PaperView extends ItemView {
 
       try {
         await this.app.fileManager.processFrontMatter(file, fm => {
+          const frontmatter = fm as PaperFrontmatter;
           const primaryField = normalizedNextFields[0] || this.plugin.settings.defaultField;
-          fm.field = primaryField;
+          frontmatter.field = primaryField;
           if (normalizedNextFields.length > 0) {
-            fm.fields = normalizedNextFields;
+            frontmatter.fields = normalizedNextFields;
           } else {
-            delete fm.fields;
+            delete frontmatter.fields;
           }
         });
 
@@ -1160,9 +1194,9 @@ export class PaperView extends ItemView {
     
     // 收集该领域的所有论文（包括别名匹配）
     const papers: TFile[] = [];
-    for (const [category, files] of Object.entries(byCategory)) {
+    for (const files of Object.values(byCategory)) {
       for (const file of files) {
-        const fm = this.app.metadataCache.getFileCache(file as TFile)?.frontmatter;
+        const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
         if (
           paperMatchesField(
             this.plugin.settings,
@@ -1171,7 +1205,7 @@ export class PaperView extends ItemView {
             this.plugin.settings.defaultField
           )
         ) {
-          papers.push(file as TFile);
+          papers.push(file);
         }
       }
     }
@@ -1216,7 +1250,7 @@ export class PaperView extends ItemView {
           new Notice('已从英灵殿移除');
           modal.close();
           this.showValhallaModal();
-          this.render();
+          void this.render();
         });
       }
     }
@@ -1280,7 +1314,7 @@ export class PaperView extends ItemView {
         });
       });
 
-    const tagTypeSetting = new Setting(modal.contentEl)
+    new Setting(modal.contentEl)
       .setName('标签类型')
       .setDesc('选择标签类型或无标签')
       .addDropdown(drop => {
@@ -1521,13 +1555,13 @@ export class PaperView extends ItemView {
     // 确认删除按钮（危险操作）
     const confirmBtn = actions.createEl('button', { text: '删除' });
     confirmBtn.style.cssText = 'min-height: 38px; padding: 8px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: 1px solid #ff3b30; background: #ff3b30; color: white; box-shadow: 0 2px 8px rgba(255, 59, 48, 0.3);';
-    confirmBtn.addEventListener('click', () => {
-      this.plugin.removeIdea(idea.id);
+    confirmBtn.addEventListener('click', async () => {
+      await this.plugin.removeIdea(idea.id);
       new Notice('✓ 灵感已删除');
       modal.close();
       parentModal.close();
       this.showIdeasLibraryModal();
-      this.render();
+      await this.render();
     });
 
     modal.open();
@@ -1583,14 +1617,14 @@ export class PaperView extends ItemView {
       const ideas = this.plugin.settings.ideas || [];
       const ideaIndex = ideas.findIndex(i => i.id === idea.id);
       if (ideaIndex !== -1 && ideas[ideaIndex]) {
-        ideas[ideaIndex]!.title = newTitle;
-        ideas[ideaIndex]!.content = newContent;
+        ideas[ideaIndex].title = newTitle;
+        ideas[ideaIndex].content = newContent;
         await this.plugin.saveSettings();
         new Notice('✓ 灵感已更新');
         modal.close();
         parentModal.close();
         this.showIdeasLibraryModal();
-        this.render();
+        await this.render();
       }
     });
 
@@ -1613,14 +1647,14 @@ export class PaperView extends ItemView {
     const titleContainer = titleRow.createDiv({ cls: 'pm-idea-detail-title-container' });
 
     // 查看模式：标题显示
-    const titleDisplay = titleContainer.createEl('h2', {
+    titleContainer.createEl('h2', {
       text: idea.title,
       cls: 'pm-idea-detail-title'
     });
 
     // 时间信息
     const date = new Date(idea.createdAt);
-    const timeEl = header.createEl('div', {
+    header.createEl('div', {
       text: this.formatIdeaTime(date),
       cls: 'pm-idea-detail-time'
     });
@@ -1629,7 +1663,7 @@ export class PaperView extends ItemView {
     const body = modal.contentEl.createDiv({ cls: 'pm-idea-detail-body' });
 
     // 查看模式：内容显示
-    const contentDisplay = body.createEl('p', {
+    body.createEl('p', {
       text: idea.content,
       cls: 'pm-idea-detail-text'
     });
@@ -1659,7 +1693,7 @@ export class PaperView extends ItemView {
       modal.close();
       parentModal.close();
       this.showIdeasLibraryModal();
-      this.render();
+      await this.render();
     });
 
     // 查看模式下的取消/关闭按钮
@@ -1730,8 +1764,6 @@ export class PaperView extends ItemView {
       const ideaDate = new Date(idea.createdAt);
       return ideaDate.getFullYear() === currentYear && ideaDate.getMonth() + 1 === currentMonth;
     });
-
-    const currentTotal = monthIdeas.length;
 
     const dayIdeaCounts = new Map<string, number>();
     for (const idea of monthIdeas) {
@@ -1892,7 +1924,7 @@ export class PaperView extends ItemView {
       this.calendarDisplayYear = selectedYear;
       this.calendarDisplayMonth = selectedMonth;
       modal.close();
-      this.render();
+      void this.render();
     });
 
     modal.open();
@@ -1904,7 +1936,7 @@ export class PaperView extends ItemView {
 
     for (const files of Object.values(byCategory)) {
       for (const file of files) {
-        papers.push(file as TFile);
+        papers.push(file);
       }
     }
 
@@ -1936,10 +1968,12 @@ export class PaperView extends ItemView {
 
     const metaRow = content.createDiv({ cls: 'pm-field-paper-meta' });
     const metaParts: string[] = [];
-    if (fm?.date) metaParts.push(fm.date);
-    if (fm?.journal) metaParts.push(fm.journal);
-    if (fm?.authors) {
-      const authors = Array.isArray(fm.authors) ? fm.authors[0] : fm.authors.split(',')[0];
+    const date = getFrontmatterString(fm, 'date');
+    const journal = getFrontmatterString(fm, 'journal');
+    const authors = getFirstAuthor(fm);
+    if (date) metaParts.push(date);
+    if (journal) metaParts.push(journal);
+    if (authors) {
       metaParts.push(authors);
     }
     metaRow.textContent = metaParts.join(' · ');

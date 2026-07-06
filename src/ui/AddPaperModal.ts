@@ -310,7 +310,7 @@ export class AddPaperModal extends Modal {
     loadingEl.style.color = 'var(--text-muted)';
 
     const spinner = loadingEl.createSpan({ cls: 'pm-spinner' });
-    spinner.innerHTML = '🔍';
+    spinner.textContent = '🔍';
     spinner.style.fontSize = '24px';
     spinner.style.animation = 'pulse 1s infinite';
     loadingEl.createSpan({ text: ' 搜索中...' });
@@ -605,7 +605,7 @@ export class AddPaperModal extends Modal {
           }
 
           this.plugin.settings.fields.push(newField);
-          this.plugin.saveSettings();
+          void this.plugin.saveSettings();
           if (!this.selectedFields.includes(fieldName)) {
             this.selectedFields = [...this.getFieldSelections(), fieldName];
           }

@@ -1,4 +1,12 @@
-import { MyPluginSettings } from '../settings';
+import { requestUrl } from 'obsidian';
+
+interface SiliconFlowTranslationResponse {
+  choices?: Array<{
+    message?: {
+      content?: unknown;
+    };
+  }>;
+}
 
 /**
  * 调用硅基流动API翻译文本
@@ -13,7 +21,8 @@ export async function translateText(
   }
 
   try {
-    const response = await fetch('https://api.siliconflow.cn/v1/chat/completions', {
+    const response = await requestUrl({
+      url: 'https://api.siliconflow.cn/v1/chat/completions',
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -36,15 +45,14 @@ export async function translateText(
       })
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`API 请求失败: ${response.status} - ${errorText}`);
+    if (response.status < 200 || response.status >= 300) {
+      throw new Error(`API 请求失败: ${response.status} - ${response.text}`);
     }
 
-    const data = await response.json();
-    const translatedText = data.choices[0]?.message?.content;
+    const data = response.json as SiliconFlowTranslationResponse;
+    const translatedText = data.choices?.[0]?.message?.content;
 
-    if (!translatedText) {
+    if (typeof translatedText !== 'string' || !translatedText) {
       throw new Error('API 返回数据格式错误');
     }
 

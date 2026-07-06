@@ -410,7 +410,7 @@ export class PaperSettingTab extends PluginSettingTab {
         this.plugin.settings.fields,
         (newField: FieldStyle) => {
           this.plugin.settings.fields.push(newField);
-          this.plugin.saveSettings();
+          void this.plugin.saveSettings();
           // 切换到新添加的领域
           this.activeFieldIndex = this.plugin.settings.fields.length - 1;
           this.display(); // 刷新设置页面
@@ -526,7 +526,7 @@ export class PaperSettingTab extends PluginSettingTab {
           removeBtn.style.fontWeight = 'bold';
           removeBtn.addEventListener('click', async () => {
             if (this.plugin.settings.fields[index]?.aliases) {
-              this.plugin.settings.fields[index].aliases!.splice(aliasIndex, 1);
+              this.plugin.settings.fields[index].aliases.splice(aliasIndex, 1);
               await this.plugin.saveSettings();
               this.display();
             }
@@ -535,7 +535,7 @@ export class PaperSettingTab extends PluginSettingTab {
       }
 
       // 样式设置
-      this.addFieldStyleSetting(fieldItem!, field, index);
+      this.addFieldStyleSetting(fieldItem, field, index);
     });
   }
 
@@ -566,7 +566,7 @@ export class PaperSettingTab extends PluginSettingTab {
           targetField.aliases = [];
         }
         targetField.aliases.push(aliasName.trim());
-        this.plugin.saveSettings();
+        void this.plugin.saveSettings();
         this.display();
         new Notice('已添加关联领域: ' + aliasName);
       }
@@ -630,7 +630,7 @@ export class PaperSettingTab extends PluginSettingTab {
           if (!value) return;
           const preset = COLOR_HUNT_FIELD_PRESETS.find(item => item.id === value);
           if (!preset || !this.plugin.settings.fields[index]) return;
-          this.plugin.settings.fields[index] = applyColorPresetToField(this.plugin.settings.fields[index]!, preset);
+          this.plugin.settings.fields[index] = applyColorPresetToField(this.plugin.settings.fields[index], preset);
           await this.plugin.saveSettings();
           this.display();
         });
@@ -641,21 +641,21 @@ export class PaperSettingTab extends PluginSettingTab {
           .setTooltip('随机应用一组 Color Hunt 高赞浅背景色卡')
           .onClick(async () => {
             if (!this.plugin.settings.fields[index]) return;
-            const randomField = createRandomColorHuntFieldStyle(this.plugin.settings.fields[index]!.name);
+            const randomField = createRandomColorHuntFieldStyle(this.plugin.settings.fields[index].name);
             this.plugin.settings.fields[index] = {
               ...randomField,
-              aliases: this.plugin.settings.fields[index]!.aliases || [],
-              backgroundPattern: this.plugin.settings.fields[index]!.backgroundPattern || randomField.backgroundPattern,
-              roughness: this.plugin.settings.fields[index]!.roughness,
-              opacity: this.plugin.settings.fields[index]!.opacity,
-              roundness: this.plugin.settings.fields[index]!.roundness,
-              titleFontSize: this.plugin.settings.fields[index]!.titleFontSize,
-              titleFontFamily: this.plugin.settings.fields[index]!.titleFontFamily,
-              metaFontSize: this.plugin.settings.fields[index]!.metaFontSize,
-              metaFontFamily: this.plugin.settings.fields[index]!.metaFontFamily,
-              cardWidth: this.plugin.settings.fields[index]!.cardWidth,
-              cardHeight: this.plugin.settings.fields[index]!.cardHeight,
-              titleAlignment: this.plugin.settings.fields[index]!.titleAlignment,
+              aliases: this.plugin.settings.fields[index].aliases || [],
+              backgroundPattern: this.plugin.settings.fields[index].backgroundPattern || randomField.backgroundPattern,
+              roughness: this.plugin.settings.fields[index].roughness,
+              opacity: this.plugin.settings.fields[index].opacity,
+              roundness: this.plugin.settings.fields[index].roundness,
+              titleFontSize: this.plugin.settings.fields[index].titleFontSize,
+              titleFontFamily: this.plugin.settings.fields[index].titleFontFamily,
+              metaFontSize: this.plugin.settings.fields[index].metaFontSize,
+              metaFontFamily: this.plugin.settings.fields[index].metaFontFamily,
+              cardWidth: this.plugin.settings.fields[index].cardWidth,
+              cardHeight: this.plugin.settings.fields[index].cardHeight,
+              titleAlignment: this.plugin.settings.fields[index].titleAlignment,
             };
             await this.plugin.saveSettings();
             this.display();
@@ -675,7 +675,7 @@ export class PaperSettingTab extends PluginSettingTab {
         colorPicker
           .setValue(field.backgroundColor)
           .onChange(async value => {
-            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index]!.backgroundColor = value;
+            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index].backgroundColor = value;
             await this.plugin.saveSettings();
             this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
             this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
@@ -690,7 +690,7 @@ export class PaperSettingTab extends PluginSettingTab {
         colorPicker
           .setValue(field.borderColor)
           .onChange(async value => {
-            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index]!.borderColor = value;
+            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index].borderColor = value;
             await this.plugin.saveSettings();
             this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
             this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
@@ -708,7 +708,7 @@ export class PaperSettingTab extends PluginSettingTab {
         dropdown
           .setValue(field.backgroundPattern || 'solid')
           .onChange(async value => {
-            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index]!.backgroundPattern = value as any;
+            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index].backgroundPattern = value as FieldStyle['backgroundPattern'];
             await this.plugin.saveSettings();
             this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
             this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
@@ -722,7 +722,7 @@ export class PaperSettingTab extends PluginSettingTab {
         colorPicker
           .setValue(field.titleTextColor || field.textColor)
           .onChange(async value => {
-            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index]!.titleTextColor = value;
+            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index].titleTextColor = value;
             await this.plugin.saveSettings();
             this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
             this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
@@ -736,7 +736,7 @@ export class PaperSettingTab extends PluginSettingTab {
         colorPicker
           .setValue(field.metaTextColor || field.textColor)
           .onChange(async value => {
-            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index]!.metaTextColor = value;
+            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index].metaTextColor = value;
             await this.plugin.saveSettings();
             this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
             this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
@@ -770,7 +770,7 @@ export class PaperSettingTab extends PluginSettingTab {
           .setValue(field.roundness)
           .setDynamicTooltip()
           .onChange(async value => {
-            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index]!.roundness = value;
+            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index].roundness = value;
             await this.plugin.saveSettings();
             this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
             this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
@@ -786,7 +786,7 @@ export class PaperSettingTab extends PluginSettingTab {
           .setValue(field.roughness)
           .setDynamicTooltip()
           .onChange(async value => {
-            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index]!.roughness = value;
+            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index].roughness = value;
             await this.plugin.saveSettings();
             this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
             this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
@@ -802,7 +802,7 @@ export class PaperSettingTab extends PluginSettingTab {
           .setValue(field.opacity)
           .setDynamicTooltip()
           .onChange(async value => {
-            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index]!.opacity = value;
+            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index].opacity = value;
             await this.plugin.saveSettings();
             this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
             this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
@@ -822,7 +822,7 @@ export class PaperSettingTab extends PluginSettingTab {
         fontOptions.forEach(opt => dropdown.addOption(opt.value.toString(), opt.label));
         dropdown.setValue(field.titleFontFamily.toString())
           .onChange(async value => {
-            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index]!.titleFontFamily = parseInt(value);
+            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index].titleFontFamily = parseInt(value);
             await this.plugin.saveSettings();
             this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
             this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
@@ -835,7 +835,7 @@ export class PaperSettingTab extends PluginSettingTab {
       .addSlider(slider => {
         slider.setLimits(8, 24, 1).setValue(field.titleFontSize).setDynamicTooltip()
           .onChange(async value => {
-            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index]!.titleFontSize = value;
+            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index].titleFontSize = value;
             await this.plugin.saveSettings();
             this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
             this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
@@ -855,7 +855,7 @@ export class PaperSettingTab extends PluginSettingTab {
         fontOptions.forEach(opt => dropdown.addOption(opt.value.toString(), opt.label));
         dropdown.setValue(field.metaFontFamily.toString())
           .onChange(async value => {
-            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index]!.metaFontFamily = parseInt(value);
+            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index].metaFontFamily = parseInt(value);
             await this.plugin.saveSettings();
             this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
             this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
@@ -868,7 +868,7 @@ export class PaperSettingTab extends PluginSettingTab {
       .addSlider(slider => {
         slider.setLimits(8, 20, 1).setValue(field.metaFontSize).setDynamicTooltip()
           .onChange(async value => {
-            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index]!.metaFontSize = value;
+            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index].metaFontSize = value;
             await this.plugin.saveSettings();
             this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
             this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
@@ -881,7 +881,7 @@ export class PaperSettingTab extends PluginSettingTab {
       .addSlider(slider => {
         slider.setLimits(150, 800, 10).setValue(field.cardWidth || 280).setDynamicTooltip()
           .onChange(async value => {
-            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index]!.cardWidth = value;
+            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index].cardWidth = value;
             await this.plugin.saveSettings();
             this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
             this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
@@ -894,7 +894,7 @@ export class PaperSettingTab extends PluginSettingTab {
       .addSlider(slider => {
         slider.setLimits(100, 600, 10).setValue(field.cardHeight || 180).setDynamicTooltip()
           .onChange(async value => {
-            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index]!.cardHeight = value;
+            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index].cardHeight = value;
             await this.plugin.saveSettings();
             this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
             this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
@@ -909,7 +909,7 @@ export class PaperSettingTab extends PluginSettingTab {
         dropdown.addOption('center', '居中');
         dropdown.setValue(field.titleAlignment || 'left')
           .onChange(async value => {
-            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index]!.titleAlignment = value as 'left' | 'center';
+            if (this.plugin.settings.fields[index]) this.plugin.settings.fields[index].titleAlignment = value as 'left' | 'center';
             await this.plugin.saveSettings();
             this.updateFieldPreview(cardPreview, this.plugin.settings.fields[index]!);
             this.updateFontPreview(fontPreview, this.plugin.settings.fields[index]!);
@@ -933,7 +933,7 @@ export class PaperSettingTab extends PluginSettingTab {
             // 找到默认领域中同名的设置
             const defaultField = DEFAULT_FIELDS.find(f => f.name === field.name);
             if (defaultField && this.plugin.settings.fields[index]) {
-              Object.assign(this.plugin.settings.fields[index]!, defaultField);
+              Object.assign(this.plugin.settings.fields[index], defaultField);
               await this.plugin.saveSettings();
               this.display(); // 刷新页面
               new Notice('已恢复默认样式');
@@ -951,25 +951,55 @@ export class PaperSettingTab extends PluginSettingTab {
       4: 'Comic', // Comic Sans
     };
 
-    preview.innerHTML =
-      '<div style="height: 100%;">' +
-        '<div style="margin-bottom: 16px; color: #000000; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">字体预览</div>' +
-        '<div style="margin-bottom: 24px;">' +
-          '<div style="font-size: ' + (field.titleFontSize || 14) + 'px; font-family: ' + fontFamilyMap[field.titleFontFamily] + '; color: ' + (field.titleTextColor || field.textColor) + '; margin-bottom: 8px; font-weight: 600; text-align: ' + (field.titleAlignment || 'left') + ';">' +
-            '论文标题字体效果 Title Font Preview' +
-          '</div>' +
-          '<div style="font-size: ' + (field.metaFontSize || 11) + 'px; font-family: ' + fontFamilyMap[field.metaFontFamily] + '; color: ' + (field.metaTextColor || field.textColor) + '; opacity: 0.85;">' +
-            '这是正文字体效果示例 · Meta Font Example · 作者名 · arXiv · 2024' +
-          '</div>' +
-        '</div>' +
-        '<div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(0,0,0,0.2);">' +
-          '<div style="font-size: 12px; color: #000000; margin-bottom: 8px; font-weight: 600;">字体设置信息</div>' +
-          '<div style="font-size: 11px; color: #000000; opacity: 0.7;">' +
-            '标题: ' + (field.titleFontSize || 14) + 'px · ' +
-            '正文: ' + (field.metaFontSize || 11) + 'px' +
-          '</div>' +
-        '</div>' +
-      '</div>';
+    preview.replaceChildren();
+
+    const wrapper = preview.createDiv();
+    wrapper.style.height = '100%';
+
+    const label = wrapper.createDiv({ text: '字体预览' });
+    label.style.marginBottom = '16px';
+    label.style.color = '#000000';
+    label.style.fontSize = '12px';
+    label.style.textTransform = 'uppercase';
+    label.style.letterSpacing = '0.05em';
+    label.style.fontWeight = '600';
+
+    const sample = wrapper.createDiv();
+    sample.style.marginBottom = '24px';
+
+    const titleSample = sample.createDiv({ text: '论文标题字体效果 Title Font Preview' });
+    titleSample.style.fontSize = `${field.titleFontSize || 14}px`;
+    titleSample.style.fontFamily = fontFamilyMap[field.titleFontFamily] || fontFamilyMap[1]!;
+    titleSample.style.color = field.titleTextColor || field.textColor;
+    titleSample.style.marginBottom = '8px';
+    titleSample.style.fontWeight = '600';
+    titleSample.style.textAlign = field.titleAlignment || 'left';
+
+    const metaSample = sample.createDiv({
+      text: '这是正文字体效果示例 · Meta Font Example · 作者名 · arXiv · 2024',
+    });
+    metaSample.style.fontSize = `${field.metaFontSize || 11}px`;
+    metaSample.style.fontFamily = fontFamilyMap[field.metaFontFamily] || fontFamilyMap[1]!;
+    metaSample.style.color = field.metaTextColor || field.textColor;
+    metaSample.style.opacity = '0.85';
+
+    const info = wrapper.createDiv();
+    info.style.marginTop = '20px';
+    info.style.paddingTop = '16px';
+    info.style.borderTop = '1px solid rgba(0,0,0,0.2)';
+
+    const infoTitle = info.createDiv({ text: '字体设置信息' });
+    infoTitle.style.fontSize = '12px';
+    infoTitle.style.color = '#000000';
+    infoTitle.style.marginBottom = '8px';
+    infoTitle.style.fontWeight = '600';
+
+    const infoText = info.createDiv({
+      text: `标题: ${field.titleFontSize || 14}px · 正文: ${field.metaFontSize || 11}px`,
+    });
+    infoText.style.fontSize = '11px';
+    infoText.style.color = '#000000';
+    infoText.style.opacity = '0.7';
   }
 
   updateFieldPreview(preview: HTMLElement, field: FieldStyle): void {
@@ -1018,12 +1048,35 @@ export class PaperSettingTab extends PluginSettingTab {
     const scaledPadding = 16 * scaleFactor;
     const sizeText = (field.cardWidth || 280) + ' x ' + (field.cardHeight || 180) + 'px';
 
-    preview.innerHTML =
-      '<div style="color: ' + (field.titleTextColor || field.textColor) + '; padding: ' + scaledPadding + 'px; text-align: center; width: 100%;">' +
-        '<strong style="font-size: ' + scaledTitleFontSize + 'px; font-family: ' + fontFamilyMap[field.titleFontFamily] + '; display: block; margin-bottom: ' + (8 * scaleFactor) + 'px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + field.name + '</strong>' +
-        '<div style="font-size: ' + scaledMetaFontSize + 'px; font-family: ' + fontFamilyMap[field.metaFontFamily] + '; opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">TITLE EXAMPLE</div>' +
-        '<div style="margin-top: ' + (8 * scaleFactor) + 'px; font-size: ' + (10 * scaleFactor) + 'px; opacity: 0.6;">' + sizeText + '</div>' +
-      '</div>';
+    preview.replaceChildren();
+
+    const content = preview.createDiv();
+    content.style.color = field.titleTextColor || field.textColor;
+    content.style.padding = `${scaledPadding}px`;
+    content.style.textAlign = 'center';
+    content.style.width = '100%';
+
+    const title = content.createEl('strong', { text: field.name });
+    title.style.fontSize = `${scaledTitleFontSize}px`;
+    title.style.fontFamily = fontFamilyMap[field.titleFontFamily] || fontFamilyMap[1]!;
+    title.style.display = 'block';
+    title.style.marginBottom = `${8 * scaleFactor}px`;
+    title.style.whiteSpace = 'nowrap';
+    title.style.overflow = 'hidden';
+    title.style.textOverflow = 'ellipsis';
+
+    const meta = content.createDiv({ text: 'TITLE EXAMPLE' });
+    meta.style.fontSize = `${scaledMetaFontSize}px`;
+    meta.style.fontFamily = fontFamilyMap[field.metaFontFamily] || fontFamilyMap[1]!;
+    meta.style.opacity = '0.85';
+    meta.style.whiteSpace = 'nowrap';
+    meta.style.overflow = 'hidden';
+    meta.style.textOverflow = 'ellipsis';
+
+    const size = content.createDiv({ text: sizeText });
+    size.style.marginTop = `${8 * scaleFactor}px`;
+    size.style.fontSize = `${10 * scaleFactor}px`;
+    size.style.opacity = '0.6';
   }
 
   addSectionHeader(containerEl: HTMLElement, text: string): void {

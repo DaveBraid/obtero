@@ -67,7 +67,7 @@ export class PaperSearchModal extends Modal {
 			}
 
 			searchBtn.textContent = '搜索中…';
-			(searchBtn as HTMLButtonElement).disabled = true;
+			(searchBtn).disabled = true;
 			resultsEl.empty();
 			hintEl.textContent = '⏳ 正在搜索，请稍候…';
 
@@ -89,13 +89,13 @@ export class PaperSearchModal extends Modal {
 				hintEl.addClass('paper-error');
 			} finally {
 				searchBtn.textContent = '搜索';
-				(searchBtn as HTMLButtonElement).disabled = false;
+				(searchBtn).disabled = false;
 			}
 		};
 
 		searchBtn.addEventListener('click', doSearch);
 		inputEl.addEventListener('keydown', (e) => {
-			if (e.key === 'Enter') doSearch();
+			if (e.key === 'Enter') void doSearch();
 		});
 
 		// 自动聚焦输入框
@@ -215,7 +215,7 @@ export class PaperSearchModal extends Modal {
 		addBtn.addEventListener('click', async () => {
 			if (!this.selectedPaper) return;
 			addBtn.textContent = '添加中…';
-			(addBtn as HTMLButtonElement).disabled = true;
+			(addBtn).disabled = true;
 			try {
 				await addPaperCardToFile(
 					this.app,
@@ -228,7 +228,7 @@ export class PaperSearchModal extends Modal {
 			} catch (err) {
 				new Notice(`添加失败：${String(err)}`);
 				addBtn.textContent = '✅ 添加到地图';
-				(addBtn as HTMLButtonElement).disabled = false;
+				(addBtn).disabled = false;
 			}
 		});
 	}

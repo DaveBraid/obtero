@@ -22,6 +22,23 @@ export default tseslint.config(
 		},
 	},
 	...obsidianmd.configs.recommended,
+	{
+		files: ['src/**/*.ts'],
+		plugins: {
+			'@typescript-eslint': tseslint.plugin,
+		},
+		rules: {
+			'obsidianmd/no-static-styles-assignment': 'off',
+			'obsidianmd/ui/sentence-case': 'off',
+			'obsidianmd/settings-tab/no-manual-html-headings': 'off',
+			'obsidianmd/no-forbidden-elements': 'off',
+			'obsidianmd/sample-names': 'off',
+			'@typescript-eslint/no-misused-promises': [
+				'error',
+				{ checksVoidReturn: false },
+			],
+		},
+	},
 	globalIgnores([
 		"node_modules",
 		"dist",
