@@ -17,6 +17,7 @@ import {
   shouldIncludeClaudianMetadata,
   updatePaperBodyMetadata,
   upsertBibtexCallout,
+  upsertRatingPlaceholder,
 } from './paperMetadata';
 import { sendPromptToClaudian } from './claudianAdapter';
 import { createPaperFile } from './utils/fileUtils';
@@ -227,7 +228,7 @@ export default class PaperPlugin extends Plugin {
 
     const content = await this.app.vault.read(file);
     const nextContent = upsertBibtexCallout(
-      updatePaperBodyMetadata(content, paper),
+      upsertRatingPlaceholder(updatePaperBodyMetadata(content, paper)),
       paper.bibtex || ''
     );
     if (nextContent !== content) {
@@ -298,10 +299,26 @@ export default class PaperPlugin extends Plugin {
       }
 
       const rating = normalizeRating(frontmatter.rating);
+      const placeholder = el.querySelector<HTMLElement>('.obtero-rating-placeholder');
+      if (placeholder) {
+        this.renderRatingElement(placeholder, rating);
+        return;
+      }
+
       const ratingEl = document.createElement('div');
-      ratingEl.className = 'obtero-rendered-rating';
-      ratingEl.setAttribute('aria-label', `评分 ${rating} / 5`);
-      ratingEl.textContent = formatRatingStars(rating);
+      this.renderRatingElement(ratingEl, rating);
+
+      const bibtexCallout = this.findRenderedBibtexCallout(el);
+      if (bibtexCallout?.parentElement) {
+        bibtexCallout.insertAdjacentElement('beforebegin', ratingEl);
+        return;
+      }
+
+      const summaryHeading = this.findRenderedHeading(el, '摘要') || this.findRenderedHeading(el, '笔记');
+      if (summaryHeading?.parentElement) {
+        summaryHeading.insertAdjacentElement('beforebegin', ratingEl);
+        return;
+      }
 
       const title = el.querySelector('h1');
       if (title?.parentElement) {
@@ -310,6 +327,27 @@ export default class PaperPlugin extends Plugin {
       }
       el.prepend(ratingEl);
     });
+  }
+
+  private renderRatingElement(element: HTMLElement, rating: number): void {
+    element.addClass('obtero-rendered-rating');
+    element.setAttribute('aria-label', `评分 ${rating} / 5`);
+    element.textContent = formatRatingStars(rating);
+  }
+
+  private findRenderedHeading(root: HTMLElement, text: string): HTMLElement | null {
+    const headings = root.querySelectorAll<HTMLElement>('h2');
+    return Array.from(headings).find(heading => heading.textContent?.trim() === text) || null;
+  }
+
+  private findRenderedBibtexCallout(root: HTMLElement): HTMLElement | null {
+    const nativeCallout = root.querySelector<HTMLElement>('.callout[data-callout="bibtex"]');
+    if (nativeCallout) {
+      return nativeCallout;
+    }
+
+    const blockquotes = root.querySelectorAll<HTMLElement>('blockquote');
+    return Array.from(blockquotes).find(blockquote => blockquote.textContent?.includes('BibTeX')) || null;
   }
 
   private registerBibtexCopyPostProcessor(): void {

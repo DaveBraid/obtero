@@ -8,7 +8,10 @@ import {
   formatOpenSourceSummary,
   getPaperFields,
   normalizeClaudianMetadataMode,
+  RATING_PLACEHOLDER_MARKER,
   shouldIncludeClaudianMetadata,
+  shouldIncludeAbstract,
+  shouldTranslateAbstract,
 } from '../paperMetadata';
 
 export function getExcalidrawPath(settings: MyPluginSettings): string {
@@ -111,7 +114,7 @@ export async function createPaperFile(
   try {
     // 翻译摘要（如果启用）
     let translatedAbstract = '';
-    if (settings.translateAbstract && settings.siliconflowApiKey && paper.abstract) {
+    if (shouldTranslateAbstract(settings.includeAbstract, settings.translateAbstract) && settings.siliconflowApiKey && paper.abstract) {
       try {
         translatedAbstract = await translateText(paper.abstract, settings.siliconflowApiKey, settings.translationModel);
       } catch (error) {
@@ -125,7 +128,8 @@ export async function createPaperFile(
       buildPaperContent(
         paper,
         translatedAbstract,
-        normalizeClaudianMetadataMode(settings.claudianMetadataMode)
+        normalizeClaudianMetadataMode(settings.claudianMetadataMode),
+        shouldIncludeAbstract(settings.includeAbstract)
       )
     );
   } catch (e) {
@@ -137,7 +141,8 @@ export async function createPaperFile(
 function buildPaperContent(
   paper: PaperInfo,
   translatedAbstract = '',
-  claudianMode = normalizeClaudianMetadataMode('auto')
+  claudianMode = normalizeClaudianMetadataMode('auto'),
+  includeAbstract = true
 ): string {
   const paperFields = getPaperFields(paper);
   const lines: string[] = buildPaperFrontmatterLines(paper, { claudianMode });
@@ -175,7 +180,13 @@ function buildPaperContent(
     lines.push(`**arXiv**：[arXiv](https://arxiv.org/abs/${arxivId}), [PDF](https://arxiv.org/pdf/${arxivId}), [AlphaXiv](https://alphaxiv.org/abs/${arxivId}), [HTML](https://arxiv.org/html/${arxivId})  `);
   }
 
-  if (paper.abstract) {
+  lines.push('', RATING_PLACEHOLDER_MARKER);
+
+  if (shouldIncludeClaudianMetadata(claudianMode)) {
+    lines.push('', buildBibtexCallout(paper.bibtex || ''));
+  }
+
+  if (includeAbstract && paper.abstract) {
     lines.push('', '## 摘要');
     // 如果有翻译，添加可折叠的中文翻译
     if (translatedAbstract) {
@@ -185,9 +196,6 @@ function buildPaperContent(
     }
     // 英文原文作为正文（在可折叠区块外）
     lines.push('', paper.abstract);
-  }
-  if (shouldIncludeClaudianMetadata(claudianMode)) {
-    lines.push('', buildBibtexCallout(paper.bibtex || ''));
   }
   lines.push('', '## 笔记', '', '');
   return lines.join('\n');

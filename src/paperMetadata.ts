@@ -18,6 +18,7 @@ export interface ClaudianEnrichmentResult {
 export const DEFAULT_CLAUDIAN_MODEL = 'gpt-5.5';
 export const DEFAULT_CLAUDIAN_PROMPT_RELATIVE_PATH = 'plugins/obtero/skills/paper-metadata-enrichment.md';
 export const BIBTEX_CALLOUT_MARKER = '[!bibtex]- BibTeX';
+export const RATING_PLACEHOLDER_MARKER = '<div class="obtero-rating-placeholder"></div>';
 export const DEFAULT_CLAUDIAN_PROMPT = `# Obtero 论文元数据补全
 
 你是 Obtero 插件的论文元数据补全 skill。请根据用户提供的论文标题、作者、摘要、DOI、arXiv ID、已有期刊/会议信息，尽量查证并补全论文元数据。
@@ -86,6 +87,14 @@ export function shouldAutoEnrichWithClaudian(mode: ClaudianMetadataMode): boolea
   return mode === 'auto';
 }
 
+export function shouldIncludeAbstract(value: unknown): boolean {
+  return value !== false;
+}
+
+export function shouldTranslateAbstract(includeAbstract: unknown, translateAbstract: unknown): boolean {
+  return shouldIncludeAbstract(includeAbstract) && translateAbstract === true;
+}
+
 export function buildPaperFrontmatterLines(
   paper: PaperInfo,
   options: PaperMetadataBuildOptions
@@ -142,26 +151,56 @@ export function buildBibtexCallout(bibtex: string): string {
 
 export function upsertBibtexCallout(content: string, bibtex: string): string {
   const nextCallout = buildBibtexCallout(bibtex);
+  const contentWithoutCallout = removeBibtexCallout(content);
+  return insertBlockBeforeHeadings(contentWithoutCallout, nextCallout, ['## 摘要', '## 笔记']);
+}
+
+export function upsertRatingPlaceholder(content: string): string {
+  const contentWithoutPlaceholder = content
+    .replace(new RegExp(`\\n*${escapeRegExp(RATING_PLACEHOLDER_MARKER)}\\n*`, 'g'), '\n')
+    .trimEnd();
+  return insertBlockBeforeHeadings(contentWithoutPlaceholder, RATING_PLACEHOLDER_MARKER, [
+    `> ${BIBTEX_CALLOUT_MARKER}`,
+    '## 摘要',
+    '## 笔记',
+  ]);
+}
+
+function removeBibtexCallout(content: string): string {
   const existingStart = content.indexOf(`> ${BIBTEX_CALLOUT_MARKER}`);
-  if (existingStart >= 0) {
-    const before = content.slice(0, existingStart).trimEnd();
-    const rest = content.slice(existingStart);
-    const restLines = rest.split('\n');
-    let calloutLineCount = 0;
-    while (calloutLineCount < restLines.length && restLines[calloutLineCount]?.startsWith('>')) {
-      calloutLineCount += 1;
-    }
-    const remainder = restLines.slice(calloutLineCount).join('\n').trimStart();
-    return `${before}\n\n${nextCallout}${remainder ? `\n\n${remainder}` : ''}`;
+  if (existingStart < 0) {
+    return content;
   }
 
-  const notesHeading = '\n## 笔记';
-  const notesIndex = content.indexOf(notesHeading);
-  if (notesIndex >= 0) {
-    return `${content.slice(0, notesIndex).trimEnd()}\n\n${nextCallout}${content.slice(notesIndex)}`;
+  const before = content.slice(0, existingStart).trimEnd();
+  const rest = content.slice(existingStart);
+  const restLines = rest.split('\n');
+  let calloutLineCount = 0;
+  while (calloutLineCount < restLines.length && restLines[calloutLineCount]?.startsWith('>')) {
+    calloutLineCount += 1;
+  }
+  const remainder = restLines.slice(calloutLineCount).join('\n').trimStart();
+  return `${before}${remainder ? `\n\n${remainder}` : ''}`;
+}
+
+function insertBlockBeforeHeadings(content: string, block: string, headings: string[]): string {
+  const targetIndex = headings
+    .map(heading => findHeadingIndex(content, heading))
+    .filter(index => index >= 0)
+    .sort((a, b) => a - b)[0];
+
+  if (targetIndex !== undefined) {
+    return `${content.slice(0, targetIndex).trimEnd()}\n\n${block}${content.slice(targetIndex)}`;
   }
 
-  return `${content.trimEnd()}\n\n${nextCallout}\n`;
+  return `${content.trimEnd()}\n\n${block}\n`;
+}
+
+function findHeadingIndex(content: string, heading: string): number {
+  if (content.startsWith(heading)) {
+    return 0;
+  }
+  return content.indexOf(`\n${heading}`);
 }
 
 export function updatePaperBodyMetadata(content: string, paper: PaperInfo): string {

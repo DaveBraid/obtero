@@ -24,6 +24,7 @@ export interface MyPluginSettings {
   addCardToExcalidraw: boolean; // 添加论文时是否在 Excalidraw 中添加卡片
   fields: FieldStyle[]; // 领域样式列表
   defaultField: string; // 默认领域
+  includeAbstract?: boolean;  // 是否写入摘要正文
   translateAbstract?: boolean;  // 是否翻译摘要
   siliconflowApiKey?: string;   // 硅基流动API密钥
   translationModel?: string;    // 翻译模型名称
@@ -126,6 +127,7 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
   addCardToExcalidraw: true, // 默认启用
   fields: DEFAULT_FIELDS,
   defaultField: '其他',
+  includeAbstract: true,
   translateAbstract: false,
   siliconflowApiKey: '',
   translationModel: 'Qwen/Qwen2.5-7B-Instruct',
@@ -325,15 +327,29 @@ export class PaperSettingTab extends PluginSettingTab {
       })
       .catch(error => promptPreviewContent.setText(`读取失败：${(error as Error).message}`));
 
-    // ── 摘要翻译 ────────────────────────────────────────────────────────────
-    this.addSectionHeader(containerEl, '摘要翻译');
+    // ── 摘要 ────────────────────────────────────────────────────────────
+    this.addSectionHeader(containerEl, '摘要');
 
     new Setting(containerEl)
-      .setName('启用翻译')
-      .setDesc('在创建论文时自动翻译摘要')
+      .setName('写入摘要')
+      .setDesc('关闭后，新建论文不会生成 ## 摘要，也不会调用摘要翻译')
+      .addToggle(toggle =>
+        toggle
+          .setValue(this.plugin.settings.includeAbstract !== false)
+          .onChange(async value => {
+            this.plugin.settings.includeAbstract = value;
+            await this.plugin.saveSettings();
+            this.display();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName('启用摘要翻译')
+      .setDesc('在写入摘要时自动翻译；关闭后仍保留英文摘要')
       .addToggle(toggle =>
         toggle
           .setValue(this.plugin.settings.translateAbstract || false)
+          .setDisabled(this.plugin.settings.includeAbstract === false)
           .onChange(async value => {
             this.plugin.settings.translateAbstract = value;
             await this.plugin.saveSettings();

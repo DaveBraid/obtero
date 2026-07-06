@@ -3,9 +3,12 @@ import test from 'node:test';
 
 import {
   BIBTEX_CALLOUT_MARKER,
+  RATING_PLACEHOLDER_MARKER,
   buildBibtexCallout,
   buildPaperFrontmatterLines,
   formatRatingStars,
+  shouldIncludeAbstract,
+  shouldTranslateAbstract,
   upsertBibtexCallout,
   normalizeClaudianModel,
   normalizeRating,
@@ -80,11 +83,49 @@ test('bibtex callout is inserted before notes and replaced in place', () => {
   const withoutCallout = '# Demo\n\n## 摘要\nText\n\n## 笔记\n';
   const inserted = upsertBibtexCallout(withoutCallout, '@article{a}');
 
-  assert.match(inserted, /@article\{a\}[\s\S]*## 笔记/);
+  assert.ok(inserted.indexOf('@article{a}') < inserted.indexOf('## 摘要'));
 
   const replaced = upsertBibtexCallout(inserted, '@article{b}');
   assert.equal(replaced.includes('@article{a}'), false);
-  assert.match(replaced, /@article\{b\}[\s\S]*## 笔记/);
+  assert.ok(replaced.indexOf('@article{b}') < replaced.indexOf('## 摘要'));
+});
+
+test('bibtex callout stays after the rating placeholder and moves from old note position', () => {
+  const oldContent = [
+    '# Demo',
+    '',
+    '**arXiv**：[arXiv](https://arxiv.org/abs/2607.00001)  ',
+    '',
+    RATING_PLACEHOLDER_MARKER,
+    '',
+    '## 摘要',
+    '',
+    'Abstract text.',
+    '',
+    '> [!bibtex]- BibTeX',
+    '> ```bibtex',
+    '> @article{old}',
+    '> ```',
+    '',
+    '## 笔记',
+    '',
+  ].join('\n');
+  const moved = upsertBibtexCallout(oldContent, '@article{new}');
+
+  assert.equal(moved.includes('@article{old}'), false);
+  assert.ok(moved.indexOf(RATING_PLACEHOLDER_MARKER) < moved.indexOf('@article{new}'));
+  assert.ok(moved.indexOf('@article{new}') < moved.indexOf('## 摘要'));
+  assert.ok(moved.indexOf('## 摘要') < moved.indexOf('## 笔记'));
+});
+
+test('abstract and abstract translation switches keep old defaults but can be disabled independently', () => {
+  assert.equal(shouldIncludeAbstract(undefined), true);
+  assert.equal(shouldIncludeAbstract(true), true);
+  assert.equal(shouldIncludeAbstract(false), false);
+  assert.equal(shouldTranslateAbstract(true, true), true);
+  assert.equal(shouldTranslateAbstract(undefined, true), true);
+  assert.equal(shouldTranslateAbstract(false, true), false);
+  assert.equal(shouldTranslateAbstract(true, false), false);
 });
 
 test('Claudian response parser accepts fenced JSON and normalizes missing evidence', () => {
