@@ -655,6 +655,12 @@ export class PaperView extends ItemView {
       })
     );
 
+    menu.addItem(mi =>
+      mi.setTitle('使用 Claudian 补全元数据').onClick(() => {
+        void this.plugin.enrichExistingPaperInBackground(file);
+      })
+    );
+
     menu.addSeparator();
 
     // Add to Excalidraw

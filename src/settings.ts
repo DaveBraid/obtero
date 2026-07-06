@@ -1,6 +1,12 @@
-import { App, Modal, Notice, PluginSettingTab, Setting } from 'obsidian';
+import { App, Modal, Notice, PluginSettingTab, Setting, TFile } from 'obsidian';
 import MyPlugin from './main';
 import { FieldStyle, IdeaItem } from './types';
+import {
+  ClaudianMetadataMode,
+  DEFAULT_CLAUDIAN_MODEL,
+  DEFAULT_CLAUDIAN_PROMPT_RELATIVE_PATH,
+  normalizeClaudianMetadataMode,
+} from './paperMetadata';
 import {
   COLOR_HUNT_FIELD_PRESETS,
   applyColorPresetToField,
@@ -21,6 +27,9 @@ export interface MyPluginSettings {
   translateAbstract?: boolean;  // 是否翻译摘要
   siliconflowApiKey?: string;   // 硅基流动API密钥
   translationModel?: string;    // 翻译模型名称
+  claudianMetadataMode: ClaudianMetadataMode; // Claudian 元数据补全模式
+  claudianModel: string; // Claudian 调用模型
+  claudianPromptPath: string; // 元数据补全 prompt 文件路径
   ideas?: IdeaItem[];
 }
 
@@ -120,8 +129,59 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
   translateAbstract: false,
   siliconflowApiKey: '',
   translationModel: 'Qwen/Qwen2.5-7B-Instruct',
+  claudianMetadataMode: 'auto',
+  claudianModel: 'GPT-5.5',
+  claudianPromptPath: DEFAULT_CLAUDIAN_PROMPT_RELATIVE_PATH,
   ideas: [],
 };
+
+class PromptEditorModal extends Modal {
+  private plugin: MyPlugin;
+  private filePath: string;
+  private content: string;
+
+  constructor(app: App, plugin: MyPlugin, filePath: string, content: string) {
+    super(app);
+    this.plugin = plugin;
+    this.filePath = filePath;
+    this.content = content;
+  }
+
+  onOpen(): void {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.createEl('h2', { text: 'Claudian 元数据补全提示词' });
+    contentEl.createEl('p', {
+      text: this.filePath,
+      cls: 'setting-item-description',
+    });
+    const textarea = contentEl.createEl('textarea', {
+      cls: 'pm-prompt-editor',
+    });
+    textarea.value = this.content;
+    textarea.rows = 18;
+    textarea.style.width = '100%';
+    textarea.style.boxSizing = 'border-box';
+
+    const buttons = contentEl.createDiv({ cls: 'modal-button-container' });
+    buttons.style.display = 'flex';
+    buttons.style.justifyContent = 'flex-end';
+    buttons.style.gap = '8px';
+    buttons.style.marginTop = '12px';
+
+    buttons.createEl('button', { text: '取消' }).addEventListener('click', () => {
+      this.close();
+    });
+    const saveButton = buttons.createEl('button', { text: '保存', cls: 'mod-cta' });
+    saveButton.addEventListener('click', () => {
+      void (async () => {
+        await this.plugin.saveClaudianPrompt(textarea.value);
+        new Notice('已保存 Claudian 提示词');
+        this.close();
+      })();
+    });
+  }
+}
 
 export class PaperSettingTab extends PluginSettingTab {
   plugin: MyPlugin;
@@ -237,6 +297,66 @@ export class PaperSettingTab extends PluginSettingTab {
           })
       );
 
+    // ── Claudian 元数据补全 ───────────────────────────────────────────────
+    this.addSectionHeader(containerEl, 'Claudian 元数据补全');
+
+    new Setting(containerEl)
+      .setName('补全模式')
+      .setDesc('控制研究机构、发表状态、开源状态和 BibTeX 的生成方式')
+      .addDropdown(dropdown => {
+        dropdown
+          .addOption('auto', '自动补全：保留字段并调用 Claudian')
+          .addOption('manual', '手动填写：保留字段但不调用 Claudian')
+          .addOption('off', '完全关闭：不新增 Claudian 字段');
+        dropdown
+          .setValue(normalizeClaudianMetadataMode(this.plugin.settings.claudianMetadataMode))
+          .onChange(async value => {
+            this.plugin.settings.claudianMetadataMode = normalizeClaudianMetadataMode(value);
+            await this.plugin.saveSettings();
+          });
+      });
+
+    new Setting(containerEl)
+      .setName('Claudian 模型')
+      .setDesc('用于元数据补全的模型名称，默认 GPT-5.5')
+      .addText(text =>
+        text
+          .setPlaceholder(DEFAULT_CLAUDIAN_MODEL)
+          .setValue(this.plugin.settings.claudianModel || 'GPT-5.5')
+          .onChange(async value => {
+            this.plugin.settings.claudianModel = value.trim() || 'GPT-5.5';
+            await this.plugin.saveSettings();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName('Skill 提示词')
+      .setDesc('Markdown 文件存放在 Obtero 插件目录下，可预览和编辑')
+      .addText(text =>
+        text
+          .setPlaceholder(this.plugin.getDefaultClaudianPromptPath())
+          .setValue(this.plugin.settings.claudianPromptPath || this.plugin.getDefaultClaudianPromptPath())
+          .onChange(async value => {
+            this.plugin.settings.claudianPromptPath = value.trim() || this.plugin.getDefaultClaudianPromptPath();
+            await this.plugin.saveSettings();
+          })
+      )
+      .addButton(button =>
+        button
+          .setButtonText('打开')
+          .onClick(async () => {
+            await this.openPromptFile();
+          })
+      );
+
+    const promptPreview = containerEl.createEl('details', { cls: 'obtero-prompt-preview' });
+    promptPreview.createEl('summary', { text: '查看当前提示词内容' });
+    const promptCode = promptPreview.createEl('pre');
+    promptCode.setText('读取中...');
+    void this.plugin.loadClaudianPrompt()
+      .then(content => promptCode.setText(content))
+      .catch(error => promptCode.setText(`读取失败：${(error as Error).message}`));
+
     // ── 摘要翻译 ────────────────────────────────────────────────────────────
     this.addSectionHeader(containerEl, '摘要翻译');
 
@@ -308,6 +428,20 @@ export class PaperSettingTab extends PluginSettingTab {
     // 渲染领域列表
     this.renderFieldsList(containerEl);
 
+  }
+
+  private async openPromptFile(): Promise<void> {
+    const promptPath = this.plugin.settings.claudianPromptPath || this.plugin.getDefaultClaudianPromptPath();
+    await this.plugin.ensureClaudianPromptFile();
+    const file = this.app.vault.getAbstractFileByPath(promptPath);
+    if (file instanceof TFile) {
+      const leaf = this.app.workspace.getLeaf(false);
+      await leaf.openFile(file);
+      return;
+    }
+
+    const content = await this.plugin.loadClaudianPrompt();
+    new PromptEditorModal(this.app, this.plugin, promptPath, content).open();
   }
 
   renderFieldsList(containerEl: HTMLElement): void {

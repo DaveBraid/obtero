@@ -4,10 +4,9 @@ import { PaperInfo, FieldStyle } from '../types';
 import { searchArxiv } from '../api/arxivSearch';
 import { searchIEEE } from '../api/ieeeSearch';
 import { isRateLimitError } from '../api/requestGuards';
-import { createPaperFile } from '../utils/fileUtils';
-import { insertPaperToExcalidraw } from '../utils/excalidrawUtils';
 import { normalizePaperFields } from '../utils/paperFields';
 import { createRandomColorHuntFieldStyle } from '../colorPalettes';
+import { normalizeRating } from '../paperMetadata';
 
 export class AddPaperModal extends Modal {
   private plugin: MyPlugin;
@@ -27,6 +26,7 @@ export class AddPaperModal extends Modal {
     arxivId: string;
     doi: string;
     abstract: string;
+    pdfUrl: string;
   } = {
     title: '',
     authors: '',
@@ -36,6 +36,7 @@ export class AddPaperModal extends Modal {
     arxivId: '',
     doi: '',
     abstract: '',
+    pdfUrl: '',
   };
 
   constructor(app: App, plugin: MyPlugin, onComplete?: (file?: TFile) => void | Promise<void>) {
@@ -253,6 +254,16 @@ export class AddPaperModal extends Modal {
       });
 
     new Setting(moreContent)
+      .setName('PDF 附件地址')
+      .setDesc('可选，默认留空')
+      .addText(text => {
+        text.setPlaceholder('https://example.com/paper.pdf');
+        text.inputEl.addEventListener('change', (e) => {
+          this.manualInput.pdfUrl = (e.target as HTMLInputElement).value.trim();
+        });
+      });
+
+    new Setting(moreContent)
       .setName('摘要')
       .addTextArea(text => {
         text.setPlaceholder('输入论文摘要...');
@@ -412,6 +423,20 @@ export class AddPaperModal extends Modal {
     if (p.arxivId) addField('arXiv ID', p.arxivId);
     if (p.doi) addField('DOI', p.doi);
 
+    this.renderRatingSetting(contentEl, p);
+
+    new Setting(contentEl)
+      .setName('PDF 附件地址')
+      .setDesc('手动输入 PDF 或附件链接，默认留空')
+      .addText(text =>
+        text
+          .setPlaceholder('https://example.com/paper.pdf')
+          .setValue(p.pdfUrl || '')
+          .onChange(value => {
+            p.pdfUrl = value.trim();
+          })
+      );
+
     // 论文类别
     const categories = ['待阅读', ...this.plugin.settings.labels];
     new Setting(contentEl)
@@ -512,6 +537,54 @@ export class AddPaperModal extends Modal {
       cls: 'mod-cta'
     });
     addBtn.addEventListener('click', () => this.doAdd(addBtn));
+  }
+
+  private renderRatingSetting(containerEl: HTMLElement, paper: PaperInfo): void {
+    const setting = new Setting(containerEl)
+      .setName('评分')
+      .setDesc('0-5 星，默认 0 星');
+    const wrapper = setting.controlEl.createDiv({ cls: 'pm-rating-control' });
+    const starButtons: HTMLButtonElement[] = [];
+    const numberInput = wrapper.createEl('input', {
+      attr: {
+        type: 'number',
+        min: '0',
+        max: '5',
+        step: '1',
+        'aria-label': '评分',
+      },
+    });
+    numberInput.addClass('pm-rating-input');
+
+    const setRating = (nextValue: number): void => {
+      paper.rating = normalizeRating(nextValue);
+      numberInput.value = String(paper.rating);
+      starButtons.forEach((button, index) => {
+        const starValue = index + 1;
+        button.textContent = starValue <= normalizeRating(paper.rating) ? '★' : '☆';
+        button.setAttribute('aria-pressed', starValue <= normalizeRating(paper.rating) ? 'true' : 'false');
+      });
+    };
+
+    const clearButton = wrapper.createEl('button', {
+      text: '0',
+      attr: { 'aria-label': '清除评分' },
+    });
+    clearButton.addClass('pm-rating-clear');
+    clearButton.addEventListener('click', () => setRating(0));
+
+    for (let index = 0; index < 5; index += 1) {
+      const button = wrapper.createEl('button', {
+        text: '☆',
+        attr: { 'aria-label': `${index + 1} 星` },
+      });
+      button.addClass('pm-rating-star');
+      button.addEventListener('click', () => setRating(index + 1));
+      starButtons.push(button);
+    }
+
+    numberInput.addEventListener('change', () => setRating(Number(numberInput.value)));
+    setRating(normalizeRating(paper.rating));
   }
 
   // ── 新建领域模态框 ─────────────────────────────────────────────────────
@@ -619,55 +692,32 @@ export class AddPaperModal extends Modal {
 
   // ── 添加论文 ─────────────────────────────────────────────────────────────
 
-  private async doAdd(addBtn?: HTMLButtonElement): Promise<void> {
+  private doAdd(addBtn?: HTMLButtonElement): void {
     if (!this.selected || this.isAdding) return;
 
     const paperFields = this.getFieldSelections();
-    this.selected.fields = paperFields;
-    this.selected.field = paperFields[0];
+    const paperToAdd: PaperInfo = {
+      ...this.selected,
+      authors: [...this.selected.authors],
+      institutions: this.selected.institutions ? [...this.selected.institutions] : undefined,
+      fields: paperFields,
+      field: paperFields[0],
+      rating: normalizeRating(this.selected.rating),
+      pdfUrl: this.selected.pdfUrl || '',
+    };
     this.isAdding = true;
     if (addBtn) {
       addBtn.disabled = true;
       addBtn.addClass('pm-add-button-loading');
-      addBtn.textContent = '添加中...';
+      addBtn.textContent = '后台添加中...';
     }
 
-    try {
-      const file = await createPaperFile(
-        this.app,
-        this.plugin.settings,
-        this.selected,
-        this.category
-      );
-      if (!file) {
-        new Notice('创建论文文件失败');
-        return;
-      }
-      // 只有设置启用时才添加卡片
-      if (this.plugin.settings.addCardToExcalidraw) {
-        await insertPaperToExcalidraw(
-          this.app,
-          this.plugin.settings,
-          this.selected,
-          file
-        );
-      }
-      await waitForPaperMetadata(this.app, file, paperFields);
-      await this.onComplete?.(file);
-      this.showAddSuccess();
-      new Notice(`已将「${this.selected.title}」添加到「${this.category}」`);
-      await sleep(520);
-      this.close();
-    } catch (e) {
-      new Notice('添加论文失败：' + (e as Error).message);
-      if (addBtn) {
-        addBtn.disabled = false;
-        addBtn.removeClass('pm-add-button-loading');
-        addBtn.textContent = '确定添加';
-      }
-    } finally {
-      this.isAdding = false;
-    }
+    new Notice(`已开始后台添加「${paperToAdd.title}」`);
+    this.close();
+    void this.plugin.addPaperInBackground(paperToAdd, this.category, this.onComplete)
+      .finally(() => {
+        this.isAdding = false;
+      });
   }
 
   private showAddSuccess(): void {
@@ -697,6 +747,8 @@ export class AddPaperModal extends Modal {
       arxivId: this.manualInput.arxivId || undefined,
       doi: this.manualInput.doi || undefined,
       abstract: this.manualInput.abstract || undefined,
+      pdfUrl: this.manualInput.pdfUrl,
+      rating: 0,
       source: undefined, // 手动添加没有特定来源
     };
 
@@ -706,25 +758,5 @@ export class AddPaperModal extends Modal {
 
   onClose(): void {
     this.contentEl.empty();
-  }
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => window.setTimeout(resolve, ms));
-}
-
-// Obsidian 写入文件后 metadataCache 可能晚一点才读到 frontmatter。
-async function waitForPaperMetadata(app: App, file: TFile, expectedFields: string[]): Promise<void> {
-  const deadline = Date.now() + 2500;
-  while (Date.now() < deadline) {
-    const fm = app.metadataCache.getFileCache(file)?.frontmatter;
-    const actualFields = normalizePaperFields(fm);
-    if (
-      fm &&
-      (expectedFields.length === 0 || expectedFields.every(field => actualFields.includes(field)))
-    ) {
-      return;
-    }
-    await sleep(100);
   }
 }

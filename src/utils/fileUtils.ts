@@ -2,6 +2,15 @@ import { App, TFile, TFolder, normalizePath } from 'obsidian';
 import { MyPluginSettings } from '../settings';
 import { PaperInfo } from '../types';
 import { translateText } from './translationUtils';
+import {
+  buildBibtexCallout,
+  buildPaperFrontmatterLines,
+  formatOpenSourceSummary,
+  getPaperFields,
+  normalizeClaudianMetadataMode,
+  normalizeRating,
+  shouldIncludeClaudianMetadata,
+} from '../paperMetadata';
 
 export function getExcalidrawPath(settings: MyPluginSettings): string {
   return normalizePath(`${settings.workspaceFolder}/论文关系图.md`);
@@ -112,45 +121,44 @@ export async function createPaperFile(
       }
     }
 
-    return await app.vault.create(filePath, buildPaperContent(paper, translatedAbstract));
+    return await app.vault.create(
+      filePath,
+      buildPaperContent(
+        paper,
+        translatedAbstract,
+        normalizeClaudianMetadataMode(settings.claudianMetadataMode)
+      )
+    );
   } catch (e) {
     console.error('[PaperPlugin] Failed to create paper file:', e);
     return null;
   }
 }
 
-function buildPaperContent(paper: PaperInfo, translatedAbstract: string = ''): string {
-  const paperFields = Array.from(
-    new Set((paper.fields && paper.fields.length > 0 ? paper.fields : paper.field ? [paper.field] : []).filter(Boolean))
-  );
-  const primaryField = paperFields[0];
-  const lines: string[] = ['---'];
-  lines.push(`title: "${escapeYaml(paper.title)}"`);
-  lines.push(`journal: "${escapeYaml(paper.journal || '')}"`);
-  lines.push(`date: "${paper.date || ''}"`);
-  lines.push(
-    `authors: [${paper.authors.map(a => `"${escapeYaml(a)}"`).join(', ')}]`
-  );
-  if (paper.institutions && paper.institutions.length > 0) {
-    lines.push(
-      `institutions: [${paper.institutions
-        .map(i => `"${escapeYaml(i)}"`)
-        .join(', ')}]`
-    );
-  }
-  if (paperFields.length > 0) {
-    lines.push(`fields: [${paperFields.map(field => `"${escapeYaml(field)}"`).join(', ')}]`);
-  }
-  if (primaryField) lines.push(`field: "${escapeYaml(primaryField)}"`);
-  if (paper.arxivId) lines.push(`arxivId: "${escapeYaml(paper.arxivId)}"`);
-  if (paper.doi) lines.push(`doi: "${paper.doi}"`);
-  lines.push('---', '');
+function buildPaperContent(
+  paper: PaperInfo,
+  translatedAbstract = '',
+  claudianMode = normalizeClaudianMetadataMode('auto')
+): string {
+  const paperFields = getPaperFields(paper);
+  const lines: string[] = buildPaperFrontmatterLines(paper, { claudianMode });
   lines.push(`# ${paper.title}`, '');
   lines.push(`**期刊/会议**：${paper.journal || ''}  `);
   lines.push(`**发表时间**：${paper.date || ''}  `);
   lines.push(`**作者**：${paper.authors.join('; ')}  `);
-  if (paper.institutions && paper.institutions.length > 0) {
+  lines.push(`**评分**：${formatRating(normalizeRating(paper.rating))}  `);
+  if (paper.pdfUrl) {
+    lines.push(`**PDF 附件**：${paper.pdfUrl}  `);
+  }
+  if (shouldIncludeClaudianMetadata(claudianMode) && paper.institutions && paper.institutions.length > 0) {
     lines.push(`**作者单位**：${paper.institutions.join('; ')}  `);
+  }
+  if (shouldIncludeClaudianMetadata(claudianMode)) {
+    lines.push(`**发表状态**：${paper.published || 'unknown'}  `);
+    if (paper.publicationVenue || paper.journal) {
+      lines.push(`**发表期刊/会议**：${paper.publicationVenue || paper.journal || ''}  `);
+    }
+    lines.push(`**开源状态**：${formatOpenSourceSummary(paper)}  `);
   }
   if (paperFields.length > 0) {
     lines.push(`**研究领域**：${paperFields.join(' / ')}  `);
@@ -177,12 +185,15 @@ function buildPaperContent(paper: PaperInfo, translatedAbstract: string = ''): s
     // 英文原文作为正文（在可折叠区块外）
     lines.push('', paper.abstract);
   }
+  if (shouldIncludeClaudianMetadata(claudianMode)) {
+    lines.push('', buildBibtexCallout(paper.bibtex || ''));
+  }
   lines.push('', '## 笔记', '', '');
   return lines.join('\n');
 }
 
-function escapeYaml(s: string): string {
-  return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+function formatRating(rating: number): string {
+  return `${'★'.repeat(rating)}${'☆'.repeat(5 - rating)} (${rating}/5)`;
 }
 
 function sanitizeFileName(name: string): string {

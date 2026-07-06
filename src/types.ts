@@ -4,6 +4,16 @@ export interface PaperInfo {
   date?: string;
   authors: string[];
   institutions?: string[];
+  rating?: number;
+  published?: string;
+  publicationVenue?: string;
+  openSourceStatus?: string;
+  openSourceUrl?: string;
+  openSourcePlan?: string;
+  openSourceLevel?: string;
+  metadataEnrichedAt?: string;
+  bibtex?: string;
+  pdfUrl?: string;
   arxivId?: string;
   doi?: string;
   abstract?: string;
