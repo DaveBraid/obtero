@@ -7,7 +7,7 @@ import { isRateLimitError } from '../api/requestGuards';
 import { createPaperFile } from '../utils/fileUtils';
 import { insertPaperToExcalidraw } from '../utils/excalidrawUtils';
 import { normalizePaperFields } from '../utils/paperFields';
-import { createRandomHappyHuesFieldStyle } from '../colorPalettes';
+import { createRandomColorHuntFieldStyle } from '../colorPalettes';
 
 export class AddPaperModal extends Modal {
   private plugin: MyPlugin;
@@ -537,9 +537,9 @@ export class AddPaperModal extends Modal {
 
     new Setting(modal.contentEl)
       .setName('样式来源')
-      .setDesc('默认随机使用一组 Happy Hues 浅背景色卡，也可以复制已有领域')
+      .setDesc('默认随机使用一组 Color Hunt 高赞浅背景色卡，也可以复制已有领域')
       .addDropdown(dropdown => {
-        dropdown.addOption('-1', '随机 Happy Hues 色卡');
+        dropdown.addOption('-1', '随机 Color Hunt 色卡');
         this.plugin.settings.fields.forEach((field, index) => {
           dropdown.addOption(index.toString(), `复制: ${field.name}`);
         });
@@ -599,9 +599,9 @@ export class AddPaperModal extends Modal {
             };
             new Notice(`已复制「${sourceField.name}」的样式创建新领域`);
           } else {
-            // 默认随机使用 Happy Hues 浅背景色卡
-            newField = createRandomHappyHuesFieldStyle(fieldName);
-            new Notice('已随机应用 Happy Hues 色卡');
+            // 默认随机使用 Color Hunt 高赞浅背景色卡
+            newField = createRandomColorHuntFieldStyle(fieldName);
+            new Notice('已随机应用 Color Hunt 色卡');
           }
 
           this.plugin.settings.fields.push(newField);

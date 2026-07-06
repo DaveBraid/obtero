@@ -5,6 +5,8 @@ export interface FieldColorPreset {
   name: string;
   sourcePalette: string;
   sourceUrl: string;
+  code: string;
+  likes: number;
   backgroundColor: string;
   textColor: string;
   borderColor: string;
@@ -12,215 +14,325 @@ export interface FieldColorPreset {
   swatches: string[];
 }
 
-const HAPPY_HUES_URL = 'https://www.happyhues.co/';
+export const COLOR_HUNT_SOURCE_URL = 'https://colorhunt.co/';
+export const COLOR_HUNT_SOURCE_AVERAGE_LIKES = 15212.722916666668;
 
-export const HAPPY_HUES_FIELD_PRESETS: FieldColorPreset[] = [
+export const COLOR_HUNT_FIELD_PRESETS: FieldColorPreset[] = [
   {
-    id: 'happy-hues-17',
-    name: '暖杏晨光',
-    sourcePalette: 'Happy Hues 17',
-    sourceUrl: HAPPY_HUES_URL,
-    backgroundColor: '#fef6e4',
-    textColor: '#001858',
-    borderColor: '#f582ae',
-    patternColor: '#8bd3dd',
-    swatches: ['#fef6e4', '#8bd3dd', '#f582ae', '#f3d2c1'],
+    id: 'color-hunt-222831393e4600adb5eeeeee',
+    name: '极简青灰',
+    sourcePalette: 'Color Hunt #222831393e4600adb5eeeeee',
+    sourceUrl: `${COLOR_HUNT_SOURCE_URL}palette/222831393e4600adb5eeeeee`,
+    code: '222831393e4600adb5eeeeee',
+    likes: 73071,
+    backgroundColor: '#eeeeee',
+    textColor: '#222831',
+    borderColor: '#00adb5',
+    patternColor: '#393e46',
+    swatches: ['#222831', '#393e46', '#00adb5', '#eeeeee'],
   },
   {
-    id: 'happy-hues-16',
-    name: '可可玫瑰',
-    sourcePalette: 'Happy Hues 16',
-    sourceUrl: HAPPY_HUES_URL,
-    backgroundColor: '#fff3ec',
-    textColor: '#271c19',
-    borderColor: '#9656a1',
-    patternColor: '#e78fb3',
-    swatches: ['#55423d', '#e78fb3', '#ffc0ad', '#9656a1', '#fff3ec', '#271c19'],
+    id: 'color-hunt-08d9d6252a34ff2e63eaeaea',
+    name: '霓虹青粉',
+    sourcePalette: 'Color Hunt #08d9d6252a34ff2e63eaeaea',
+    sourceUrl: `${COLOR_HUNT_SOURCE_URL}palette/08d9d6252a34ff2e63eaeaea`,
+    code: '08d9d6252a34ff2e63eaeaea',
+    likes: 35057,
+    backgroundColor: '#08d9d6',
+    textColor: '#252a34',
+    borderColor: '#ff2e63',
+    patternColor: '#eaeaea',
+    swatches: ['#08d9d6', '#252a34', '#ff2e63', '#eaeaea'],
   },
   {
-    id: 'happy-hues-15',
-    name: '奶油花园',
-    sourcePalette: 'Happy Hues 15',
-    sourceUrl: HAPPY_HUES_URL,
-    backgroundColor: '#faeee7',
-    textColor: '#33272a',
-    borderColor: '#ff8ba7',
-    patternColor: '#c3f0ca',
-    swatches: ['#faeee7', '#ff8ba7', '#ffc6c7', '#c3f0ca', '#fffffe'],
+    id: 'color-hunt-f5f7f8f4ce14495e5745474b',
+    name: '柠檬苔藓',
+    sourcePalette: 'Color Hunt #f5f7f8f4ce14495e5745474b',
+    sourceUrl: `${COLOR_HUNT_SOURCE_URL}palette/f5f7f8f4ce14495e5745474b`,
+    code: 'f5f7f8f4ce14495e5745474b',
+    likes: 23583,
+    backgroundColor: '#f4ce14',
+    textColor: '#45474b',
+    borderColor: '#495e57',
+    patternColor: '#f5f7f8',
+    swatches: ['#f5f7f8', '#f4ce14', '#495e57', '#45474b'],
   },
   {
-    id: 'happy-hues-14',
-    name: '海盐柠檬',
-    sourcePalette: 'Happy Hues 14',
-    sourceUrl: HAPPY_HUES_URL,
-    backgroundColor: '#e3f6f5',
-    textColor: '#272343',
-    borderColor: '#ffd803',
-    patternColor: '#bae8e8',
-    swatches: ['#fffffe', '#ffd803', '#e3f6f5', '#bae8e8'],
+    id: 'color-hunt-b1b2ffaac4ffd2daffeef1ff',
+    name: '薄蓝索引',
+    sourcePalette: 'Color Hunt #b1b2ffaac4ffd2daffeef1ff',
+    sourceUrl: `${COLOR_HUNT_SOURCE_URL}palette/b1b2ffaac4ffd2daffeef1ff`,
+    code: 'b1b2ffaac4ffd2daffeef1ff',
+    likes: 32697,
+    backgroundColor: '#aac4ff',
+    textColor: '#111111',
+    borderColor: '#b1b2ff',
+    patternColor: '#eef1ff',
+    swatches: ['#b1b2ff', '#aac4ff', '#d2daff', '#eef1ff'],
   },
   {
-    id: 'happy-hues-13',
-    name: '夜幕信笺',
-    sourcePalette: 'Happy Hues 13',
-    sourceUrl: HAPPY_HUES_URL,
-    backgroundColor: '#fffffe',
-    textColor: '#0f0e17',
-    borderColor: '#e53170',
-    patternColor: '#ff8906',
-    swatches: ['#0f0e17', '#ff8906', '#f25f4c', '#e53170', '#fffffe'],
+    id: 'color-hunt-ffb6b9fae3d9bbded661c0bf',
+    name: '粉桃海松',
+    sourcePalette: 'Color Hunt #ffb6b9fae3d9bbded661c0bf',
+    sourceUrl: `${COLOR_HUNT_SOURCE_URL}palette/ffb6b9fae3d9bbded661c0bf`,
+    code: 'ffb6b9fae3d9bbded661c0bf',
+    likes: 30197,
+    backgroundColor: '#ffb6b9',
+    textColor: '#111111',
+    borderColor: '#61c0bf',
+    patternColor: '#bbded6',
+    swatches: ['#ffb6b9', '#fae3d9', '#bbded6', '#61c0bf'],
   },
   {
-    id: 'happy-hues-12',
-    name: '星河淡紫',
-    sourcePalette: 'Happy Hues 12',
-    sourceUrl: HAPPY_HUES_URL,
-    backgroundColor: '#d4d8f0',
-    textColor: '#121629',
-    borderColor: '#eebbc3',
-    patternColor: '#b8c1ec',
-    swatches: ['#232946', '#eebbc3', '#fffffe', '#b8c1ec', '#d4d8f0'],
+    id: 'color-hunt-2121213232320d737714ffec',
+    name: '电光湖蓝',
+    sourcePalette: 'Color Hunt #2121213232320d737714ffec',
+    sourceUrl: `${COLOR_HUNT_SOURCE_URL}palette/2121213232320d737714ffec`,
+    code: '2121213232320d737714ffec',
+    likes: 24432,
+    backgroundColor: '#14ffec',
+    textColor: '#212121',
+    borderColor: '#0d7377',
+    patternColor: '#323232',
+    swatches: ['#212121', '#323232', '#0d7377', '#14ffec'],
   },
   {
-    id: 'happy-hues-11',
-    name: '羊皮红印',
-    sourcePalette: 'Happy Hues 11',
-    sourceUrl: HAPPY_HUES_URL,
-    backgroundColor: '#f9f4ef',
-    textColor: '#020826',
-    borderColor: '#f25042',
-    patternColor: '#eaddcf',
-    swatches: ['#f9f4ef', '#8c7851', '#eaddcf', '#f25042', '#fffffe'],
+    id: 'color-hunt-e3fdfdcbf1f5a6e3e971c9ce',
+    name: '冰湖青',
+    sourcePalette: 'Color Hunt #e3fdfdcbf1f5a6e3e971c9ce',
+    sourceUrl: `${COLOR_HUNT_SOURCE_URL}palette/e3fdfdcbf1f5a6e3e971c9ce`,
+    code: 'e3fdfdcbf1f5a6e3e971c9ce',
+    likes: 46486,
+    backgroundColor: '#a6e3e9',
+    textColor: '#111111',
+    borderColor: '#71c9ce',
+    patternColor: '#e3fdfd',
+    swatches: ['#e3fdfd', '#cbf1f5', '#a6e3e9', '#71c9ce'],
   },
   {
-    id: 'happy-hues-10',
-    name: '松石档案',
-    sourcePalette: 'Happy Hues 10',
-    sourceUrl: HAPPY_HUES_URL,
-    backgroundColor: '#e8e4e6',
-    textColor: '#001e1d',
-    borderColor: '#e16162',
-    patternColor: '#abd1c6',
-    swatches: ['#004643', '#f9bc60', '#abd1c6', '#e16162', '#e8e4e6'],
+    id: 'color-hunt-f38181fce38aeaffd095e1d3',
+    name: '夏日珊瑚',
+    sourcePalette: 'Color Hunt #f38181fce38aeaffd095e1d3',
+    sourceUrl: `${COLOR_HUNT_SOURCE_URL}palette/f38181fce38aeaffd095e1d3`,
+    code: 'f38181fce38aeaffd095e1d3',
+    likes: 33202,
+    backgroundColor: '#fce38a',
+    textColor: '#111111',
+    borderColor: '#f38181',
+    patternColor: '#95e1d3',
+    swatches: ['#f38181', '#fce38a', '#eaffd0', '#95e1d3'],
   },
   {
-    id: 'happy-hues-9',
-    name: '雾灰珊瑚',
-    sourcePalette: 'Happy Hues 9',
-    sourceUrl: HAPPY_HUES_URL,
-    backgroundColor: '#eff0f3',
-    textColor: '#0d0d0d',
-    borderColor: '#d9376e',
-    patternColor: '#ff8e3c',
-    swatches: ['#eff0f3', '#ff8e3c', '#fffffe', '#d9376e'],
+    id: 'color-hunt-faf8f1faeab1e5ba73c58940',
+    name: '焦糖纸页',
+    sourcePalette: 'Color Hunt #faf8f1faeab1e5ba73c58940',
+    sourceUrl: `${COLOR_HUNT_SOURCE_URL}palette/faf8f1faeab1e5ba73c58940`,
+    code: 'faf8f1faeab1e5ba73c58940',
+    likes: 17491,
+    backgroundColor: '#e5ba73',
+    textColor: '#111111',
+    borderColor: '#c58940',
+    patternColor: '#faf8f1',
+    swatches: ['#faf8f1', '#faeab1', '#e5ba73', '#c58940'],
   },
   {
-    id: 'happy-hues-8',
-    name: '亚麻海松',
-    sourcePalette: 'Happy Hues 8',
-    sourceUrl: HAPPY_HUES_URL,
-    backgroundColor: '#f8f5f2',
-    textColor: '#232323',
-    borderColor: '#078080',
-    patternColor: '#f45d48',
-    swatches: ['#f8f5f2', '#078080', '#f45d48', '#fffffe'],
+    id: 'color-hunt-f4eeffdcd6f7a6b1e1424874',
+    name: '淡紫学院',
+    sourcePalette: 'Color Hunt #f4eeffdcd6f7a6b1e1424874',
+    sourceUrl: `${COLOR_HUNT_SOURCE_URL}palette/f4eeffdcd6f7a6b1e1424874`,
+    code: 'f4eeffdcd6f7a6b1e1424874',
+    likes: 37580,
+    backgroundColor: '#dcd6f7',
+    textColor: '#424874',
+    borderColor: '#a6b1e1',
+    patternColor: '#f4eeff',
+    swatches: ['#f4eeff', '#dcd6f7', '#a6b1e1', '#424874'],
   },
   {
-    id: 'happy-hues-7',
-    name: '粉雾索引',
-    sourcePalette: 'Happy Hues 7',
-    sourceUrl: HAPPY_HUES_URL,
-    backgroundColor: '#fec7d7',
-    textColor: '#0e172c',
-    borderColor: '#a786df',
-    patternColor: '#d9d4e7',
-    swatches: ['#fec7d7', '#d9d4e7', '#a786df', '#f9f8fc', '#fffffe'],
+    id: 'color-hunt-fff5e4ffe3e1ffd1d1ff9494',
+    name: '樱粉便签',
+    sourcePalette: 'Color Hunt #fff5e4ffe3e1ffd1d1ff9494',
+    sourceUrl: `${COLOR_HUNT_SOURCE_URL}palette/fff5e4ffe3e1ffd1d1ff9494`,
+    code: 'fff5e4ffe3e1ffd1d1ff9494',
+    likes: 41574,
+    backgroundColor: '#ffd1d1',
+    textColor: '#111111',
+    borderColor: '#ff9494',
+    patternColor: '#fff5e4',
+    swatches: ['#fff5e4', '#ffe3e1', '#ffd1d1', '#ff9494'],
   },
   {
-    id: 'happy-hues-6',
-    name: '白瓷电光',
-    sourcePalette: 'Happy Hues 6',
-    sourceUrl: HAPPY_HUES_URL,
-    backgroundColor: '#fffffe',
-    textColor: '#2b2c34',
-    borderColor: '#6246ea',
-    patternColor: '#d1d1e9',
-    swatches: ['#fffffe', '#6246ea', '#d1d1e9', '#e45858'],
+    id: 'color-hunt-feffdeddffbc91c78852734d',
+    name: '青柠书签',
+    sourcePalette: 'Color Hunt #feffdeddffbc91c78852734d',
+    sourceUrl: `${COLOR_HUNT_SOURCE_URL}palette/feffdeddffbc91c78852734d`,
+    code: 'feffdeddffbc91c78852734d',
+    likes: 19199,
+    backgroundColor: '#ddffbc',
+    textColor: '#52734d',
+    borderColor: '#91c788',
+    patternColor: '#feffde',
+    swatches: ['#feffde', '#ddffbc', '#91c788', '#52734d'],
   },
   {
-    id: 'happy-hues-5',
-    name: '薄荷琥珀',
-    sourcePalette: 'Happy Hues 5',
-    sourceUrl: HAPPY_HUES_URL,
-    backgroundColor: '#f2f7f5',
-    textColor: '#00332c',
-    borderColor: '#faae2b',
-    patternColor: '#ffa8ba',
-    swatches: ['#f2f7f5', '#faae2b', '#ffa8ba', '#fa5246', '#00473e'],
+    id: 'color-hunt-ad8b73ceab93e3caa5fffbe9',
+    name: '陶土羊皮',
+    sourcePalette: 'Color Hunt #ad8b73ceab93e3caa5fffbe9',
+    sourceUrl: `${COLOR_HUNT_SOURCE_URL}palette/ad8b73ceab93e3caa5fffbe9`,
+    code: 'ad8b73ceab93e3caa5fffbe9',
+    likes: 38309,
+    backgroundColor: '#e3caa5',
+    textColor: '#111111',
+    borderColor: '#ad8b73',
+    patternColor: '#fffbe9',
+    swatches: ['#ad8b73', '#ceab93', '#e3caa5', '#fffbe9'],
   },
   {
-    id: 'happy-hues-4',
-    name: '黑曜荧紫',
-    sourcePalette: 'Happy Hues 4',
-    sourceUrl: HAPPY_HUES_URL,
-    backgroundColor: '#fffffe',
-    textColor: '#16161a',
-    borderColor: '#7f5af0',
-    patternColor: '#2cb67d',
-    swatches: ['#16161a', '#7f5af0', '#72757e', '#2cb67d', '#fffffe'],
+    id: 'color-hunt-1fab8962d2a29df3c4d7fbe8',
+    name: '薄荷森林',
+    sourcePalette: 'Color Hunt #1fab8962d2a29df3c4d7fbe8',
+    sourceUrl: `${COLOR_HUNT_SOURCE_URL}palette/1fab8962d2a29df3c4d7fbe8`,
+    code: '1fab8962d2a29df3c4d7fbe8',
+    likes: 15810,
+    backgroundColor: '#9df3c4',
+    textColor: '#111111',
+    borderColor: '#1fab89',
+    patternColor: '#62d2a2',
+    swatches: ['#1fab89', '#62d2a2', '#9df3c4', '#d7fbe8'],
   },
   {
-    id: 'happy-hues-3',
-    name: '蓝印雪笺',
-    sourcePalette: 'Happy Hues 3',
-    sourceUrl: HAPPY_HUES_URL,
-    backgroundColor: '#d8eefe',
-    textColor: '#094067',
-    borderColor: '#3da9fc',
-    patternColor: '#90b4ce',
-    swatches: ['#fffffe', '#3da9fc', '#90b4ce', '#ef4565', '#d8eefe'],
+    id: 'color-hunt-f9ed69f08a5db83b5e6a2c70',
+    name: '日光莓紫',
+    sourcePalette: 'Color Hunt #f9ed69f08a5db83b5e6a2c70',
+    sourceUrl: `${COLOR_HUNT_SOURCE_URL}palette/f9ed69f08a5db83b5e6a2c70`,
+    code: 'f9ed69f08a5db83b5e6a2c70',
+    likes: 33300,
+    backgroundColor: '#f9ed69',
+    textColor: '#6a2c70',
+    borderColor: '#b83b5e',
+    patternColor: '#f08a5d',
+    swatches: ['#f9ed69', '#f08a5d', '#b83b5e', '#6a2c70'],
   },
   {
-    id: 'happy-hues-2',
-    name: '极光便签',
-    sourcePalette: 'Happy Hues 2',
-    sourceUrl: HAPPY_HUES_URL,
-    backgroundColor: '#f2f4f6',
-    textColor: '#00214d',
-    borderColor: '#ff5470',
-    patternColor: '#00ebc7',
-    swatches: ['#fffffe', '#00ebc7', '#ff5470', '#fde24f', '#f2f4f6'],
+    id: 'color-hunt-ffd4d4ffffe8cde990aacb73',
+    name: '青柠粉笺',
+    sourcePalette: 'Color Hunt #ffd4d4ffffe8cde990aacb73',
+    sourceUrl: `${COLOR_HUNT_SOURCE_URL}palette/ffd4d4ffffe8cde990aacb73`,
+    code: 'ffd4d4ffffe8cde990aacb73',
+    likes: 20260,
+    backgroundColor: '#cde990',
+    textColor: '#111111',
+    borderColor: '#aacb73',
+    patternColor: '#ffd4d4',
+    swatches: ['#ffd4d4', '#ffffe8', '#cde990', '#aacb73'],
   },
   {
-    id: 'happy-hues-1',
-    name: '白页霓虹',
-    sourcePalette: 'Happy Hues 1',
-    sourceUrl: HAPPY_HUES_URL,
-    backgroundColor: '#f2eef5',
-    textColor: '#181818',
-    borderColor: '#994ff3',
-    patternColor: '#4fc4cf',
-    swatches: ['#fffffe', '#4fc4cf', '#994ff3', '#fbdd74', '#f2eef5', '#f6efef'],
+    id: 'color-hunt-6096b493bfcfbdcdd6eee9da',
+    name: '雾蓝档案',
+    sourcePalette: 'Color Hunt #6096b493bfcfbdcdd6eee9da',
+    sourceUrl: `${COLOR_HUNT_SOURCE_URL}palette/6096b493bfcfbdcdd6eee9da`,
+    code: '6096b493bfcfbdcdd6eee9da',
+    likes: 31552,
+    backgroundColor: '#bdcdd6',
+    textColor: '#111111',
+    borderColor: '#6096b4',
+    patternColor: '#eee9da',
+    swatches: ['#6096b4', '#93bfcf', '#bdcdd6', '#eee9da'],
+  },
+  {
+    id: 'color-hunt-61826479ac78b0d9b1d0e7d2',
+    name: '苔绿札记',
+    sourcePalette: 'Color Hunt #61826479ac78b0d9b1d0e7d2',
+    sourceUrl: `${COLOR_HUNT_SOURCE_URL}palette/61826479ac78b0d9b1d0e7d2`,
+    code: '61826479ac78b0d9b1d0e7d2',
+    likes: 16678,
+    backgroundColor: '#b0d9b1',
+    textColor: '#111111',
+    borderColor: '#618264',
+    patternColor: '#79ac78',
+    swatches: ['#618264', '#79ac78', '#b0d9b1', '#d0e7d2'],
+  },
+  {
+    id: 'color-hunt-e4f9f530e3ca11999e40514e',
+    name: '高亮绿松',
+    sourcePalette: 'Color Hunt #e4f9f530e3ca11999e40514e',
+    sourceUrl: `${COLOR_HUNT_SOURCE_URL}palette/e4f9f530e3ca11999e40514e`,
+    code: 'e4f9f530e3ca11999e40514e',
+    likes: 22597,
+    backgroundColor: '#30e3ca',
+    textColor: '#40514e',
+    borderColor: '#11999e',
+    patternColor: '#e4f9f5',
+    swatches: ['#e4f9f5', '#30e3ca', '#11999e', '#40514e'],
+  },
+  {
+    id: 'color-hunt-2d4059ea5455f07b3fffd460',
+    name: '芒果海军',
+    sourcePalette: 'Color Hunt #2d4059ea5455f07b3fffd460',
+    sourceUrl: `${COLOR_HUNT_SOURCE_URL}palette/2d4059ea5455f07b3fffd460`,
+    code: '2d4059ea5455f07b3fffd460',
+    likes: 18967,
+    backgroundColor: '#ffd460',
+    textColor: '#2d4059',
+    borderColor: '#f07b3f',
+    patternColor: '#ea5455',
+    swatches: ['#2d4059', '#ea5455', '#f07b3f', '#ffd460'],
   },
 ];
 
-export function relativeLuminance(hexColor: string): number {
+function hexToRgb(hexColor: string): [number, number, number] {
   const hex = hexColor.replace('#', '');
-  const rgb = [0, 2, 4].map(offset => {
-    const value = parseInt(hex.slice(offset, offset + 2), 16) / 255;
+
+  return [0, 2, 4].map(offset => parseInt(hex.slice(offset, offset + 2), 16)) as [
+    number,
+    number,
+    number,
+  ];
+}
+
+export function relativeLuminance(hexColor: string): number {
+  const rgb = hexToRgb(hexColor).map(channel => {
+    const value = channel / 255;
     return value <= 0.04045 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4);
   });
 
   return 0.2126 * rgb[0]! + 0.7152 * rgb[1]! + 0.0722 * rgb[2]!;
 }
 
-export function getRandomHappyHuesPreset(random = Math.random): FieldColorPreset {
+function linearSrgbToOklab([red, green, blue]: [number, number, number]): [number, number, number] {
+  const l = 0.4122214708 * red + 0.5363325363 * green + 0.0514459929 * blue;
+  const m = 0.2119034982 * red + 0.6806995451 * green + 0.1073969566 * blue;
+  const s = 0.0883024619 * red + 0.2817188376 * green + 0.6299787005 * blue;
+
+  const lRoot = Math.cbrt(l);
+  const mRoot = Math.cbrt(m);
+  const sRoot = Math.cbrt(s);
+
+  return [
+    0.2104542553 * lRoot + 0.793617785 * mRoot - 0.0040720468 * sRoot,
+    1.9779984951 * lRoot - 2.428592205 * mRoot + 0.4505937099 * sRoot,
+    0.0259040371 * lRoot + 0.7827717662 * mRoot - 0.808675766 * sRoot,
+  ];
+}
+
+export function oklabDistance(a: string, b: string): number {
+  const toLinear = (channel: number): number => {
+    const value = channel / 255;
+    return value <= 0.04045 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4);
+  };
+  const labA = linearSrgbToOklab(hexToRgb(a).map(toLinear) as [number, number, number]);
+  const labB = linearSrgbToOklab(hexToRgb(b).map(toLinear) as [number, number, number]);
+
+  return Math.hypot(labA[0] - labB[0], labA[1] - labB[1], labA[2] - labB[2]);
+}
+
+export function getRandomColorHuntPreset(random = Math.random): FieldColorPreset {
   const index = Math.min(
-    HAPPY_HUES_FIELD_PRESETS.length - 1,
-    Math.floor(random() * HAPPY_HUES_FIELD_PRESETS.length)
+    COLOR_HUNT_FIELD_PRESETS.length - 1,
+    Math.floor(random() * COLOR_HUNT_FIELD_PRESETS.length)
   );
 
-  return HAPPY_HUES_FIELD_PRESETS[index]!;
+  return COLOR_HUNT_FIELD_PRESETS[index]!;
 }
 
 export function applyColorPresetToField(field: FieldStyle, preset: FieldColorPreset): FieldStyle {
@@ -236,8 +348,8 @@ export function applyColorPresetToField(field: FieldStyle, preset: FieldColorPre
   };
 }
 
-export function findMatchingHappyHuesPreset(field: FieldStyle): FieldColorPreset | undefined {
-  return HAPPY_HUES_FIELD_PRESETS.find(preset =>
+export function findMatchingColorHuntPreset(field: FieldStyle): FieldColorPreset | undefined {
+  return COLOR_HUNT_FIELD_PRESETS.find(preset =>
     field.backgroundColor === preset.backgroundColor &&
     field.textColor === preset.textColor &&
     field.borderColor === preset.borderColor &&
@@ -245,11 +357,11 @@ export function findMatchingHappyHuesPreset(field: FieldStyle): FieldColorPreset
   );
 }
 
-export function createRandomHappyHuesFieldStyle(
+export function createRandomColorHuntFieldStyle(
   name: string,
   random = Math.random
 ): FieldStyle {
-  const preset = getRandomHappyHuesPreset(random);
+  const preset = getRandomColorHuntPreset(random);
 
   return applyColorPresetToField({
     name,
