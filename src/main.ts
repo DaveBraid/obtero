@@ -284,6 +284,10 @@ export default class PaperPlugin extends Plugin {
 
   private registerRatingPostProcessor(): void {
     this.registerMarkdownPostProcessor((el, ctx) => {
+      if (el.closest('.pm-paper-item')) {
+        return;
+      }
+
       const file = this.app.vault.getAbstractFileByPath(ctx.sourcePath);
       if (!(file instanceof TFile) || file.extension !== 'md') {
         return;

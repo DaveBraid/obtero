@@ -6,6 +6,7 @@ import {
   RATING_PLACEHOLDER_MARKER,
   buildBibtexCallout,
   buildPaperFrontmatterLines,
+  formatCompactRatingStars,
   formatRatingStars,
   shouldIncludeAbstract,
   shouldTranslateAbstract,
@@ -35,6 +36,8 @@ test('rating is stored as an integer from 0 to 5', () => {
   assert.equal(normalizeRating(9), 5);
   assert.equal(formatRatingStars(3), '★★★☆☆ (3/5)');
   assert.equal(formatRatingStars(0), '☆☆☆☆☆ (0/5)');
+  assert.equal(formatCompactRatingStars(3), '★★★☆☆');
+  assert.equal(formatCompactRatingStars(0), '☆☆☆☆☆');
 });
 
 test('auto mode writes local fields and compact Claudian metadata defaults', () => {

@@ -70,6 +70,11 @@ export function formatRatingStars(value: unknown): string {
   return `${'★'.repeat(rating)}${'☆'.repeat(5 - rating)} (${rating}/5)`;
 }
 
+export function formatCompactRatingStars(value: unknown): string {
+  const rating = normalizeRating(value);
+  return `${'★'.repeat(rating)}${'☆'.repeat(5 - rating)}`;
+}
+
 export function normalizeClaudianModel(value: string | undefined): string {
   const normalized = (value || DEFAULT_CLAUDIAN_MODEL).trim().toLowerCase();
   return normalized || DEFAULT_CLAUDIAN_MODEL;

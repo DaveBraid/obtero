@@ -145,6 +145,21 @@
   align-items: center;
 }
 
+.pm-paper-inline-rating {
+  flex: 0 0 auto;
+  min-width: 58px;
+  color: var(--color-yellow);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.pm-paper-inline-rating-empty {
+  color: var(--text-faint);
+}
+
 .pm-field-tag-row {
   display: flex;
   align-items: center;

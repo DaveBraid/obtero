@@ -7,6 +7,7 @@ import { PaperInfo, IdeaItem } from '../types';
 import { AddPaperModal } from './AddPaperModal';
 import { SetupModal } from './SetupModal';
 import { getPrimaryPaperField, normalizePaperFields, paperMatchesField, resolveMainFieldName } from '../utils/paperFields';
+import { formatCompactRatingStars, normalizeRating } from '../paperMetadata';
 
 export const PAPER_VIEW_TYPE = 'paper-plugin-view';
 
@@ -76,6 +77,18 @@ function getFrontmatterString(frontmatter: PaperFrontmatter | undefined, key: st
 function getFrontmatterStringArray(frontmatter: PaperFrontmatter | undefined, key: string): string[] {
   const value = frontmatter?.[key];
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+}
+
+function getFrontmatterNumber(frontmatter: PaperFrontmatter | undefined, key: string): number {
+  const value = frontmatter?.[key];
+  if (typeof value === 'number') {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : 0;
+  }
+  return 0;
 }
 
 function getFirstAuthor(frontmatter: PaperFrontmatter | undefined): string {
@@ -584,6 +597,14 @@ export class PaperView extends ItemView {
     // 使用 MarkdownRenderer 渲染标题（支持公式）
     const titleSpan = titleContainer.createSpan({ cls: 'pm-paper-title' });
     await MarkdownRenderer.render(this.app, displayName, titleSpan, file.path, this);
+
+    const rating = normalizeRating(getFrontmatterNumber(fm, 'rating'));
+    const ratingEl = contentContainer.createSpan({
+      cls: 'pm-paper-inline-rating',
+      text: formatCompactRatingStars(rating),
+      attr: { 'aria-label': `评分 ${rating} / 5` },
+    });
+    ratingEl.toggleClass('pm-paper-inline-rating-empty', rating === 0);
 
     const fieldTagContainer = contentContainer.createDiv({ cls: 'pm-paper-field-tags' });
     if (typeof tagColumnWidth === 'number') {
