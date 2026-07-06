@@ -9,9 +9,6 @@ export interface PaperInfo {
   publicationVenue?: string;
   openSourceStatus?: string;
   openSourceUrl?: string;
-  openSourcePlan?: string;
-  openSourceLevel?: string;
-  metadataEnrichedAt?: string;
   bibtex?: string;
   pdfUrl?: string;
   arxivId?: string;

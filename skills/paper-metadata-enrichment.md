@@ -13,21 +13,17 @@
   "publicationVenue": "",
   "openSourceStatus": "unknown",
   "openSourceUrl": "",
-  "openSourcePlan": "",
-  "openSourceLevel": "",
   "bibtex": ""
 }
 ```
 
 ## 字段说明
 
-- institutions：研究机构或作者单位，使用常见简称或清晰英文名，例如 NVIDIA Lab、CMU、UCB、KAIST、ZJU。
+- institutions：研究机构或作者单位，优先使用全称（缩写），例如 Carnegie Mellon University（CMU）、UC Berkeley（UCB）、Zhejiang University（ZJU）。机构本身常用全称已经清晰时可不加缩写，例如 NVIDIA Research、KAIST。
 - published：只能使用 "published"、"preprint"、"unpublished"、"unknown"。
 - publicationVenue：发表期刊或会议，例如 CVPR 2026、IEEE RA-L、arXiv。
-- openSourceStatus：只能使用 "open"、"partial"、"planned"、"not_open"、"unknown"。
+- openSourceStatus：包含开源状态、计划时间和开源程度，不能包含 URL。例如 "open · full"、"partial · weights only"、"planned · 2026 Q4"、"not_open"、"unknown"。
 - openSourceUrl：开源地址，没有可靠证据则为空字符串。
-- openSourcePlan：计划开源时间或说明，没有可靠证据则为空字符串。
-- openSourceLevel：例如 full、code、weights、dataset、partial，没有可靠证据则为空字符串。
 - bibtex：BibTeX 条目。证据不足时可以使用 DOI/arXiv 信息生成合理 BibTeX；仍不足则为空字符串。
 
 ## 约束

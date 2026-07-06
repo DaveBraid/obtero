@@ -6,7 +6,6 @@ import { searchIEEE } from '../api/ieeeSearch';
 import { isRateLimitError } from '../api/requestGuards';
 import { normalizePaperFields } from '../utils/paperFields';
 import { createRandomColorHuntFieldStyle } from '../colorPalettes';
-import { normalizeRating } from '../paperMetadata';
 
 export class AddPaperModal extends Modal {
   private plugin: MyPlugin;
@@ -423,8 +422,6 @@ export class AddPaperModal extends Modal {
     if (p.arxivId) addField('arXiv ID', p.arxivId);
     if (p.doi) addField('DOI', p.doi);
 
-    this.renderRatingSetting(contentEl, p);
-
     new Setting(contentEl)
       .setName('PDF 附件地址')
       .setDesc('手动输入 PDF 或附件链接，默认留空')
@@ -537,54 +534,6 @@ export class AddPaperModal extends Modal {
       cls: 'mod-cta'
     });
     addBtn.addEventListener('click', () => this.doAdd(addBtn));
-  }
-
-  private renderRatingSetting(containerEl: HTMLElement, paper: PaperInfo): void {
-    const setting = new Setting(containerEl)
-      .setName('评分')
-      .setDesc('0-5 星，默认 0 星');
-    const wrapper = setting.controlEl.createDiv({ cls: 'pm-rating-control' });
-    const starButtons: HTMLButtonElement[] = [];
-    const numberInput = wrapper.createEl('input', {
-      attr: {
-        type: 'number',
-        min: '0',
-        max: '5',
-        step: '1',
-        'aria-label': '评分',
-      },
-    });
-    numberInput.addClass('pm-rating-input');
-
-    const setRating = (nextValue: number): void => {
-      paper.rating = normalizeRating(nextValue);
-      numberInput.value = String(paper.rating);
-      starButtons.forEach((button, index) => {
-        const starValue = index + 1;
-        button.textContent = starValue <= normalizeRating(paper.rating) ? '★' : '☆';
-        button.setAttribute('aria-pressed', starValue <= normalizeRating(paper.rating) ? 'true' : 'false');
-      });
-    };
-
-    const clearButton = wrapper.createEl('button', {
-      text: '0',
-      attr: { 'aria-label': '清除评分' },
-    });
-    clearButton.addClass('pm-rating-clear');
-    clearButton.addEventListener('click', () => setRating(0));
-
-    for (let index = 0; index < 5; index += 1) {
-      const button = wrapper.createEl('button', {
-        text: '☆',
-        attr: { 'aria-label': `${index + 1} 星` },
-      });
-      button.addClass('pm-rating-star');
-      button.addEventListener('click', () => setRating(index + 1));
-      starButtons.push(button);
-    }
-
-    numberInput.addEventListener('change', () => setRating(Number(numberInput.value)));
-    setRating(normalizeRating(paper.rating));
   }
 
   // ── 新建领域模态框 ─────────────────────────────────────────────────────
@@ -702,7 +651,6 @@ export class AddPaperModal extends Modal {
       institutions: this.selected.institutions ? [...this.selected.institutions] : undefined,
       fields: paperFields,
       field: paperFields[0],
-      rating: normalizeRating(this.selected.rating),
       pdfUrl: this.selected.pdfUrl || '',
     };
     this.isAdding = true;
@@ -748,7 +696,6 @@ export class AddPaperModal extends Modal {
       doi: this.manualInput.doi || undefined,
       abstract: this.manualInput.abstract || undefined,
       pdfUrl: this.manualInput.pdfUrl,
-      rating: 0,
       source: undefined, // 手动添加没有特定来源
     };
 

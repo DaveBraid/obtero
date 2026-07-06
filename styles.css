@@ -1892,33 +1892,12 @@ details summary:hover {
   min-width: auto;
 }
 
-.pm-rating-control {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.pm-rating-star,
-.pm-rating-clear {
-  min-width: 28px;
-  height: 28px;
-  padding: 0 6px;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 6px;
-  background: var(--background-secondary);
-  color: var(--text-normal);
-  line-height: 1;
-}
-
-.pm-rating-star {
+.obtero-rendered-rating {
+  margin: -4px 0 14px;
   color: var(--color-yellow);
-  font-size: 17px;
-}
-
-.pm-rating-input {
-  width: 56px;
-  height: 28px;
-  margin-left: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
 }
 
 .obtero-copy-bibtex {
@@ -1935,12 +1914,11 @@ details summary:hover {
   margin: 8px 0 18px;
 }
 
-.obtero-prompt-preview pre {
+.obtero-prompt-preview-content {
   max-height: 280px;
   overflow: auto;
   padding: 10px;
   border: 1px solid var(--background-modifier-border);
   border-radius: 6px;
   background: var(--background-secondary);
-  white-space: pre-wrap;
 }

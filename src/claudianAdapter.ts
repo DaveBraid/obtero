@@ -10,11 +10,20 @@ interface AppWithPlugins extends App {
 }
 
 interface ClaudianPluginInternal {
+  deleteConversation?: (conversationId: string) => Promise<void> | void;
   ensureViewOpen?: () => Promise<ClaudianViewInternal | null>;
   getView?: () => ClaudianViewInternal | null;
+  queryAuxiliary?: ClaudianHeadlessMethod;
+  runAuxiliaryPrompt?: ClaudianHeadlessMethod;
+  runHeadlessPrompt?: ClaudianHeadlessMethod;
+  sendAuxiliaryPrompt?: ClaudianHeadlessMethod;
+  sendHeadlessPrompt?: ClaudianHeadlessMethod;
 }
 
 interface ClaudianViewInternal {
+  leaf?: {
+    detach?: () => void;
+  };
   getTabManager?: () => ClaudianTabManagerInternal | null;
 }
 
@@ -22,13 +31,17 @@ interface ClaudianTabManagerInternal {
   createTab?: (
     conversationId?: string,
     tabId?: string,
-    options?: { draftModel?: string }
+    options?: { activate?: boolean; draftModel?: string }
   ) => Promise<ClaudianTabInternal | null>;
+  closeTab?: (tabId: string, force?: boolean) => Promise<boolean> | boolean;
   getActiveTab?: () => ClaudianTabInternal | null;
 }
 
 interface ClaudianTabInternal {
+  id?: string;
+  conversationId?: string | null;
   state?: {
+    currentConversationId?: string | null;
     isStreaming?: boolean;
     messages?: ClaudianMessageInternal[];
   };
@@ -46,6 +59,18 @@ interface ClaudianMessageInternal {
   text?: unknown;
 }
 
+type ClaudianHeadlessMethod = (promptOrOptions: unknown, options?: unknown) => Promise<unknown>;
+
+interface ClaudianSession {
+  tab: ClaudianTabInternal;
+  created: boolean;
+}
+
+interface ClaudianViewSession {
+  view: ClaudianViewInternal;
+  openedByAdapter: boolean;
+}
+
 export async function sendPromptToClaudian(
   app: App,
   prompt: string,
@@ -57,27 +82,42 @@ export async function sendPromptToClaudian(
     throw new Error('未检测到 Claudian 插件 realclaudian');
   }
 
-  const view = await ensureClaudianView(claudian);
+  const headlessResponse = await trySendPromptToClaudianHeadless(
+    claudian,
+    prompt,
+    normalizeClaudianModel(model)
+  );
+  if (headlessResponse) {
+    return headlessResponse;
+  }
+
+  const viewSession = await ensureClaudianView(claudian);
+  const { view } = viewSession;
   const tabManager = view.getTabManager?.();
   if (!tabManager) {
     throw new Error('无法访问 Claudian 会话管理器');
   }
 
-  const tab = await createClaudianTab(tabManager, normalizeClaudianModel(model));
+  const session = await createClaudianSession(tabManager, normalizeClaudianModel(model));
+  const { tab } = session;
   const inputController = tab.controllers?.inputController;
   if (!inputController?.sendMessage) {
     throw new Error('无法访问 Claudian 输入控制器');
   }
 
-  const initialMessageCount = tab.state?.messages?.length || 0;
-  await inputController.sendMessage({ content: prompt });
-  await waitForClaudianTurn(tab, initialMessageCount, timeoutMs);
+  try {
+    const initialMessageCount = tab.state?.messages?.length || 0;
+    await inputController.sendMessage({ content: prompt });
+    await waitForClaudianTurn(tab, initialMessageCount, timeoutMs);
 
-  const assistantText = getLatestAssistantMessageText(tab, initialMessageCount);
-  if (!assistantText) {
-    throw new Error('Claudian 没有返回可解析内容');
+    const assistantText = getLatestAssistantMessageText(tab, initialMessageCount);
+    if (!assistantText) {
+      throw new Error('Claudian 没有返回可解析内容');
+    }
+    return assistantText;
+  } finally {
+    await cleanupTemporaryClaudianSession(claudian, viewSession, tabManager, session);
   }
-  return assistantText;
 }
 
 function getClaudianPlugin(app: App): ClaudianPluginInternal | null {
@@ -90,30 +130,89 @@ function isClaudianPlugin(value: unknown): value is ClaudianPluginInternal {
   if (!isRecord(value)) {
     return false;
   }
-  return typeof value.ensureViewOpen === 'function' || typeof value.getView === 'function';
+  return (
+    typeof value.ensureViewOpen === 'function' ||
+    typeof value.getView === 'function' ||
+    getHeadlessMethod(value) !== null
+  );
 }
 
-async function ensureClaudianView(claudian: ClaudianPluginInternal): Promise<ClaudianViewInternal> {
+async function trySendPromptToClaudianHeadless(
+  claudian: ClaudianPluginInternal,
+  prompt: string,
+  model: string
+): Promise<string | null> {
+  const method = getHeadlessMethod(claudian);
+  if (!method) {
+    return null;
+  }
+
+  const result = await method.call(claudian, prompt, {
+    model,
+    persistHistory: false,
+    persistExtendedHistory: false,
+    visible: false,
+  });
+  const text = extractHeadlessResultText(result);
+  if (!text) {
+    throw new Error('Claudian 后台调用没有返回可解析内容');
+  }
+  return text;
+}
+
+function getHeadlessMethod(value: unknown): ClaudianHeadlessMethod | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const candidates = [
+    value.runHeadlessPrompt,
+    value.sendHeadlessPrompt,
+    value.runAuxiliaryPrompt,
+    value.sendAuxiliaryPrompt,
+    value.queryAuxiliary,
+  ];
+  const method = candidates.find(candidate => typeof candidate === 'function');
+  return typeof method === 'function' ? method as ClaudianHeadlessMethod : null;
+}
+
+function extractHeadlessResultText(value: unknown): string {
+  if (typeof value === 'string') {
+    return value.trim();
+  }
+  if (!isRecord(value)) {
+    return '';
+  }
+
+  return (
+    normalizeString(value.text) ||
+    normalizeString(value.response) ||
+    normalizeString(value.message) ||
+    extractMessageText(value.content)
+  );
+}
+
+async function ensureClaudianView(claudian: ClaudianPluginInternal): Promise<ClaudianViewSession> {
   const existingView = claudian.getView?.();
   if (existingView?.getTabManager) {
-    return existingView;
+    return { view: existingView, openedByAdapter: false };
   }
   const openedView = await claudian.ensureViewOpen?.();
   const view = openedView || claudian.getView?.();
   if (!view?.getTabManager) {
     throw new Error('无法打开 Claudian 视图');
   }
-  return view;
+  return { view, openedByAdapter: true };
 }
 
-async function createClaudianTab(
+async function createClaudianSession(
   tabManager: ClaudianTabManagerInternal,
   model: string
-): Promise<ClaudianTabInternal> {
+): Promise<ClaudianSession> {
   if (tabManager.createTab) {
-    const tab = await tabManager.createTab(undefined, undefined, { draftModel: model });
+    const tab = await tabManager.createTab(undefined, undefined, { activate: false, draftModel: model });
     if (tab) {
-      return tab;
+      return { tab, created: true };
     }
   }
 
@@ -122,9 +221,38 @@ async function createClaudianTab(
     throw new Error('Claudian 当前会话正在运行，无法复用');
   }
   if (activeTab) {
-    return activeTab;
+    return { tab: activeTab, created: false };
   }
   throw new Error('无法创建 Claudian 会话');
+}
+
+async function cleanupTemporaryClaudianSession(
+  claudian: ClaudianPluginInternal,
+  viewSession: ClaudianViewSession,
+  tabManager: ClaudianTabManagerInternal,
+  session: ClaudianSession
+): Promise<void> {
+  if (session.created) {
+    const conversationId = getTabConversationId(session.tab);
+    if (session.tab.id && tabManager.closeTab) {
+      await Promise.resolve(tabManager.closeTab(session.tab.id, true)).catch(error => {
+        console.warn('[Obtero] Failed to close temporary Claudian tab:', error);
+      });
+    }
+    if (conversationId && claudian.deleteConversation) {
+      await Promise.resolve(claudian.deleteConversation(conversationId)).catch(error => {
+        console.warn('[Obtero] Failed to delete temporary Claudian conversation:', error);
+      });
+    }
+  }
+
+  if (viewSession.openedByAdapter) {
+    viewSession.view.leaf?.detach?.();
+  }
+}
+
+function getTabConversationId(tab: ClaudianTabInternal): string {
+  return normalizeString(tab.conversationId) || normalizeString(tab.state?.currentConversationId);
 }
 
 async function waitForClaudianTurn(

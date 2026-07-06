@@ -8,7 +8,6 @@ import {
   formatOpenSourceSummary,
   getPaperFields,
   normalizeClaudianMetadataMode,
-  normalizeRating,
   shouldIncludeClaudianMetadata,
 } from '../paperMetadata';
 
@@ -146,7 +145,6 @@ function buildPaperContent(
   lines.push(`**期刊/会议**：${paper.journal || ''}  `);
   lines.push(`**发表时间**：${paper.date || ''}  `);
   lines.push(`**作者**：${paper.authors.join('; ')}  `);
-  lines.push(`**评分**：${formatRating(normalizeRating(paper.rating))}  `);
   if (paper.pdfUrl) {
     lines.push(`**PDF 附件**：${paper.pdfUrl}  `);
   }
@@ -159,6 +157,9 @@ function buildPaperContent(
       lines.push(`**发表期刊/会议**：${paper.publicationVenue || paper.journal || ''}  `);
     }
     lines.push(`**开源状态**：${formatOpenSourceSummary(paper)}  `);
+    if (paper.openSourceUrl) {
+      lines.push(`**开源地址**：${paper.openSourceUrl}  `);
+    }
   }
   if (paperFields.length > 0) {
     lines.push(`**研究领域**：${paperFields.join(' / ')}  `);
@@ -190,10 +191,6 @@ function buildPaperContent(
   }
   lines.push('', '## 笔记', '', '');
   return lines.join('\n');
-}
-
-function formatRating(rating: number): string {
-  return `${'★'.repeat(rating)}${'☆'.repeat(5 - rating)} (${rating}/5)`;
 }
 
 function sanitizeFileName(name: string): string {

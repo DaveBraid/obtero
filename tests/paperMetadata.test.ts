@@ -5,6 +5,7 @@ import {
   BIBTEX_CALLOUT_MARKER,
   buildBibtexCallout,
   buildPaperFrontmatterLines,
+  formatRatingStars,
   upsertBibtexCallout,
   normalizeClaudianModel,
   normalizeRating,
@@ -29,9 +30,11 @@ test('rating is stored as an integer from 0 to 5', () => {
   assert.equal(normalizeRating(2.6), 3);
   assert.equal(normalizeRating('4'), 4);
   assert.equal(normalizeRating(9), 5);
+  assert.equal(formatRatingStars(3), '★★★☆☆ (3/5)');
+  assert.equal(formatRatingStars(0), '☆☆☆☆☆ (0/5)');
 });
 
-test('auto mode keeps local fields and Claudian metadata defaults', () => {
+test('auto mode writes local fields and compact Claudian metadata defaults', () => {
   const lines = buildPaperFrontmatterLines(basePaper, { claudianMode: 'auto' });
 
   assert.ok(lines.includes('rating: 0'));
@@ -39,7 +42,12 @@ test('auto mode keeps local fields and Claudian metadata defaults', () => {
   assert.ok(lines.includes('institutions: []'));
   assert.ok(lines.includes('published: "unknown"'));
   assert.ok(lines.includes('openSourceStatus: "unknown"'));
-  assert.ok(lines.includes('metadataEnrichedAt: ""'));
+  assert.ok(lines.includes('openSourceUrl: ""'));
+  assert.ok(lines.includes('fields: ["Robotics"]'));
+  assert.equal(lines.some(line => line.startsWith('openSourcePlan:')), false);
+  assert.equal(lines.some(line => line.startsWith('openSourceLevel:')), false);
+  assert.equal(lines.some(line => line.startsWith('metadataEnrichedAt:')), false);
+  assert.equal(lines.some(line => line.startsWith('field:')), false);
 });
 
 test('manual mode keeps Claudian fields without requiring an automatic call', () => {
@@ -84,23 +92,23 @@ test('Claudian response parser accepts fenced JSON and normalizes missing eviden
     Here is the result:
     \`\`\`json
     {
-      "institutions": ["CMU", "NVIDIA Lab"],
+      "institutions": ["Carnegie Mellon University（CMU）", "NVIDIA Research"],
       "published": "published",
       "publicationVenue": "CVPR 2026",
       "openSourceStatus": "partial",
       "openSourceUrl": "https://github.com/example/repo",
       "openSourceLevel": "weights",
+      "openSourcePlan": "after camera-ready",
       "bibtex": "@inproceedings{demo2026,title={Demo}}"
     }
     \`\`\`
   `);
 
-  assert.deepEqual(parsed.institutions, ['CMU', 'NVIDIA Lab']);
+  assert.deepEqual(parsed.institutions, ['Carnegie Mellon University（CMU）', 'NVIDIA Research']);
   assert.equal(parsed.published, 'published');
   assert.equal(parsed.publicationVenue, 'CVPR 2026');
-  assert.equal(parsed.openSourceStatus, 'partial');
-  assert.equal(parsed.openSourcePlan, '');
-  assert.equal(parsed.openSourceLevel, 'weights');
+  assert.equal(parsed.openSourceStatus, 'partial · weights · 计划：after camera-ready');
+  assert.equal(parsed.openSourceUrl, 'https://github.com/example/repo');
   assert.match(parsed.bibtex, /@inproceedings/);
 });
 
@@ -123,15 +131,15 @@ test('paper body metadata is updated after Claudian enrichment', () => {
     institutions: ['CMU', 'NVIDIA Lab'],
     published: 'published',
     publicationVenue: 'CVPR 2026',
-    openSourceStatus: 'partial',
+    openSourceStatus: 'partial · weights',
     openSourceUrl: 'https://github.com/example/repo',
-    openSourceLevel: 'weights',
   });
 
   assert.match(updated, /\*\*作者单位\*\*：CMU; NVIDIA Lab/);
   assert.match(updated, /\*\*发表状态\*\*：published/);
   assert.match(updated, /\*\*发表期刊\/会议\*\*：CVPR 2026/);
-  assert.match(updated, /\*\*开源状态\*\*：partial · weights · https:\/\/github.com\/example\/repo/);
+  assert.match(updated, /\*\*开源状态\*\*：partial · weights/);
+  assert.match(updated, /\*\*开源地址\*\*：https:\/\/github.com\/example\/repo/);
 });
 
 test('Claudian model setting is normalized for runtime use', () => {

@@ -12,8 +12,6 @@ export interface ClaudianEnrichmentResult {
   publicationVenue: string;
   openSourceStatus: string;
   openSourceUrl: string;
-  openSourcePlan: string;
-  openSourceLevel: string;
   bibtex: string;
 }
 
@@ -35,21 +33,17 @@ export const DEFAULT_CLAUDIAN_PROMPT = `# Obtero 论文元数据补全
   "publicationVenue": "",
   "openSourceStatus": "unknown",
   "openSourceUrl": "",
-  "openSourcePlan": "",
-  "openSourceLevel": "",
   "bibtex": ""
 }
 \`\`\`
 
 ## 字段说明
 
-- institutions：研究机构或作者单位，使用常见简称或清晰英文名，例如 NVIDIA Lab、CMU、UCB、KAIST、ZJU。
+- institutions：研究机构或作者单位，优先使用全称（缩写），例如 Carnegie Mellon University（CMU）、UC Berkeley（UCB）、Zhejiang University（ZJU）。机构本身常用全称已经清晰时可不加缩写，例如 NVIDIA Research、KAIST。
 - published：只能使用 "published"、"preprint"、"unpublished"、"unknown"。
 - publicationVenue：发表期刊或会议，例如 CVPR 2026、IEEE RA-L、arXiv。
-- openSourceStatus：只能使用 "open"、"partial"、"planned"、"not_open"、"unknown"。
+- openSourceStatus：包含开源状态、计划时间和开源程度，不能包含 URL。例如 "open · full"、"partial · weights only"、"planned · 2026 Q4"、"not_open"、"unknown"。
 - openSourceUrl：开源地址，没有可靠证据则为空字符串。
-- openSourcePlan：计划开源时间或说明，没有可靠证据则为空字符串。
-- openSourceLevel：例如 full、code、weights、dataset、partial，没有可靠证据则为空字符串。
 - bibtex：BibTeX 条目。证据不足时可以使用 DOI/arXiv 信息生成合理 BibTeX；仍不足则为空字符串。
 
 ## 约束
@@ -68,6 +62,11 @@ export function normalizeRating(value: unknown): number {
     return 0;
   }
   return Math.max(0, Math.min(5, Math.round(numeric)));
+}
+
+export function formatRatingStars(value: unknown): string {
+  const rating = normalizeRating(value);
+  return `${'★'.repeat(rating)}${'☆'.repeat(5 - rating)} (${rating}/5)`;
 }
 
 export function normalizeClaudianModel(value: string | undefined): string {
@@ -92,7 +91,6 @@ export function buildPaperFrontmatterLines(
   options: PaperMetadataBuildOptions
 ): string[] {
   const paperFields = getPaperFields(paper);
-  const primaryField = paperFields[0];
   const lines: string[] = ['---'];
 
   lines.push(`title: "${escapeYaml(paper.title)}"`);
@@ -110,15 +108,11 @@ export function buildPaperFrontmatterLines(
     lines.push(`publicationVenue: "${escapeYaml(paper.publicationVenue || paper.journal || '')}"`);
     lines.push(`openSourceStatus: "${escapeYaml(paper.openSourceStatus || DEFAULT_OPEN_SOURCE_STATUS)}"`);
     lines.push(`openSourceUrl: "${escapeYaml(paper.openSourceUrl || '')}"`);
-    lines.push(`openSourcePlan: "${escapeYaml(paper.openSourcePlan || '')}"`);
-    lines.push(`openSourceLevel: "${escapeYaml(paper.openSourceLevel || '')}"`);
-    lines.push(`metadataEnrichedAt: "${escapeYaml(paper.metadataEnrichedAt || '')}"`);
   }
 
   if (paperFields.length > 0) {
     lines.push(formatYamlArray('fields', paperFields));
   }
-  if (primaryField) lines.push(`field: "${escapeYaml(primaryField)}"`);
   if (paper.arxivId) lines.push(`arxivId: "${escapeYaml(paper.arxivId)}"`);
   if (paper.doi) lines.push(`doi: "${escapeYaml(paper.doi)}"`);
   lines.push('---', '');
@@ -127,7 +121,7 @@ export function buildPaperFrontmatterLines(
 
 export function getPaperFields(paper: PaperInfo): string[] {
   return Array.from(
-    new Set((paper.fields && paper.fields.length > 0 ? paper.fields : paper.field ? [paper.field] : []).filter(Boolean))
+    new Set([...(paper.fields || []), paper.field || ''].filter(Boolean))
   );
 }
 
@@ -181,15 +175,16 @@ export function updatePaperBodyMetadata(content: string, paper: PaperInfo): stri
     next = upsertBodyMetadataLine(next, '发表期刊/会议', paper.publicationVenue || paper.journal || '', '发表状态');
   }
   next = upsertBodyMetadataLine(next, '开源状态', formatOpenSourceSummary(paper), '发表期刊/会议');
+  if (paper.openSourceUrl) {
+    next = upsertBodyMetadataLine(next, '开源地址', paper.openSourceUrl, '开源状态');
+  } else {
+    next = removeBodyMetadataLine(next, '开源地址');
+  }
   return next;
 }
 
 export function formatOpenSourceSummary(paper: PaperInfo): string {
-  const parts = [paper.openSourceStatus || DEFAULT_OPEN_SOURCE_STATUS];
-  if (paper.openSourceLevel) parts.push(paper.openSourceLevel);
-  if (paper.openSourceUrl) parts.push(paper.openSourceUrl);
-  if (paper.openSourcePlan) parts.push(`计划：${paper.openSourcePlan}`);
-  return parts.join(' · ');
+  return paper.openSourceStatus || DEFAULT_OPEN_SOURCE_STATUS;
 }
 
 export function parseClaudianEnrichmentResponse(content: string): ClaudianEnrichmentResult {
@@ -204,18 +199,19 @@ export function normalizeClaudianEnrichmentResult(value: unknown): ClaudianEnric
     institutions: normalizeStringArray(record.institutions),
     published: normalizeString(record.published) || DEFAULT_PUBLISHED_STATUS,
     publicationVenue: normalizeString(record.publicationVenue),
-    openSourceStatus: normalizeString(record.openSourceStatus) || DEFAULT_OPEN_SOURCE_STATUS,
+    openSourceStatus: combineOpenSourceStatus(
+      normalizeString(record.openSourceStatus) || DEFAULT_OPEN_SOURCE_STATUS,
+      normalizeString(record.openSourceLevel),
+      normalizeString(record.openSourcePlan)
+    ),
     openSourceUrl: normalizeString(record.openSourceUrl),
-    openSourcePlan: normalizeString(record.openSourcePlan),
-    openSourceLevel: normalizeString(record.openSourceLevel),
     bibtex: normalizeString(record.bibtex),
   };
 }
 
 export function applyClaudianEnrichmentToPaper(
   paper: PaperInfo,
-  enrichment: ClaudianEnrichmentResult,
-  enrichedAt = new Date().toISOString()
+  enrichment: ClaudianEnrichmentResult
 ): PaperInfo {
   return {
     ...paper,
@@ -224,10 +220,7 @@ export function applyClaudianEnrichmentToPaper(
     publicationVenue: enrichment.publicationVenue,
     openSourceStatus: enrichment.openSourceStatus,
     openSourceUrl: enrichment.openSourceUrl,
-    openSourcePlan: enrichment.openSourcePlan,
-    openSourceLevel: enrichment.openSourceLevel,
     bibtex: enrichment.bibtex,
-    metadataEnrichedAt: enrichedAt,
   };
 }
 
@@ -294,6 +287,28 @@ function upsertBodyMetadataLine(
     return `${content.slice(0, notesIndex).trimEnd()}\n${line}${content.slice(notesIndex)}`;
   }
   return `${content.trimEnd()}\n${line}\n`;
+}
+
+function removeBodyMetadataLine(content: string, label: string): string {
+  const existing = new RegExp(`^\\*\\*${escapeRegExp(label)}\\*\\*：.*(?:\\n|$)`, 'm');
+  return content.replace(existing, '');
+}
+
+function combineOpenSourceStatus(status: string, level: string, plan: string): string {
+  const parts = [status || DEFAULT_OPEN_SOURCE_STATUS];
+  if (level) {
+    parts.push(level);
+  }
+  if (plan) {
+    parts.push(`计划：${plan}`);
+  }
+
+  return parts.reduce<string[]>((result, part) => {
+    if (!result.includes(part)) {
+      result.push(part);
+    }
+    return result;
+  }, []).join(' · ');
 }
 
 function escapeRegExp(value: string): string {

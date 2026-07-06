@@ -1,4 +1,4 @@
-import { App, Modal, Notice, PluginSettingTab, Setting, TFile } from 'obsidian';
+import { App, Component, MarkdownRenderer, Modal, Notice, PluginSettingTab, Setting, TFile } from 'obsidian';
 import MyPlugin from './main';
 import { FieldStyle, IdeaItem } from './types';
 import {
@@ -135,58 +135,12 @@ export const DEFAULT_SETTINGS: MyPluginSettings = {
   ideas: [],
 };
 
-class PromptEditorModal extends Modal {
-  private plugin: MyPlugin;
-  private filePath: string;
-  private content: string;
-
-  constructor(app: App, plugin: MyPlugin, filePath: string, content: string) {
-    super(app);
-    this.plugin = plugin;
-    this.filePath = filePath;
-    this.content = content;
-  }
-
-  onOpen(): void {
-    const { contentEl } = this;
-    contentEl.empty();
-    contentEl.createEl('h2', { text: 'Claudian 元数据补全提示词' });
-    contentEl.createEl('p', {
-      text: this.filePath,
-      cls: 'setting-item-description',
-    });
-    const textarea = contentEl.createEl('textarea', {
-      cls: 'pm-prompt-editor',
-    });
-    textarea.value = this.content;
-    textarea.rows = 18;
-    textarea.style.width = '100%';
-    textarea.style.boxSizing = 'border-box';
-
-    const buttons = contentEl.createDiv({ cls: 'modal-button-container' });
-    buttons.style.display = 'flex';
-    buttons.style.justifyContent = 'flex-end';
-    buttons.style.gap = '8px';
-    buttons.style.marginTop = '12px';
-
-    buttons.createEl('button', { text: '取消' }).addEventListener('click', () => {
-      this.close();
-    });
-    const saveButton = buttons.createEl('button', { text: '保存', cls: 'mod-cta' });
-    saveButton.addEventListener('click', () => {
-      void (async () => {
-        await this.plugin.saveClaudianPrompt(textarea.value);
-        new Notice('已保存 Claudian 提示词');
-        this.close();
-      })();
-    });
-  }
-}
-
 export class PaperSettingTab extends PluginSettingTab {
   plugin: MyPlugin;
 
   activeFieldIndex: number = 0; // 当前选中的领域索引
+  private promptPreviewComponent: Component | null = null;
+
   constructor(app: App, plugin: MyPlugin) {
     super(app, plugin);
     this.plugin = plugin;
@@ -194,6 +148,8 @@ export class PaperSettingTab extends PluginSettingTab {
 
   display(): void {
     const { containerEl } = this;
+    this.promptPreviewComponent?.unload();
+    this.promptPreviewComponent = null;
     containerEl.empty();
     containerEl.createEl('h2', { text: '论文管理' });
 
@@ -351,11 +307,23 @@ export class PaperSettingTab extends PluginSettingTab {
 
     const promptPreview = containerEl.createEl('details', { cls: 'obtero-prompt-preview' });
     promptPreview.createEl('summary', { text: '查看当前提示词内容' });
-    const promptCode = promptPreview.createEl('pre');
-    promptCode.setText('读取中...');
+    const promptPreviewContent = promptPreview.createDiv({ cls: 'obtero-prompt-preview-content markdown-rendered' });
+    promptPreviewContent.setText('读取中...');
+    const previewComponent = new Component();
+    previewComponent.load();
+    this.promptPreviewComponent = previewComponent;
     void this.plugin.loadClaudianPrompt()
-      .then(content => promptCode.setText(content))
-      .catch(error => promptCode.setText(`读取失败：${(error as Error).message}`));
+      .then(async content => {
+        promptPreviewContent.empty();
+        await MarkdownRenderer.render(
+          this.app,
+          content,
+          promptPreviewContent,
+          this.plugin.getClaudianPromptPath(),
+          previewComponent
+        );
+      })
+      .catch(error => promptPreviewContent.setText(`读取失败：${(error as Error).message}`));
 
     // ── 摘要翻译 ────────────────────────────────────────────────────────────
     this.addSectionHeader(containerEl, '摘要翻译');
@@ -430,6 +398,12 @@ export class PaperSettingTab extends PluginSettingTab {
 
   }
 
+  hide(): void {
+    this.promptPreviewComponent?.unload();
+    this.promptPreviewComponent = null;
+    super.hide();
+  }
+
   private async openPromptFile(): Promise<void> {
     const promptPath = this.plugin.settings.claudianPromptPath || this.plugin.getDefaultClaudianPromptPath();
     await this.plugin.ensureClaudianPromptFile();
@@ -440,8 +414,11 @@ export class PaperSettingTab extends PluginSettingTab {
       return;
     }
 
-    const content = await this.plugin.loadClaudianPrompt();
-    new PromptEditorModal(this.app, this.plugin, promptPath, content).open();
+    await this.app.workspace.openLinkText(promptPath, '', true);
+    const openedFile = this.app.vault.getAbstractFileByPath(promptPath);
+    if (!(openedFile instanceof TFile)) {
+      new Notice('Obsidian 未将该提示词文件索引为 Markdown，无法用原生编辑器打开。可将提示词路径改到普通 vault 目录。');
+    }
   }
 
   renderFieldsList(containerEl: HTMLElement): void {

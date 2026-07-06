@@ -1170,8 +1170,7 @@ export class PaperView extends ItemView {
       try {
         await this.app.fileManager.processFrontMatter(file, fm => {
           const frontmatter = fm as PaperFrontmatter;
-          const primaryField = normalizedNextFields[0] || this.plugin.settings.defaultField;
-          frontmatter.field = primaryField;
+          delete frontmatter.field;
           if (normalizedNextFields.length > 0) {
             frontmatter.fields = normalizedNextFields;
           } else {

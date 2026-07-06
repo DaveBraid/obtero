@@ -8,7 +8,10 @@ import {
   buildClaudianMetadataPrompt,
   DEFAULT_CLAUDIAN_PROMPT,
   DEFAULT_CLAUDIAN_PROMPT_RELATIVE_PATH,
+  formatRatingStars,
+  getPaperFields,
   normalizeClaudianMetadataMode,
+  normalizeRating,
   parseClaudianEnrichmentResponse,
   shouldAutoEnrichWithClaudian,
   shouldIncludeClaudianMetadata,
@@ -55,6 +58,7 @@ export default class PaperPlugin extends Plugin {
     });
 
     this.registerBibtexCopyPostProcessor();
+    this.registerRatingPostProcessor();
     this.addSettingTab(new PaperSettingTab(this.app, this));
 
     this.app.workspace.onLayoutReady(() => {
@@ -214,9 +218,11 @@ export default class PaperPlugin extends Plugin {
       metadata.publicationVenue = paper.publicationVenue || '';
       metadata.openSourceStatus = paper.openSourceStatus || 'unknown';
       metadata.openSourceUrl = paper.openSourceUrl || '';
-      metadata.openSourcePlan = paper.openSourcePlan || '';
-      metadata.openSourceLevel = paper.openSourceLevel || '';
-      metadata.metadataEnrichedAt = paper.metadataEnrichedAt || new Date().toISOString();
+      metadata.fields = getPaperFields(paper);
+      delete metadata.field;
+      delete metadata.openSourcePlan;
+      delete metadata.openSourceLevel;
+      delete metadata.metadataEnrichedAt;
     });
 
     const content = await this.app.vault.read(file);
@@ -232,6 +238,11 @@ export default class PaperPlugin extends Plugin {
   private paperFromFrontmatter(file: TFile, frontmatter: Record<string, unknown> | undefined): PaperInfo {
     const authors = frontmatter?.authors;
     const institutions = frontmatter?.institutions;
+    const fields = frontmatter?.fields;
+    const legacyField = this.getFrontmatterString(frontmatter, 'field');
+    const normalizedFields = Array.isArray(fields)
+      ? fields.filter((field): field is string => typeof field === 'string')
+      : [];
     return {
       title: this.getFrontmatterString(frontmatter, 'title') || file.basename.replace(/^【.+?】-/, ''),
       journal: this.getFrontmatterString(frontmatter, 'journal'),
@@ -244,7 +255,8 @@ export default class PaperPlugin extends Plugin {
         : [],
       rating: this.getFrontmatterNumber(frontmatter, 'rating'),
       pdfUrl: this.getFrontmatterString(frontmatter, 'pdfUrl'),
-      field: this.getFrontmatterString(frontmatter, 'field'),
+      fields: Array.from(new Set([...normalizedFields, legacyField].filter(Boolean))),
+      field: legacyField,
       arxivId: this.getFrontmatterString(frontmatter, 'arxivId'),
       doi: this.getFrontmatterString(frontmatter, 'doi'),
       abstract: '',
@@ -259,7 +271,45 @@ export default class PaperPlugin extends Plugin {
 
   private getFrontmatterNumber(frontmatter: Record<string, unknown> | undefined, key: string): number {
     const value = frontmatter?.[key];
-    return typeof value === 'number' ? value : 0;
+    if (typeof value === 'number') {
+      return value;
+    }
+    if (typeof value === 'string') {
+      const numeric = Number(value);
+      return Number.isFinite(numeric) ? numeric : 0;
+    }
+    return 0;
+  }
+
+  private registerRatingPostProcessor(): void {
+    this.registerMarkdownPostProcessor((el, ctx) => {
+      const file = this.app.vault.getAbstractFileByPath(ctx.sourcePath);
+      if (!(file instanceof TFile) || file.extension !== 'md') {
+        return;
+      }
+
+      const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter;
+      if (!frontmatter || !Object.prototype.hasOwnProperty.call(frontmatter, 'rating')) {
+        return;
+      }
+
+      if (el.querySelector('.obtero-rendered-rating')) {
+        return;
+      }
+
+      const rating = normalizeRating(frontmatter.rating);
+      const ratingEl = document.createElement('div');
+      ratingEl.className = 'obtero-rendered-rating';
+      ratingEl.setAttribute('aria-label', `评分 ${rating} / 5`);
+      ratingEl.textContent = formatRatingStars(rating);
+
+      const title = el.querySelector('h1');
+      if (title?.parentElement) {
+        title.insertAdjacentElement('afterend', ratingEl);
+        return;
+      }
+      el.prepend(ratingEl);
+    });
   }
 
   private registerBibtexCopyPostProcessor(): void {
